@@ -4,7 +4,7 @@ use std::cmp::Reverse;
 trait Individual {
     // can this return just a numeric traited instance?
     // post calculated fitness. 
-    fn fitness(&self) -> u32;
+    fn fitness(&self) -> u128;
     fn print(&self) -> ();
     fn mutate(&mut self) -> ();
     // fn crossover(&self, other: Box<dyn Individual>) -> Box<dyn Individual>;
@@ -45,12 +45,9 @@ impl Crossover for SinF {
 }
 
 impl Individual for SinF {
-    fn fitness(&self) -> u32{
+    fn fitness(&self) -> u128 {
         let _p = self.value * self.value.sin().powf(2.0);
-
-        // todo: could fitnes rely on other members of the pop?
-        // todo: maybe do this as a post process? 
-        return ((_p + 100.0) * 1000.0) as u32;
+        return ((_p + 100.0) * 1000.0) as u128;
     }
 
     fn mutate(&mut self) -> () {
@@ -82,7 +79,6 @@ fn select_parents<T: Individual>(individuals: &Vec<T>, parent_count: usize) -> V
     }
     return parents;
 }
-
 
 fn main() {
     let population_count = 300;
