@@ -80,6 +80,33 @@ fn select_parents<T: Individual>(individuals: &Vec<T>, parent_count: usize) -> V
     return parents;
 }
 
+// todo: allow user to specify parent selection algorithm. 
+fn generate_offspring<T>(parents: &Vec<T>, offspring_count: u128) -> Vec<T>
+where
+    T: Crossover<Output = T> + Individual
+{
+    let mut offspring: Vec<T> = Vec::new();
+
+    // breed offspring / mutate
+    let parent_one = match parents.choose(&mut rand::thread_rng()) {
+        None => panic!("None!"),
+        Some(FD) => FD,
+    };
+
+    let parent_two = match parents.choose(&mut rand::thread_rng()) {
+        None => panic!("None!"),
+        Some(FD) => FD,
+    };
+
+    for offp in 1..offspring_count {
+        let mut child = parent_one.crossover(parent_two);
+        child.mutate();
+        offspring.push(child);
+    }
+
+    return offspring;
+}
+
 fn main() {
     let population_count = 300;
     let parent_count = 20;
@@ -102,6 +129,9 @@ fn main() {
         // Select Parents. 
         let parents = select_parents(&specific_pop, parent_count);
 
+        // let mut offspring = generate_offspring(&parents, offspring_count);
+        let mut offspring: Vec<SinF> = Vec::new();
+
         // breed offspring / mutate
         let parent_one = match parents.choose(&mut rand::thread_rng()) {
             None => panic!("None!"),
@@ -113,7 +143,6 @@ fn main() {
             Some(FD) => FD,
         };
 
-        let mut offspring: Vec<SinF> = Vec::new();
         for offp in 1..offspring_count {
             let mut child = parent_one.crossover(parent_two);
             child.mutate();
@@ -121,7 +150,6 @@ fn main() {
         }
 
         do_fitness_func(&offspring);
-
 
         // add in the offspring
         specific_pop.append(&mut offspring);
