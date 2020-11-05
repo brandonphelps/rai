@@ -86,11 +86,11 @@ fn select_parents<T: Individual>(individuals: &Vec<T>, parent_count: usize) -> V
 
 fn main() {
     let population_count = 300;
+    let parent_count = 20;
+    let offspring_count = 30;
+    let mut iteration_count = 0;
+    let max_iter_count = 100;
     let mut specific_pop: Vec<SinF> = Vec::new();
-    let mut pop: Vec<Box<dyn Individual>> = Vec::new();
-
-    // fitness , index
-    let mut results : Vec<(u32, u32)> = Vec::new();
 
     // generate random populateion
     for n in 1..population_count+1 {
@@ -101,13 +101,12 @@ fn main() {
     // fitness evaluation
 
     do_fitness_func(&specific_pop);
-    let mut iteration_count = 0;
-    let max_iter_count = 100;
 
     while iteration_count < max_iter_count {
         // Select Parents. 
-        let parents = select_parents(&specific_pop, 20);
+        let parents = select_parents(&specific_pop, parent_count);
 
+        // breed offspring / mutate
         let parent_one = match parents.choose(&mut rand::thread_rng()) {
             None => panic!("None!"),
             Some(FD) => FD,
@@ -118,9 +117,6 @@ fn main() {
             Some(FD) => FD,
         };
 
-        let offspring_count = 30;
-
-        // breed offspring
         let mut offspring: Vec<SinF> = Vec::new();
         for offp in 1..offspring_count {
             let mut child = parent_one.crossover(parent_two);
@@ -129,6 +125,7 @@ fn main() {
         }
 
         do_fitness_func(&offspring);
+
 
         // add in the offspring
         specific_pop.append(&mut offspring);
@@ -142,17 +139,13 @@ fn main() {
         iteration_count += 1;
     }
 
-
-
-    let mut c = 0;
-    for n in pop.iter() {
-        results.push((n.fitness(), c));
-        c = c + 1;
-    }
-
     // generate fitness values.
 
-
+    specific_pop.sort_by_key(|indiv| Reverse(indiv.fitness()));
+    println!("Top Ten");
+    for offp in 1..10 {
+        println!("{} {:?} {}", offp, specific_pop[offp], specific_pop[offp].fitness());
+    }
 
     // let rand_t: Option<&(u32, u32)> = results.choose(&mut rand::thread_rng());
     // let newSinF = match rand_t {
