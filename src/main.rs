@@ -1,18 +1,19 @@
 use rand::seq::SliceRandom;
+use std::cmp::Reverse;
 
 trait Individual {
     // can this return just a numeric traited instance?
     // post calculated fitness. 
     fn fitness(&self) -> u32;
     fn print(&self) -> ();
-    fn mutate(&self) -> Box<dyn Individual>;
+    fn mutate(&mut self) -> ();
     // fn crossover(&self, other: Box<dyn Individual>) -> Box<dyn Individual>;
 }
 
 trait Crossover<Rhs=Self> {
     type Output;
 
-    fn crossover(&self, rhs: &Box<Rhs>) -> Self::Output;
+    fn crossover(&self, rhs: &Rhs) -> Self::Output;
 }
 
 use std::sync::atomic::{AtomicUsize, Ordering};
@@ -38,8 +39,7 @@ impl SinF {
 
 impl Crossover for SinF {
     type Output = SinF;
-    fn crossover(&self, _rhs: &Box<SinF>) -> SinF {
-        println!("Cross over for SinF");
+    fn crossover(&self, _rhs: &SinF) -> SinF {
         SinF::new((_rhs.value + self.value) / 2.0)
     }
 }
@@ -53,25 +53,13 @@ impl Individual for SinF {
         return ((_p + 100.0) * 1000.0) as u32;
     }
 
-    fn mutate(&self) -> Box<dyn Individual> {
-        return Box::new(SinF::new(self.value + 0.01));
+    fn mutate(&mut self) -> () {
+        self.value = 0.01;
     }
     
     fn print(&self) -> () {
         print!("{:?}", self)
     }
-}
-
-fn get_mah_fitness<T: Individual>(ind: T) {
-    ind.fitness();
-}
-
-fn gen_new_pop<T: Crossover>(individuals: Vec<Box<T>>) -> Vec<T> {
-    let mut results: Vec<T> = Vec::new();
-
-    for item in individuals.iter() {
-    }
-    return results;
 }
 
 
@@ -83,7 +71,7 @@ fn do_fitness_func<T: Individual>(individuals: &Vec<T>) -> () {
 
 fn select_parents<T: Individual>(individuals: &Vec<T>, parent_count: usize) -> Vec<&T> {
     let mut parents: Vec<&T> = Vec::new(); 
-    for ind in 1..parent_count  {
+    for _ind in 1..parent_count  {
         let rand_f: Option<&T> = individuals.choose(&mut rand::thread_rng());
         match rand_f {
             None => panic!("None!"),
@@ -97,6 +85,7 @@ fn select_parents<T: Individual>(individuals: &Vec<T>, parent_count: usize) -> V
 
 
 fn main() {
+    let population_count = 300;
     let mut specific_pop: Vec<SinF> = Vec::new();
     let mut pop: Vec<Box<dyn Individual>> = Vec::new();
 
@@ -104,9 +93,9 @@ fn main() {
     let mut results : Vec<(u32, u32)> = Vec::new();
 
     // generate random populateion
-    for n in 1..301 {
-        pop.push(Box::new(SinF::new((n as f64/100.0))));
-        specific_pop.push(SinF::new((n as f64/100.0)));
+    for n in 1..population_count+1 {
+        // pop.push(Box::new(SinF::new((n as f64/100.0))));
+        specific_pop.push(SinF::new(n as f64/100.0));
     }
 
     // fitness evaluation
@@ -116,12 +105,39 @@ fn main() {
     let max_iter_count = 100;
 
     while iteration_count < max_iter_count {
-
         // Select Parents. 
+        let parents = select_parents(&specific_pop, 20);
 
+        let parent_one = match parents.choose(&mut rand::thread_rng()) {
+            None => panic!("None!"),
+            Some(FD) => FD,
+        };
 
+        let parent_two = match parents.choose(&mut rand::thread_rng()) {
+            None => panic!("None!"),
+            Some(FD) => FD,
+        };
 
+        let offspring_count = 30;
 
+        // breed offspring
+        let mut offspring: Vec<SinF> = Vec::new();
+        for offp in 1..offspring_count {
+            let mut child = parent_one.crossover(parent_two);
+            child.mutate();
+            offspring.push(child);
+        }
+
+        do_fitness_func(&offspring);
+
+        // add in the offspring
+        specific_pop.append(&mut offspring);
+        
+        // cull population 
+        specific_pop.sort_by_key(|indiv| Reverse(indiv.fitness()));
+        specific_pop.truncate(population_count);
+
+        assert!(specific_pop.len() == population_count);
 
         iteration_count += 1;
     }
@@ -155,3 +171,5 @@ fn main() {
 
     // println!("New sinze F: {:?}", newSinF);
 }
+
+// todo look at this bench amrk thing https://stackoverflow.com/questions/60916194/how-to-sort-a-vector-in-descending-order-in-rust
