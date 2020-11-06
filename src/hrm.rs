@@ -14,19 +14,19 @@ pub struct Program {
 
 impl Program {
 
-    pub fn new() -> Program {
-        return Program{program_counter: 0, program_instruction: Vec::new()};
-    }
+    // pub fn new() -> Program {
+    //     return Program{program_counter: 0, program_instruction: Vec::new()};
+    // }
 
-    pub fn step(&mut self, dt: f64) {
+    // pub fn step(&mut self, dt: f64) {
 
-        self.eval(self.program_instruction[self.program_counter]);
+    //     self.eval(self.program_instruction[self.program_counter as usize]);
 
-        self.program_counter += 1;
-    }
+    //     self.program_counter += 1;
+    // }
 
     
-    fn eval(&mut self, op: Instruction) -> () {
-        println!("Evaluate!");
-    }
+    // fn eval(&mut self, op: Instruction) -> () {
+    //     println!("Evaluate!");
+    // }
 }

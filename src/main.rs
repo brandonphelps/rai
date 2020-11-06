@@ -2,6 +2,7 @@ use rand::seq::SliceRandom;
 use std::cmp::Reverse;
 
 mod hrm;
+mod nn;
 
 trait Individual {
     // can this return just a numeric traited instance?
@@ -193,7 +194,7 @@ fn main() {
         println!("{} {:?} {}", offp, specific_pop[offp], specific_pop[offp].fitness());
     }
 
-    let j = hrm::Program::new();
+    // let j = hrm::Program::new();
 
     // let rand_t: Option<&(u32, u32)> = results.choose(&mut rand::thread_rng());
     // let newSinF = match rand_t {
