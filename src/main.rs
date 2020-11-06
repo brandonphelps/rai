@@ -1,6 +1,8 @@
 use rand::seq::SliceRandom;
 use std::cmp::Reverse;
 
+mod hrm;
+
 trait Individual {
     // can this return just a numeric traited instance?
     // post calculated fitness. 
@@ -18,6 +20,7 @@ trait Crossover<Rhs=Self> {
 
 use std::sync::atomic::{AtomicUsize, Ordering};
 
+static SortedIdCount: AtomicUsize = AtomicUsize::new(0);
 static SinFIdCount: AtomicUsize = AtomicUsize::new(0);
 
 #[derive(Debug)]
@@ -25,6 +28,24 @@ struct SinF {
     pub value: f64,
     pub ident: usize
 }
+
+struct SortedItems {
+    pub data: Vec<u32>,
+    pub ident: usize
+}
+
+impl SortedItems {
+    fn new(value: u32) -> SortedItems {
+        let mut data_blob: Vec<u32> = Vec::new();
+        for i in 1..value {
+            data_blob.push(i);
+        }
+        let old_count = SortedIdCount.fetch_add(1, Ordering::SeqCst);
+        SortedItems{data: data_blob, ident: old_count}
+    }
+}
+
+
 
 impl SinF {
     // fn crossover(&self, other: &SinF) -> Box<SinF> {
@@ -34,6 +55,19 @@ impl SinF {
     fn new(value: f64) -> SinF {
         let old_count = SinFIdCount.fetch_add(1, Ordering::SeqCst);
         SinF{value: value, ident: old_count}
+    }
+}
+
+impl Individual for SortedItems {
+    fn fitness(&self) -> u128 {
+       return 0;  
+    }
+
+    fn mutate(&mut self) -> () {
+        
+    }
+
+    fn print(&self) -> () {
     }
 }
 
@@ -107,6 +141,14 @@ where
     return offspring;
 }
 
+
+fn run_dah_simulation<T>(initial_pop: Vec<T>, pop_count: u64, parent_count: u64, offspring_count: u64, iter_count: u64)
+where
+    T: Crossover<Output = T> + Individual
+{
+
+}
+
 fn main() {
     let population_count = 300;
     let parent_count = 20;
@@ -128,27 +170,7 @@ fn main() {
     while iteration_count < max_iter_count {
         // Select Parents. 
         let parents = select_parents(&specific_pop, parent_count);
-
-        let mut offspring = generate_offspring::<SinF>(&parents, offspring_count);
-        // let mut offspring: Vec<SinF> = Vec::new();
-
-        // // breed offspring / mutate
-        // let parent_one = match parents.choose(&mut rand::thread_rng()) {
-        //     None => panic!("None!"),
-        //     Some(FD) => FD,
-        // };
-
-        // let parent_two = match parents.choose(&mut rand::thread_rng()) {
-        //     None => panic!("None!"),
-        //     Some(FD) => FD,
-        // };
-
-        // for offp in 1..offspring_count {
-        //     let mut child = parent_one.crossover(parent_two);
-        //     child.mutate();
-        //     offspring.push(child);
-        // }
-
+        let mut offspring = generate_offspring(&parents, offspring_count);
         do_fitness_func(&offspring);
 
         // add in the offspring
@@ -170,6 +192,8 @@ fn main() {
     for offp in 1..10 {
         println!("{} {:?} {}", offp, specific_pop[offp], specific_pop[offp].fitness());
     }
+
+    let j = hrm::Program::new();
 
     // let rand_t: Option<&(u32, u32)> = results.choose(&mut rand::thread_rng());
     // let newSinF = match rand_t {
