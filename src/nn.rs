@@ -38,11 +38,20 @@ pub struct Network {
 
 impl Network {
     pub fn new(input_node_count: u32, output_node_count: u32) -> Network {
-        return Network{nodes: Vec::new(),
-                       edges: Vec::new(),
-                       input_node_count: input_node_count,
-                       output_node_count: output_node_count,
-                       layer_count: 2};
+        let mut network = Network{nodes: Vec::new(),
+                                  edges: Vec::new(),
+                                  input_node_count: input_node_count,
+                                  output_node_count: output_node_count,
+                                  layer_count: 2};
+        for input_n in 0..input_node_count {
+            network.new_node(0);
+        }
+
+        for output_n in 0..output_node_count {
+            network.new_node(1);
+        }
+
+        return network;
     }
 
     pub fn feed_input(&mut self, inputs: Vec<f64> ) -> Vec<f64> {
@@ -115,8 +124,6 @@ mod tests {
     #[test]
     fn test_simple_add() {
         let mut network = Network::new(1, 1);
-        network.new_node(0);
-        network.new_node(1);
 
         network.add_connection(0, 1);
 
