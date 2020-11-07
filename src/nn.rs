@@ -1,4 +1,9 @@
 
+// can't use this here ?
+//#[macro_use]
+// extern crate more_asserts;
+
+
 #[derive(Debug)]
 struct Node {
     input_sum: f64,
@@ -17,6 +22,7 @@ impl Node {
     }
 }
 
+#[derive(Debug)]
 struct Edge {
     from_node: u64,
     to_node: u64,
@@ -25,6 +31,7 @@ struct Edge {
     enabled: bool
 }
 
+#[derive(Debug)]
 pub struct Network {
 
     // first I nodes are input nodes
@@ -70,38 +77,47 @@ impl Network {
             self.nodes[i as usize].output_sum = inputs[i as usize];
         }
 
+        // set bias to true
+        self.nodes[self.bias_node_id as usize].output_sum = 1.0;
+
         for layer in 0..self.layer_count {
             println!("Evaluating layer: {}", layer);
             for node_index in 0..self.nodes.len() {
-
                 if self.nodes[node_index].layer == layer.into() {
                     println!("evaluting node: {}", node_index);
                     // set the output sum of the node so it can be used as input for next layer
                     if layer != 0 {
                         self.nodes[node_index].output_sum = sigmoid(self.nodes[node_index].input_sum);
-                        println!("Setting output of node {} to value of {}", node_index, self.nodes[node_index].output_sum );
+                        println!("Setting output of node {} to {} = sig({})",
+                                 node_index, self.nodes[node_index].output_sum, self.nodes[node_index].input_sum );
                     }
 
                     // 
                     for edge in self.edges.iter() {
-                        if edge.to_node as usize == node_index {
+                        if edge.from_node as usize == node_index {
                             if edge.enabled {
-                                println!("Updating nodes {} -> {}", edge.from_node, node_index);
-                                self.nodes[edge.to_node as usize].input_sum += edge.weight * self.nodes[edge.from_node as usize].output_sum;
-                                println!("Setting input of node {} to value of {}", edge.to_node, self.nodes[edge.to_node as usize].input_sum);
+                                let tmp_p = edge.weight * self.nodes[node_index].output_sum;
+                                println!("Updating nodes {} -> {} with input with {}", node_index, edge.to_node, tmp_p);
+                                println!("\t Calculation {} * {}", edge.weight, self.nodes[node_index].output_sum);
+                                self.nodes[edge.to_node as usize].input_sum += tmp_p;
+                                println!("\tSetting input of node {} to value of {}", edge.to_node, self.nodes[edge.to_node as usize].input_sum);
                             }
                         }
                     }
                 }
-                self.nodes[node_index].input_sum = 0.0;
             }
         }
 
-        println!("Reading output values");
+        println!("\nReading output values");
         for node in self.nodes.iter() {
             if node.layer == (self.layer_count-1).into() {
                 output.push(node.output_sum);
             }
+        }
+
+        // reset all the input sums for next feed
+        for node in self.nodes.iter_mut() {
+            node.input_sum = 0.0;
         }
 
         return output;
@@ -121,7 +137,7 @@ impl Network {
 
 
     /// Takes an edge and inserts a node inline. 
-    pub fn add_node(&mut self, _edge_index: usize, edge1_w: f64, edge2_w: f64) -> () {
+    pub fn add_node(&mut self, _edge_index: usize, edge1_w: f64, edge2_w: f64) -> u64 {
         let edge = &mut self.edges[_edge_index];
         edge.enabled = false;
 
@@ -158,6 +174,7 @@ impl Network {
             }
         }
         self.layer_count += 1;
+        return (self.nodes.len() - 1) as u64;
     }
 
     pub fn add_connection(&mut self, _node_one: usize, _node_two: usize, weight: f64) -> usize {
@@ -182,7 +199,6 @@ impl Network {
 mod tests {
     use super::*;
 
-    #[test]
     fn test_simple_add() {
         let mut network = Network::new(1, 1);
 
@@ -196,20 +212,65 @@ mod tests {
         // 1.0 -> node 1 -(0.5)> node 2 -> output (0.5)
 
         assert_eq!(output_values.len(), 1);
-        assert_eq!(output_values[0], 0.5);
+        assert_eq!(output_values[0], 0.6224593312018546);
 
         println!("Second evaulation");
         output_values = network.feed_input(vec![1.0]);
         assert_eq!(output_values.len(), 1);
-        assert_eq!(output_values[0], 0.5);
+        assert_eq!(output_values[0], 0.6224593312018546);
     }
 
-
-    fn test_xor_network() {
+    fn construct_xor_network() -> Network {
         let mut network = Network::new(2, 1);
-
         
+        // node 0 - > end node
+        let edge1 = network.add_connection(0, 2, 1.0);
+        // node 1 - > end node
+        let edge2 = network.add_connection(1, 2, -1.0);
+        
+        // node 0 -> node 2 - > end node
+        let node1_index = network.add_node(edge1, 20.0, 20.0);
+
+        // node 1 -> node 3 - > end node
+        let node2_index = network.add_node(edge2, -20.0, 20.0);
+
+        network.add_connection(3, node1_index as usize, -10.0);
+        network.add_connection(3, node2_index as usize, 30.0);
+        network.add_connection(3, 2 as usize, -30.0);
+        
+        // node 0 -> node 3 -> end node
+        let edge3 = network.add_connection(0, node2_index as usize, 20.0);
+
+        // node 1 -> node 2 -> end node
+        let edge4 = network.add_connection(1, node1_index as usize, -20.0);
+        return network;
     }
+
+    #[test]
+    fn test_xor_network_one_one() {
+        let mut network = construct_xor_network();
+        let mut output_values = network.feed_input(vec![1.0, 1.0]);
+        println!("{:?}", output_values);
+        assert_eq!(output_values.len(), 1);
+        assert!(output_values[0] < 0.1);
+        assert!(output_values[0] > -0.1);
+
+        output_values = network.feed_input(vec![1.0, 1.0]);
+        assert_eq!(output_values.len(), 1);
+        assert!(output_values[0] < 0.1);
+        assert!(output_values[0] > -0.1);
+
+    }
+    #[test]
+    fn test_xor_network_zero_zero() {
+        let mut network = construct_xor_network();
+        let output_values = network.feed_input(vec![0.0, 0.0]);
+        assert_eq!(output_values.len(), 1);
+        assert!(output_values[0] < 0.1);
+        assert!(output_values[0] > -0.1);
+
+    }
+
 
 
     fn test_sigmoid() {
