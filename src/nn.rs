@@ -199,6 +199,7 @@ impl Network {
 mod tests {
     use super::*;
 
+    #[test]
     fn test_simple_add() {
         let mut network = Network::new(1, 1);
 
@@ -239,10 +240,10 @@ mod tests {
         network.add_connection(3, 2 as usize, -30.0);
         
         // node 0 -> node 3 -> end node
-        let edge3 = network.add_connection(0, node2_index as usize, 20.0);
+        let edge3 = network.add_connection(0, node2_index as usize, -20.0);
 
         // node 1 -> node 2 -> end node
-        let edge4 = network.add_connection(1, node1_index as usize, -20.0);
+        let edge4 = network.add_connection(1, node1_index as usize, 20.0);
         return network;
     }
 
@@ -261,6 +262,7 @@ mod tests {
         assert!(output_values[0] > -0.1);
 
     }
+
     #[test]
     fn test_xor_network_zero_zero() {
         let mut network = construct_xor_network();
@@ -271,8 +273,33 @@ mod tests {
 
     }
 
+    #[test]
+    fn test_xor_network_zero_one() {
+        let mut network = construct_xor_network();
+        let output_values = network.feed_input(vec![0.0, 1.0]);
+        assert_eq!(output_values.len(), 1);
+        println!("output_values: {:?}", output_values);
+        assert!(output_values[0] < 1.1);
+        assert!(output_values[0] > 0.9);
 
 
+    }
+
+    #[test]
+    fn test_xor_network_one_zero() {
+        let mut network = construct_xor_network();
+        let mut output_values = network.feed_input(vec![1.0, 0.0]);
+        assert_eq!(output_values.len(), 1);
+        assert!(output_values[0] < 1.1);
+        assert!(output_values[0] > 0.9);
+
+        output_values = network.feed_input(vec![1.0, 0.0]);
+        assert_eq!(output_values.len(), 1);
+        assert!(output_values[0] < 1.1);
+        assert!(output_values[0] > 0.9);
+    }
+
+    #[test]
     fn test_sigmoid() {
 
         let r = sigmoid(0.0);
