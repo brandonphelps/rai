@@ -66,26 +66,34 @@ impl Network {
         let mut output = Vec::new();
         println!("Setting input nodes to values");
         for i in 0..self.input_node_count {
-            println!("Setting {} to {}", i, inputs[i as usize]);
+            println!("Setting output of node {} to {}", i, inputs[i as usize]);
             self.nodes[i as usize].output_sum = inputs[i as usize];
         }
 
-        for node_index in 0..self.nodes.len() {
-            for layer in 0..self.layer_count {
+        for layer in 0..self.layer_count {
+            println!("Evaluating layer: {}", layer);
+            for node_index in 0..self.nodes.len() {
+
                 if self.nodes[node_index].layer == layer.into() {
+                    println!("evaluting node: {}", node_index);
+                    // set the output sum of the node so it can be used as input for next layer
                     if layer != 0 {
                         self.nodes[node_index].output_sum = sigmoid(self.nodes[node_index].input_sum);
-                        println!("Setting output of {} to {}", node_index, self.nodes[node_index].output_sum );
+                        println!("Setting output of node {} to value of {}", node_index, self.nodes[node_index].output_sum );
                     }
 
+                    // 
                     for edge in self.edges.iter() {
                         if edge.to_node as usize == node_index {
-                            self.nodes[edge.to_node as usize].input_sum += edge.weight * self.nodes[node_index].output_sum;
-                            println!("Setting next layer {} -> {} {} {}", self.nodes[edge.to_node as usize].layer,
-                                     edge.from_node, edge.to_node, self.nodes[edge.to_node as usize].input_sum );
+                            if edge.enabled {
+                                println!("Updating nodes {} -> {}", edge.from_node, node_index);
+                                self.nodes[edge.to_node as usize].input_sum += edge.weight * self.nodes[edge.from_node as usize].output_sum;
+                                println!("Setting input of node {} to value of {}", edge.to_node, self.nodes[edge.to_node as usize].input_sum);
+                            }
                         }
                     }
                 }
+                self.nodes[node_index].input_sum = 0.0;
             }
         }
 
@@ -113,31 +121,43 @@ impl Network {
 
 
     /// Takes an edge and inserts a node inline. 
-    pub fn add_node(&mut self, _edge_index: usize) -> () {
+    pub fn add_node(&mut self, _edge_index: usize, edge1_w: f64, edge2_w: f64) -> () {
         let edge = &mut self.edges[_edge_index];
         edge.enabled = false;
 
+        
+        // let edge = &self.edges[_edge_index];
+
         let node = &self.nodes[edge.from_node as usize];
 
-        let m = Node{ input_sum: 0.0, output_sum: 0.0, layer: node.layer + 1};
+        let current_node_layer = node.layer + 1;
+        let m = Node{ input_sum: 0.0, output_sum: 0.0, layer: current_node_layer};
 
         self.nodes.push(m);
 
         let edge1 = Edge{from_node: edge.from_node,
                          to_node: (self.nodes.len() - 1) as u64,
                          inno_id: 2,
-                         weight: edge.weight,
+                         weight: edge1_w,
                          enabled: true};
 
-        let edge2 = Edge{from_node: edge.from_node,
-                         to_node: (self.nodes.len() - 1) as u64,
+        let edge2 = Edge{from_node: (self.nodes.len() - 1) as u64,
+                         to_node: edge.to_node,
                          inno_id: 2,
-                         weight: edge.weight,
+                         weight: edge2_w,
                          enabled: true};
+        let outgoing_node_id = edge.to_node;
 
         self.edges.push(edge1);
         self.edges.push(edge2);
-            
+
+        for node_i in 0..self.nodes.len()-1 {
+            let node_t = &mut self.nodes[node_i];
+            if node_t.layer >= current_node_layer {
+                node_t.layer += 1;
+            }
+        }
+        self.layer_count += 1;
     }
 
     pub fn add_connection(&mut self, _node_one: usize, _node_two: usize, weight: f64) -> usize {
@@ -169,22 +189,29 @@ mod tests {
         network.add_connection(0, 1, 0.5);
 
         let input_value = vec![1.0, 2.0];
-        let output_values = network.feed_input(input_value);
+        println!("First evaulation");
+        let mut output_values = network.feed_input(input_value);
 
         // simplest network
         // 1.0 -> node 1 -(0.5)> node 2 -> output (0.5)
+
+        assert_eq!(output_values.len(), 1);
+        assert_eq!(output_values[0], 0.5);
+
+        println!("Second evaulation");
+        output_values = network.feed_input(vec![1.0]);
         assert_eq!(output_values.len(), 1);
         assert_eq!(output_values[0], 0.5);
     }
 
-    #[test]
+
     fn test_xor_network() {
         let mut network = Network::new(2, 1);
 
         
     }
 
-    #[test]
+
     fn test_sigmoid() {
 
         let r = sigmoid(0.0);
