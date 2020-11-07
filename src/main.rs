@@ -8,6 +8,7 @@ trait Individual {
     // can this return just a numeric traited instance?
     // post calculated fitness. 
     fn fitness(&self) -> u128;
+    fn update_fitness(&mut self) -> ();
     fn print(&self) -> ();
     fn mutate(&mut self) -> ();
     // fn crossover(&self, other: Box<dyn Individual>) -> Box<dyn Individual>;
@@ -59,19 +60,6 @@ impl SinF {
     }
 }
 
-impl Individual for SortedItems {
-    fn fitness(&self) -> u128 {
-       return 0;  
-    }
-
-    fn mutate(&mut self) -> () {
-        
-    }
-
-    fn print(&self) -> () {
-    }
-}
-
 impl Crossover for SinF {
     type Output = SinF;
     fn crossover(&self, _rhs: &SinF) -> SinF {
@@ -80,6 +68,10 @@ impl Crossover for SinF {
 }
 
 impl Individual for SinF {
+    fn update_fitness(&mut self) -> () {
+
+    }
+
     fn fitness(&self) -> u128 {
         let _p = self.value * self.value.sin().powf(2.0);
         return ((_p + 100.0) * 1000.0) as u128;
@@ -149,6 +141,57 @@ where
 // {
 
 // }
+
+struct TestNetwork  {
+    network: nn::Network,
+    fitness: u128,
+}
+
+impl TestNetwork {
+    fn new(input_count: u32, output_count: u32) -> TestNetwork {
+        return TestNetwork {
+            network: nn::Network::new(input_count, output_count),
+            fitness: 0
+        };
+    }
+}
+
+impl Individual for TestNetwork {
+
+    fn fitness(&self) -> u128 {
+        return self.fitness;
+    }
+
+    fn update_fitness(&mut self) -> () {
+        let mut fitness = 0.0;
+        let output = self.network.feed_input(vec![0.0, 0.0]);
+        fitness += (output[0] - 1.0).powf(2.0);
+        if fitness == 0.0 {
+            self.fitness = ((1.0 / fitness) as u128) * 100;
+        }
+        else {
+            self.fitness = 10000;
+        }
+    }
+
+    fn mutate(&mut self) -> () {
+        
+    }
+
+    fn print(&self) -> () {
+
+    }
+}
+
+impl Crossover for TestNetwork {
+    type Output = TestNetwork;
+
+    fn crossover(&self, _rhs: &TestNetwork) -> TestNetwork {
+        TestNetwork::new(_rhs.network.input_node_count,
+                         _rhs.network.output_node_count)
+    }
+}
+
 
 fn main() {
     let population_count = 300;

@@ -2,7 +2,7 @@
 // can't use this here ?
 //#[macro_use]
 // extern crate more_asserts;
-
+use rand::prelude::*;
 
 #[derive(Debug)]
 struct Node {
@@ -39,8 +39,8 @@ pub struct Network {
     nodes: Vec<Node>,
     edges: Vec<Edge>,
 
-    input_node_count: u32,
-    output_node_count: u32,
+    pub input_node_count: u32,
+    pub output_node_count: u32,
     layer_count: u32,
     bias_node_id: u64
 }
@@ -123,18 +123,16 @@ impl Network {
         return output;
     }
 
-    pub fn new_node(&mut self, layer: u64) -> () {
+    fn new_node(&mut self, layer: u64) -> () {
         let m = Node{ input_sum: 0.0, output_sum: 0.0, layer: layer};
         self.nodes.push(m);
     }
-
-
-    // nod1, nod2
-    // edge <nod1 -- node2>
-    //   edge 0, 1
-    // nod1 --> node3 --> node2
     
-
+    pub fn random_edge(&self) -> u64 {
+        let mut rng = rand::thread_rng();
+        let y: f64 = rng.gen();
+        return (y * self.edges.len() as f64) as u64;
+    }
 
     /// Takes an edge and inserts a node inline. 
     pub fn add_node(&mut self, _edge_index: usize, edge1_w: f64, edge2_w: f64) -> u64 {
@@ -185,13 +183,6 @@ impl Network {
                         enabled: true};
         self.edges.push(edge);
         return self.edges.len() - 1;
-    }
-
-    fn connect_nodes(&mut self) -> () {
-        
-    }
-
-    pub fn construct_network(& mut self) -> () {
     }
 }
 
