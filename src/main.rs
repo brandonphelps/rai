@@ -107,8 +107,8 @@ fn select_parents<T: Individual>(individuals: &Vec<T>, parent_count: usize) -> V
         let rand_f: Option<&T> = individuals.choose(&mut rand::thread_rng());
         match rand_f {
             None => panic!("None!"),
-            Some(FD) => {
-                parents.push(FD)
+            Some(fd) => {
+                parents.push(fd)
             },
         };
     }
@@ -125,15 +125,15 @@ where
     // breed offspring / mutate
     let parent_one = match parents.choose(&mut rand::thread_rng()) {
         None => panic!("None!"),
-        Some(FD) => FD,
+        Some(fd) => fd,
     };
 
     let parent_two = match parents.choose(&mut rand::thread_rng()) {
         None => panic!("None!"),
-        Some(FD) => FD,
+        Some(fd) => fd,
     };
 
-    for offp in 1..offspring_count {
+    for _offp in 1..offspring_count {
         let mut child = parent_one.crossover(parent_two);
         child.mutate();
         offspring.push(child);
@@ -143,12 +143,12 @@ where
 }
 
 
-fn run_dah_simulation<T>(initial_pop: Vec<T>, pop_count: u64, parent_count: u64, offspring_count: u64, iter_count: u64)
-where
-    T: Crossover<Output = T> + Individual
-{
+// fn run_dah_simulation<T>(initial_pop: Vec<T>, pop_count: u64, parent_count: u64, offspring_count: u64, iter_count: u64)
+// where
+//     T: Crossover<Output = T> + Individual
+// {
 
-}
+// }
 
 fn main() {
     let population_count = 300;
