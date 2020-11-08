@@ -151,21 +151,22 @@ impl Individual for TestNetwork {
 
     fn update_fitness(&mut self) -> () {
         let mut fitness = 0.0;
-        self.network.pretty_print();
+        // self.network.pretty_print();
         let mut output = self.network.feed_input(vec![0.0, 0.0]);
-        println!("Input: 0, 0: {:?}", output[0]);
+        assert_eq!(output.len(), 1);
+        // println!("Input: 0, 0: {:?}", output[0]);
         fitness += (output[0] - 0.0).powf(2.0);
-        println!("Fitness: {:?}", fitness);
+        //println!("Fitness: {:?}", fitness);
         output = self.network.feed_input(vec![0.0, 1.0]);
-        println!("Input: 0, 1: {:?}", output);
+        // println!("Input: 0, 1: {:?}", output);
         fitness += (output[0] - 1.0).powf(2.0);
-        println!("Fitness: {:?}", fitness);
+        // println!("Fitness: {:?}", fitness);
         output = self.network.feed_input(vec![1.0, 0.0]);
         println!("Input: 1, 0: {:?}", output);
         fitness += (output[0] - 1.0).powf(2.0);
         println!("Fitness: {:?}", fitness);
         fitness = fitness / 3.0;
-        println!("Final fitness: {:?}", fitness);
+        // println!("Final fitness: {:?}", fitness);
         if fitness != 0.0 {
             self.fitness = (1.0 / fitness) as u128;
         }
@@ -175,8 +176,29 @@ impl Individual for TestNetwork {
     }
 
     fn mutate(&mut self) -> () {
-        let edge = self.network.random_non_bias_edge();
-        self.network.add_node(edge as usize, 0.4, 0.5);
+        let mut rng = rand::thread_rng();
+        // 90% chance to add another node. 
+        if rng.gen::<f64>() < 0.9 {
+            let edge = self.network.random_non_bias_edge();
+            println!("Add node");
+            self.network.add_node(edge as usize, 0.4, 0.5);
+        }
+
+        for f_edge in self.network.edges.iter_mut() {
+            if f_edge.enabled && f_edge.from_node != self.network.bias_node_id {
+                // chance to change weight of an edge
+                if rng.gen::<f64>() < 0.3 {
+                    if rng.gen::<f64>() < 0.5 {
+                        println!("Weight gain");
+                        f_edge.weight += 4.0;
+                    }
+                    else {
+                        println!("Weight lose");
+                        f_edge.weight -= 4.0;
+                    }
+                }
+            }
+        }
     }
 
     fn print(&self) -> () {
@@ -218,16 +240,6 @@ impl Crossover for TestNetwork {
  mod tests {
      use super::*;
 
-     #[test]
-     fn test_network_mutate() {
-         let mut network = TestNetwork::new(2, 1);
-         assert_eq!(network.network.nodes.len(), 4);
-         network.mutate();
-         assert_eq!(network.network.nodes.len(), 5);
-         network.mutate();
-         assert_eq!(network.network.nodes.len(), 6);
-         network.network.pretty_print();
-     }
  }
 
 
@@ -269,6 +281,7 @@ fn main() {
 
         for offpin in offspring.iter_mut() {
             offpin.update_fitness();
+            println!("{}", offpin.fitness());
         }
 
         // add in the offspring

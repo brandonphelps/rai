@@ -1,4 +1,3 @@
-
 // can't use this here ?
 //#[macro_use]
 // extern crate more_asserts;
@@ -17,26 +16,18 @@ impl Node {
              output_sum:0.0,
              layer:self.layer}
     }
-    
 }
 
 fn sigmoid(value: f64) -> f64 {
     return 1.0 / (1.0 + std::f64::consts::E.powf(-1.0 * value));
 }
 
-impl Node {
-    fn engage(&mut self) -> () {
-        // iterate over the inbound items and do the sigmoid
-        println!("Engage of node: {}", self.layer)
-    }
-}
-
 #[derive(Debug)]
 pub struct Edge {
-    from_node: u64,
+    pub from_node: u64,
     to_node: u64,
     inno_id: u64,
-    weight: f64,
+    pub weight: f64,
     pub enabled: bool
 }
 
@@ -131,6 +122,7 @@ impl Network {
             }
         }
         for layer in 0..self.layer_count {
+            println!("Layer: {}", layer);
             for edge in self.edges.iter() {
                 if edge.enabled && self.nodes[edge.from_node as usize].layer == layer.into() { 
                     println!("{:#?}", edge);
@@ -144,22 +136,21 @@ impl Network {
 
         let mut output = Vec::new();
         for i in 0..self.input_node_count {
-            println!("Setting input node output: {} as {}", i, inputs[i as usize]);
             self.nodes[i as usize].output_sum = inputs[i as usize];
         }
 
         // set bias to true
         self.nodes[self.bias_node_id as usize].output_sum = 1.0;
 
-        self.pretty_print();
+        // self.pretty_print();
 
         for layer in 0..self.layer_count {
-            println!("Feeding layer: {}", layer);
+            // println!("Feeding layer: {}", layer);
             for node_index in 0..self.nodes.len() {
                 if self.nodes[node_index].layer == layer.into() {
                     // set the output sum of the node so it can be used as input for next layer
                     if layer != 0 {
-                        println!("output: {} of {} {}", sigmoid(self.nodes[node_index].input_sum), node_index, self.nodes[node_index].input_sum);
+                        // println!("output: {} of {} {}", sigmoid(self.nodes[node_index].input_sum), node_index, self.nodes[node_index].input_sum);
                         self.nodes[node_index].output_sum = sigmoid(self.nodes[node_index].input_sum);
                     }
 
@@ -170,19 +161,18 @@ impl Network {
                                 let tmp_p = edge.weight * self.nodes[node_index].output_sum;
 
                                 self.nodes[edge.to_node as usize].input_sum += tmp_p;
-                                println!("{} -> {}, ({}) = {}", edge.from_node, edge.to_node, tmp_p, self.nodes[edge.to_node as usize].input_sum);
+                                // println!("{} -> {}, ({}) = {}", edge.from_node, edge.to_node, tmp_p, self.nodes[edge.to_node as usize].input_sum);
                             }
                         }
                     }
                 }
             }
-            self.pretty_print()
+            // self.pretty_print()
         }
 
-        for node in self.nodes.iter() {
-            if node.layer == (self.layer_count-1).into() {
-                output.push(node.output_sum);
-            }
+        for output_i in 0..self.output_node_count { 
+            let o_node = &self.nodes[(output_i + self.input_node_count) as usize];
+            output.push(o_node.output_sum);
         }
 
         // reset all the input sums for next feed
@@ -219,9 +209,13 @@ impl Network {
     pub fn add_node(&mut self, _edge_index: usize, edge1_w: f64, edge2_w: f64) -> u64 {
         let edge = &mut self.edges[_edge_index];
         edge.enabled = false;
+        let outgoing_node_id = edge.to_node;
 
+        // get teh node the edge we are breaking up was pointing to. 
         let node = &self.nodes[edge.from_node as usize];
         let current_node_layer = node.layer + 1;
+        
+        // new node. 
         let m = Node{ input_sum: 0.0, output_sum: 0.0, layer: current_node_layer};
         self.nodes.push(m);
 
@@ -236,18 +230,37 @@ impl Network {
                          inno_id: 2,
                          weight: edge2_w,
                          enabled: true};
-        let outgoing_node_id = edge.to_node;
+
+
+        // bias edge 
+        let edge3 = Edge{from_node: self.bias_node_id,
+                         to_node: (self.nodes.len() - 1) as u64,
+                         inno_id: 2,
+                         weight: (edge1_w + edge2_w) / 2.0,
+                         enabled: true};
 
         self.edges.push(edge1);
         self.edges.push(edge2);
+        // self.edges.push(edge3);
+        
+        if self.nodes[outgoing_node_id as usize].layer == current_node_layer.into() {
+            for node_i in 0..self.nodes.len()-1 {
+                let node_t = &mut self.nodes[node_i];
+                if node_t.layer >= current_node_layer {
+                    node_t.layer += 1;
+                }
+            }
+            self.layer_count += 1;
+        }
 
-        for node_i in 0..self.nodes.len()-1 {
-            let node_t = &mut self.nodes[node_i];
-            if node_t.layer >= current_node_layer {
-                node_t.layer += 1;
+        // assert we didn't increase number of outputs
+        let mut output_count = 0;
+        for node_i in self.nodes.iter() {
+            if node_i.layer == (self.layer_count-1).into() {
+                output_count += 1;
             }
         }
-        self.layer_count += 1;
+        assert_eq!(output_count, self.output_node_count);
         return (self.nodes.len() - 1) as u64;
     }
 
@@ -300,6 +313,20 @@ mod tests {
         // node 1 -> node 2 -> end node
         let edge4 = network.add_connection(1, node1_index as usize, 20.0);
         return network;
+    }
+
+    #[test]
+    fn test_add_node_layer_checking() {
+        let mut network = Network::new(1, 3, true);
+        let mut output = network.feed_input(vec![0.3]);
+        assert_eq!(network.layer_count, 2);
+        assert_eq!(output.len(), 3);
+        network.add_node(2, 1.0, 2.0);
+        output = network.feed_input(vec![0.4]);
+        assert_eq!(network.layer_count, 3);
+        assert_eq!(output.len(), 3);
+        println!("Output of graph");
+        network.pretty_print();
     }
 
 
@@ -407,6 +434,7 @@ mod tests {
                 fn $name() {
                     let (mut network, input, expected) = $value;
                     let output = network.feed_input(input);
+                    network.pretty_print();
                     assert_eq!(output.len(), 1);
                     assert!(output[0] > expected[0]);
                     assert!(output[0] < expected[1]);
