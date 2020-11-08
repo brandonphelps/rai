@@ -1,5 +1,6 @@
 use rand::seq::SliceRandom;
 use std::cmp::Reverse;
+use rand::prelude::*;
 
 mod hrm;
 mod nn;
@@ -128,16 +129,13 @@ where
 
 #[derive(Debug)]
 struct TestNetwork  {
-    network: nn::Network,
+    pub network: nn::Network,
     fitness: u128,
 }
 
 impl TestNetwork {
     fn new(input_count: u32, output_count: u32) -> TestNetwork {
-        let mut network = nn::Network::new(input_count, output_count);
-        network.add_connection(0, 2, 0.4);
-        network.add_connection(1, 2, 0.4);
-        network.add_connection(3, 2, 400.0);
+        let mut network = nn::Network::new(input_count, output_count, true);
         return TestNetwork {
             network: network,
             fitness: 0
@@ -153,15 +151,22 @@ impl Individual for TestNetwork {
 
     fn update_fitness(&mut self) -> () {
         let mut fitness = 0.0;
+        self.network.pretty_print();
         let mut output = self.network.feed_input(vec![0.0, 0.0]);
+        println!("Input: 0, 0: {:?}", output[0]);
         fitness += (output[0] - 0.0).powf(2.0);
+        println!("Fitness: {:?}", fitness);
         output = self.network.feed_input(vec![0.0, 1.0]);
+        println!("Input: 0, 1: {:?}", output);
         fitness += (output[0] - 1.0).powf(2.0);
+        println!("Fitness: {:?}", fitness);
         output = self.network.feed_input(vec![1.0, 0.0]);
+        println!("Input: 1, 0: {:?}", output);
         fitness += (output[0] - 1.0).powf(2.0);
+        println!("Fitness: {:?}", fitness);
         fitness = fitness / 3.0;
-
-        if fitness == 0.0 {
+        println!("Final fitness: {:?}", fitness);
+        if fitness != 0.0 {
             self.fitness = (1.0 / fitness) as u128;
         }
         else {
@@ -184,14 +189,46 @@ impl Crossover for TestNetwork {
 
     fn crossover(&self, _rhs: &TestNetwork) -> TestNetwork {
         let mut child_network = nn::Network::new(_rhs.network.input_node_count,
-                                                _rhs.network.output_node_count);
+                                                _rhs.network.output_node_count, false);
         
         child_network.layer_count = self.network.layer_count;
         child_network.bias_node_id = self.network.bias_node_id;
+
+        let mut rng = rand::thread_rng();
+        for edge in self.network.edges.iter() {
+            let mut new_edge = edge.clone();
+            if rng.gen::<f64>() < 0.9 {
+                new_edge.enabled = true; 
+            }
+            else {
+                new_edge.enabled = false;
+            }
+            child_network.edges.push(new_edge);
+        }
+
+        for node in self.network.nodes.iter() {
+            child_network.nodes.push(node.clone());
+        }
         
         TestNetwork{network: child_network, fitness: 0}
     }
 }
+
+#[cfg(test)]
+ mod tests {
+     use super::*;
+
+     #[test]
+     fn test_network_mutate() {
+         let mut network = TestNetwork::new(2, 1);
+         assert_eq!(network.network.nodes.len(), 4);
+         network.mutate();
+         assert_eq!(network.network.nodes.len(), 5);
+         network.mutate();
+         assert_eq!(network.network.nodes.len(), 6);
+         network.network.pretty_print();
+     }
+ }
 
 
 fn main() {
@@ -275,3 +312,14 @@ fn main() {
 }
 
 // todo look at this bench amrk thing https://stackoverflow.com/questions/60916194/how-to-sort-a-vector-in-descending-order-in-rust
+
+fn t_main() {
+    let mut network = TestNetwork::new(2, 1);
+
+    network.update_fitness();
+    for i in 0..4 {
+        network.network.pretty_print();
+        network.mutate();
+        network.update_fitness();
+    }
+}

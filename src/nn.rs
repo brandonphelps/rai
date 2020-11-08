@@ -11,6 +11,15 @@ pub struct Node {
     layer: u64,
 }
 
+impl Node {
+    pub fn clone(&self) -> Node {
+        Node{input_sum:0.0,
+             output_sum:0.0,
+             layer:self.layer}
+    }
+    
+}
+
 fn sigmoid(value: f64) -> f64 {
     return 1.0 / (1.0 + std::f64::consts::E.powf(-1.0 * value));
 }
@@ -28,7 +37,7 @@ pub struct Edge {
     to_node: u64,
     inno_id: u64,
     weight: f64,
-    enabled: bool
+    pub enabled: bool
 }
 
 impl Edge {
@@ -56,7 +65,12 @@ pub struct Network {
 }
 
 impl Network {
-    pub fn new(input_node_count: u32, output_node_count: u32) -> Network {
+    fn fully_connect(&mut self) -> () {
+
+    }
+
+
+    pub fn new(input_node_count: u32, output_node_count: u32, fully_connect: bool ) -> Network {
         let mut network = Network{nodes: Vec::new(),
                                   edges: Vec::new(),
                                   input_node_count: input_node_count,
@@ -76,12 +90,55 @@ impl Network {
 
         network.bias_node_id = (network.nodes.len()-1) as u64;
 
+        if fully_connect {
+            let mut inno_id = 0;
+            for _input_n in 0..input_node_count {
+                for _output_n in 0..output_node_count {
+                    println!("Constructing egde: {} -> {}", _input_n, _output_n + input_node_count);
+                    network.edges.push(Edge {
+                        from_node: _input_n as u64,
+                        to_node: (_output_n + input_node_count) as u64,
+                        inno_id: inno_id,
+                        weight: 0.5,
+                        enabled: true });
+                    inno_id += 1;
+                }
+            }
+
+            println!("Connectin bias node");
+            // connect bias nodes up 
+            for _output_n in 0..output_node_count {
+                println!("Constructing egde: {} -> {}", network.bias_node_id, _output_n + input_node_count);
+                network.edges.push(Edge {
+                    from_node: network.bias_node_id,
+                    to_node: (_output_n + input_node_count)as u64,
+                    inno_id: inno_id,
+                    weight: 400.0,
+                    enabled: true });
+                inno_id += 1;
+            }
+        }
+
         return network;
     }
 
+    pub fn pretty_print(&self) -> () {
+        for node in self.nodes.iter() {
+            println!("{:#?}", node);
+        }
+        for edge in self.edges.iter() {
+            if edge.enabled { 
+                println!("{:#?}", edge);
+            }
+        }
+    }
+
+
     pub fn feed_input(&mut self, inputs: Vec<f64> ) -> Vec<f64> {
+        self.pretty_print();
         let mut output = Vec::new();
         for i in 0..self.input_node_count {
+            println!("Setting input node output: {} as {}", i, inputs[i as usize]);
             self.nodes[i as usize].output_sum = inputs[i as usize];
         }
 
@@ -89,10 +146,12 @@ impl Network {
         self.nodes[self.bias_node_id as usize].output_sum = 1.0;
 
         for layer in 0..self.layer_count {
+            println!("Feeding layer: {}", layer);
             for node_index in 0..self.nodes.len() {
                 if self.nodes[node_index].layer == layer.into() {
                     // set the output sum of the node so it can be used as input for next layer
                     if layer != 0 {
+                        println!("output: {} of {} {}", sigmoid(self.nodes[node_index].input_sum), node_index, self.nodes[node_index].input_sum);
                         self.nodes[node_index].output_sum = sigmoid(self.nodes[node_index].input_sum);
                     }
 
@@ -100,6 +159,7 @@ impl Network {
                     for edge in self.edges.iter() {
                         if edge.from_node as usize == node_index {
                             if edge.enabled {
+                                println!("{} -> {}", edge.from_node, edge.to_node);
                                 let tmp_p = edge.weight * self.nodes[node_index].output_sum;
                                 self.nodes[edge.to_node as usize].input_sum += tmp_p;
                             }
@@ -123,9 +183,10 @@ impl Network {
         return output;
     }
 
-    fn new_node(&mut self, layer: u64) -> () {
+    pub fn new_node(&mut self, layer: u64) -> u64 {
         let m = Node{ input_sum: 0.0, output_sum: 0.0, layer: layer};
         self.nodes.push(m);
+        return (self.nodes.len() - 1) as u64;
     }
     
     pub fn random_edge(&self) -> u64 {
@@ -197,7 +258,7 @@ mod tests {
 
     #[test]
     fn test_simple_add() {
-        let mut network = Network::new(1, 1);
+        let mut network = Network::new(1, 1, false);
 
         network.add_connection(0, 1, 0.5);
 
@@ -218,7 +279,7 @@ mod tests {
     }
 
     fn construct_xor_network() -> Network {
-        let mut network = Network::new(2, 1);
+        let mut network = Network::new(2, 1, false);
         
         // node 0 - > end node
         let edge1 = network.add_connection(0, 2, 1.0);
@@ -257,6 +318,19 @@ mod tests {
         assert!(output_values[0] < 0.1);
         assert!(output_values[0] > -0.1);
 
+    }
+
+    // looks to test that all connections go forward rather than backwards. 
+    #[test]
+    fn test_connections_forward_construction() {
+        let mut network = Network::new(4, 400, true);
+
+        for edge in network.edges.iter() {
+            let from_node = &network.nodes[edge.from_node as usize];
+            let to_node = &network.nodes[edge.to_node as usize];
+            println!("Checking: {} -> {}", edge.from_node, edge.to_node);
+            assert!(from_node.layer < to_node.layer);
+        }
     }
 
     #[test]
@@ -309,5 +383,15 @@ mod tests {
         }
         
     }
-    
+
+    #[test]
+    fn test_custom_network() {
+        let mut network = Network::new(2, 1, true);
+        
+
+        let output_values = network.feed_input(vec![0.0, 0.0]);
+        assert_eq!(output_values.len(), 1);
+        println!("{:#?}", output_values);
+        assert!(output_values[0] != 1.0);
+    }
 }
