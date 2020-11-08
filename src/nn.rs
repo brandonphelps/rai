@@ -383,16 +383,4 @@ mod tests {
         }
         
     }
-
-    #[test]
-    fn test_custom_network() {
-        let mut network = Network::new(2, 1, true);
-        let output_values = network.feed_input(vec![0.0, 0.0]);
-
-        assert_eq!(output_values.len(), 1);
-
-        println!("{:#?}", output_values);
-
-        assert!(output_values[0] != 1.0);
-    }
 }
