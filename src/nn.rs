@@ -253,14 +253,6 @@ impl Network {
             self.layer_count += 1;
         }
 
-        // assert we didn't increase number of outputs
-        let mut output_count = 0;
-        for node_i in self.nodes.iter() {
-            if node_i.layer == (self.layer_count-1).into() {
-                output_count += 1;
-            }
-        }
-        assert_eq!(output_count, self.output_node_count);
         return (self.nodes.len() - 1) as u64;
     }
 
