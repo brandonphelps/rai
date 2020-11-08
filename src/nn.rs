@@ -5,7 +5,7 @@
 use rand::prelude::*;
 
 #[derive(Debug)]
-struct Node {
+pub struct Node {
     input_sum: f64,
     output_sum: f64,
     layer: u64,
@@ -23,7 +23,7 @@ impl Node {
 }
 
 #[derive(Debug)]
-struct Edge {
+pub struct Edge {
     from_node: u64,
     to_node: u64,
     inno_id: u64,
@@ -31,18 +31,28 @@ struct Edge {
     enabled: bool
 }
 
+impl Edge {
+    pub fn clone(&self) -> Edge {
+        return Edge{from_node: self.from_node,
+                    to_node: self.to_node,
+                    weight: self.weight,
+                    inno_id: self.inno_id,
+                    enabled: self.enabled};
+    }
+}
+
 #[derive(Debug)]
 pub struct Network {
 
     // first I nodes are input nodes
     // after which the output nodes are next.
-    nodes: Vec<Node>,
-    edges: Vec<Edge>,
+    pub nodes: Vec<Node>,
+    pub edges: Vec<Edge>,
 
     pub input_node_count: u32,
     pub output_node_count: u32,
-    layer_count: u32,
-    bias_node_id: u64
+    pub layer_count: u32,
+    pub bias_node_id: u64
 }
 
 impl Network {
@@ -53,11 +63,11 @@ impl Network {
                                   output_node_count: output_node_count,
                                   layer_count: 2,
                                   bias_node_id: 0};
-        for input_n in 0..input_node_count {
+        for _input_n in 0..input_node_count {
             network.new_node(0);
         }
 
-        for output_n in 0..output_node_count {
+        for _output_n in 0..output_node_count {
             network.new_node(1);
         }
 
@@ -71,9 +81,7 @@ impl Network {
 
     pub fn feed_input(&mut self, inputs: Vec<f64> ) -> Vec<f64> {
         let mut output = Vec::new();
-        println!("Setting input nodes to values");
         for i in 0..self.input_node_count {
-            println!("Setting output of node {} to {}", i, inputs[i as usize]);
             self.nodes[i as usize].output_sum = inputs[i as usize];
         }
 
@@ -81,15 +89,11 @@ impl Network {
         self.nodes[self.bias_node_id as usize].output_sum = 1.0;
 
         for layer in 0..self.layer_count {
-            println!("Evaluating layer: {}", layer);
             for node_index in 0..self.nodes.len() {
                 if self.nodes[node_index].layer == layer.into() {
-                    println!("evaluting node: {}", node_index);
                     // set the output sum of the node so it can be used as input for next layer
                     if layer != 0 {
                         self.nodes[node_index].output_sum = sigmoid(self.nodes[node_index].input_sum);
-                        println!("Setting output of node {} to {} = sig({})",
-                                 node_index, self.nodes[node_index].output_sum, self.nodes[node_index].input_sum );
                     }
 
                     // 
@@ -97,10 +101,7 @@ impl Network {
                         if edge.from_node as usize == node_index {
                             if edge.enabled {
                                 let tmp_p = edge.weight * self.nodes[node_index].output_sum;
-                                println!("Updating nodes {} -> {} with input with {}", node_index, edge.to_node, tmp_p);
-                                println!("\t Calculation {} * {}", edge.weight, self.nodes[node_index].output_sum);
                                 self.nodes[edge.to_node as usize].input_sum += tmp_p;
-                                println!("\tSetting input of node {} to value of {}", edge.to_node, self.nodes[edge.to_node as usize].input_sum);
                             }
                         }
                     }
@@ -108,7 +109,6 @@ impl Network {
             }
         }
 
-        println!("\nReading output values");
         for node in self.nodes.iter() {
             if node.layer == (self.layer_count-1).into() {
                 output.push(node.output_sum);
@@ -131,22 +131,27 @@ impl Network {
     pub fn random_edge(&self) -> u64 {
         let mut rng = rand::thread_rng();
         let y: f64 = rng.gen();
-        return (y * self.edges.len() as f64) as u64;
+        return (y * (self.edges.len()-1) as f64) as u64;
     }
+
+    pub fn random_non_bias_edge(&self) -> u64 {
+        let mut edge_index: u64 = self.random_edge();
+
+        while self.edges[edge_index as usize].from_node == self.bias_node_id  {
+            edge_index = self.random_edge();
+        }
+        return edge_index;
+    }
+
 
     /// Takes an edge and inserts a node inline. 
     pub fn add_node(&mut self, _edge_index: usize, edge1_w: f64, edge2_w: f64) -> u64 {
         let edge = &mut self.edges[_edge_index];
         edge.enabled = false;
 
-        
-        // let edge = &self.edges[_edge_index];
-
         let node = &self.nodes[edge.from_node as usize];
-
         let current_node_layer = node.layer + 1;
         let m = Node{ input_sum: 0.0, output_sum: 0.0, layer: current_node_layer};
-
         self.nodes.push(m);
 
         let edge1 = Edge{from_node: edge.from_node,

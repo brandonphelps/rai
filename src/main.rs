@@ -31,23 +31,6 @@ struct SinF {
     pub ident: usize
 }
 
-struct SortedItems {
-    pub data: Vec<u32>,
-    pub ident: usize
-}
-
-impl SortedItems {
-    fn new(value: u32) -> SortedItems {
-        let mut data_blob: Vec<u32> = Vec::new();
-        for i in 1..value {
-            data_blob.push(i);
-        }
-        let old_count = SortedIdCount.fetch_add(1, Ordering::SeqCst);
-        SortedItems{data: data_blob, ident: old_count}
-    }
-}
-
-
 
 impl SinF {
     // fn crossover(&self, other: &SinF) -> Box<SinF> {
@@ -85,6 +68,7 @@ impl Individual for SinF {
         print!("{:?}", self)
     }
 }
+
 
 
 fn do_fitness_func<T: Individual>(individuals: &Vec<T>) -> () {
@@ -142,6 +126,7 @@ where
 
 // }
 
+#[derive(Debug)]
 struct TestNetwork  {
     network: nn::Network,
     fitness: u128,
@@ -149,8 +134,12 @@ struct TestNetwork  {
 
 impl TestNetwork {
     fn new(input_count: u32, output_count: u32) -> TestNetwork {
+        let mut network = nn::Network::new(input_count, output_count);
+        network.add_connection(0, 2, 0.4);
+        network.add_connection(1, 2, 0.4);
+        network.add_connection(3, 2, 400.0);
         return TestNetwork {
-            network: nn::Network::new(input_count, output_count),
+            network: network,
             fitness: 0
         };
     }
@@ -164,10 +153,16 @@ impl Individual for TestNetwork {
 
     fn update_fitness(&mut self) -> () {
         let mut fitness = 0.0;
-        let output = self.network.feed_input(vec![0.0, 0.0]);
+        let mut output = self.network.feed_input(vec![0.0, 0.0]);
+        fitness += (output[0] - 0.0).powf(2.0);
+        output = self.network.feed_input(vec![0.0, 1.0]);
         fitness += (output[0] - 1.0).powf(2.0);
+        output = self.network.feed_input(vec![1.0, 0.0]);
+        fitness += (output[0] - 1.0).powf(2.0);
+        fitness = fitness / 3.0;
+
         if fitness == 0.0 {
-            self.fitness = ((1.0 / fitness) as u128) * 100;
+            self.fitness = (1.0 / fitness) as u128;
         }
         else {
             self.fitness = 10000;
@@ -175,7 +170,8 @@ impl Individual for TestNetwork {
     }
 
     fn mutate(&mut self) -> () {
-        
+        let edge = self.network.random_non_bias_edge();
+        self.network.add_node(edge as usize, 0.4, 0.5);
     }
 
     fn print(&self) -> () {
@@ -187,8 +183,13 @@ impl Crossover for TestNetwork {
     type Output = TestNetwork;
 
     fn crossover(&self, _rhs: &TestNetwork) -> TestNetwork {
-        TestNetwork::new(_rhs.network.input_node_count,
-                         _rhs.network.output_node_count)
+        let mut child_network = nn::Network::new(_rhs.network.input_node_count,
+                                                _rhs.network.output_node_count);
+        
+        child_network.layer_count = self.network.layer_count;
+        child_network.bias_node_id = self.network.bias_node_id;
+        
+        TestNetwork{network: child_network, fitness: 0}
     }
 }
 
@@ -199,13 +200,24 @@ fn main() {
     let offspring_count = 30;
     let mut iteration_count = 0;
     let max_iter_count = 100;
-    let mut specific_pop: Vec<SinF> = Vec::new();
+    // let mut specific_pop: Vec<SinF> = Vec::new();
+    let mut specific_pop: Vec<TestNetwork> = Vec::new();
 
     // generate random populateion
-    for n in 1..population_count+1 {
+    // for n in 1..population_count+1 {
+    //     // pop.push(Box::new(SinF::new((n as f64/100.0))));
+    //     let mut sinfff = SinF::new(n as f64/100.0);
+    //     sinfff.update_fitness();
+    //     specific_pop.push(sinfff);
+    // }
+
+    for _n in 1..population_count+1 {
         // pop.push(Box::new(SinF::new((n as f64/100.0))));
-        specific_pop.push(SinF::new(n as f64/100.0));
+        let mut random_network = TestNetwork::new(2, 1);
+        random_network.update_fitness();
+        specific_pop.push(random_network);
     }
+
 
     // fitness evaluation
 
@@ -215,7 +227,12 @@ fn main() {
         // Select Parents. 
         let parents = select_parents(&specific_pop, parent_count);
         let mut offspring = generate_offspring(&parents, offspring_count);
+        
         do_fitness_func(&offspring);
+
+        for offpin in offspring.iter_mut() {
+            offpin.update_fitness();
+        }
 
         // add in the offspring
         specific_pop.append(&mut offspring);
