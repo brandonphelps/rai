@@ -123,19 +123,25 @@ impl Network {
     }
 
     pub fn pretty_print(&self) -> () {
-        for node in self.nodes.iter() {
-            println!("{:#?}", node);
+        for layer in 0..self.layer_count {
+            for node in self.nodes.iter() {
+                if node.layer == layer.into() {
+                    println!("{:#?}", node);
+                }
+            }
         }
-        for edge in self.edges.iter() {
-            if edge.enabled { 
-                println!("{:#?}", edge);
+        for layer in 0..self.layer_count {
+            for edge in self.edges.iter() {
+                if edge.enabled && self.nodes[edge.from_node as usize].layer == layer.into() { 
+                    println!("{:#?}", edge);
+                }
             }
         }
     }
 
 
     pub fn feed_input(&mut self, inputs: Vec<f64> ) -> Vec<f64> {
-        self.pretty_print();
+
         let mut output = Vec::new();
         for i in 0..self.input_node_count {
             println!("Setting input node output: {} as {}", i, inputs[i as usize]);
@@ -144,6 +150,8 @@ impl Network {
 
         // set bias to true
         self.nodes[self.bias_node_id as usize].output_sum = 1.0;
+
+        self.pretty_print();
 
         for layer in 0..self.layer_count {
             println!("Feeding layer: {}", layer);
@@ -159,14 +167,16 @@ impl Network {
                     for edge in self.edges.iter() {
                         if edge.from_node as usize == node_index {
                             if edge.enabled {
-                                println!("{} -> {}", edge.from_node, edge.to_node);
                                 let tmp_p = edge.weight * self.nodes[node_index].output_sum;
+
                                 self.nodes[edge.to_node as usize].input_sum += tmp_p;
+                                println!("{} -> {}, ({}) = {}", edge.from_node, edge.to_node, tmp_p, self.nodes[edge.to_node as usize].input_sum);
                             }
                         }
                     }
                 }
             }
+            self.pretty_print()
         }
 
         for node in self.nodes.iter() {
@@ -242,6 +252,7 @@ impl Network {
     }
 
     pub fn add_connection(&mut self, _node_one: usize, _node_two: usize, weight: f64) -> usize {
+        // don't add in edges if the edge already exists. 
         let edge = Edge{from_node: _node_one as u64,
                         to_node: _node_two as u64,
                         inno_id: 1,
@@ -256,26 +267,13 @@ impl Network {
 mod tests {
     use super::*;
 
-    #[test]
-    fn test_simple_add() {
-        let mut network = Network::new(1, 1, false);
-
-        network.add_connection(0, 1, 0.5);
-
-        let input_value = vec![1.0, 2.0];
-        println!("First evaulation");
-        let mut output_values = network.feed_input(input_value);
-
-        // simplest network
-        // 1.0 -> node 1 -(0.5)> node 2 -> output (0.5)
-
-        assert_eq!(output_values.len(), 1);
-        assert_eq!(output_values[0], 0.6224593312018546);
-
-        println!("Second evaulation");
-        output_values = network.feed_input(vec![1.0]);
-        assert_eq!(output_values.len(), 1);
-        assert_eq!(output_values[0], 0.6224593312018546);
+    fn construct_and_network() -> Network {
+        let mut network = Network::new(2, 1, false);
+        let edge1 = network.add_connection(0, 2, 20.0);
+        // let node1 = network.add_node(edge1, 20.0, 20.0) as usize;
+        let edge2 = network.add_connection(1, 2, 20.0);
+        let edge3 = network.add_connection(3, 2, -30.0);
+        return network;
     }
 
     fn construct_xor_network() -> Network {
@@ -303,6 +301,30 @@ mod tests {
         let edge4 = network.add_connection(1, node1_index as usize, 20.0);
         return network;
     }
+
+
+    #[test]
+    fn test_simple_add() {
+        let mut network = Network::new(1, 1, false);
+
+        network.add_connection(0, 1, 0.5);
+
+        let input_value = vec![1.0, 2.0];
+        println!("First evaulation");
+        let mut output_values = network.feed_input(input_value);
+
+        // simplest network
+        // 1.0 -> node 1 -(0.5)> node 2 -> output (0.5)
+
+        assert_eq!(output_values.len(), 1);
+        assert_eq!(output_values[0], 0.6224593312018546);
+
+        println!("Second evaulation");
+        output_values = network.feed_input(vec![1.0]);
+        assert_eq!(output_values.len(), 1);
+        assert_eq!(output_values[0], 0.6224593312018546);
+    }
+
 
     #[test]
     fn test_xor_network_one_one() {
@@ -333,40 +355,77 @@ mod tests {
         }
     }
 
-    #[test]
-    fn test_xor_network_zero_zero() {
-        let mut network = construct_xor_network();
-        let output_values = network.feed_input(vec![0.0, 0.0]);
-        assert_eq!(output_values.len(), 1);
-        assert!(output_values[0] < 0.1);
-        assert!(output_values[0] > -0.1);
 
+    #[test]
+    // check to see as we add in nodes that edges preserve
+    // forward feed direction. 
+    fn test_connections_add_node_forward() {
+        let mut network = Network::new(4, 400, true);
+        let mut node_count = 4 + 400 + 1;
+        assert_eq!(network.nodes.len(), node_count);
+
+        for i in 0..100 {
+            let random_edge = network.random_non_bias_edge();
+            network.add_node(random_edge as usize, 1.0, 3.0);
+            node_count += 1;
+            assert_eq!(network.nodes.len(), node_count);
+            for edge in network.edges.iter() {
+                let from_node = &network.nodes[edge.from_node as usize];
+                let to_node = &network.nodes[edge.to_node as usize];
+                println!("Checking: {} -> {}", edge.from_node, edge.to_node);
+                assert!(from_node.layer < to_node.layer);
+            }
+        }
     }
 
     #[test]
-    fn test_xor_network_zero_one() {
-        let mut network = construct_xor_network();
-        let output_values = network.feed_input(vec![0.0, 1.0]);
-        assert_eq!(output_values.len(), 1);
-        println!("output_values: {:?}", output_values);
-        assert!(output_values[0] < 1.1);
-        assert!(output_values[0] > 0.9);
+    // check to see as we add in nodes that edges preserve
+    // forward feed direction. 
+    fn test_connections_add_connection_forward() {
+        let mut network = Network::new(4, 400, true);
+        let mut node_count = 4 + 400 + 1;
+        assert_eq!(network.nodes.len(), node_count);
 
-
+        for i in 0..100 {
+            let random_edge = network.random_non_bias_edge();
+            network.add_node(random_edge as usize, 1.0, 3.0);
+            node_count += 1;
+            assert_eq!(network.nodes.len(), node_count);
+            for edge in network.edges.iter() {
+                let from_node = &network.nodes[edge.from_node as usize];
+                let to_node = &network.nodes[edge.to_node as usize];
+                println!("Checking: {} -> {}", edge.from_node, edge.to_node);
+                assert!(from_node.layer < to_node.layer);
+            }
+        }
     }
 
-    #[test]
-    fn test_xor_network_one_zero() {
-        let mut network = construct_xor_network();
-        let mut output_values = network.feed_input(vec![1.0, 0.0]);
-        assert_eq!(output_values.len(), 1);
-        assert!(output_values[0] < 1.1);
-        assert!(output_values[0] > 0.9);
+    macro_rules! network_test {
+        ($($name:ident: $value:expr,)*) => {
+            $(
+                #[test]
+                fn $name() {
+                    let (mut network, input, expected) = $value;
+                    let output = network.feed_input(input);
+                    assert_eq!(output.len(), 1);
+                    assert!(output[0] > expected[0]);
+                    assert!(output[0] < expected[1]);
+                }
+            )*
+        }
+    }
 
-        output_values = network.feed_input(vec![1.0, 0.0]);
-        assert_eq!(output_values.len(), 1);
-        assert!(output_values[0] < 1.1);
-        assert!(output_values[0] > 0.9);
+    network_test! {
+        xor_one_one: (construct_xor_network(), vec![1.0, 1.0], vec![-0.1, 0.1]),
+        xor_zero_zero: (construct_xor_network(), vec![0.0, 0.0], vec![-0.1, 0.1]),
+        xor_one_zero: (construct_xor_network(), vec![1.0, 0.0], vec![0.9, 1.1]),
+        xor_zero_one: (construct_xor_network(), vec![0.0, 1.0], vec![0.9, 1.1]),
+
+        and_one_one: (construct_and_network(), vec![1.0, 1.0], vec![0.9, 1.1]),
+        and_one_zero: (construct_and_network(), vec![1.0, 0.0], vec![-0.1, 0.1]),
+        and_zero_one: (construct_and_network(), vec![0.0, 1.0], vec![-0.1, 0.1]),
+        and_zero_zero: (construct_and_network(), vec![0.0, 0.0], vec![-0.1, 0.1]),
+            
     }
 
     #[test]
