@@ -204,7 +204,16 @@ impl Individual for TestNetwork {
 
         // 5% add new connection
         if rng.gen::<f64>() < 0.05 {
-            // pass
+            let mut node_one = self.network.random_node();
+            let mut node_two = self.network.random_node();
+            while self.network.are_connected(node_one, node_two) ||
+                self.network.nodes[node_one].layer == self.network.nodes[node_two].layer {
+
+                node_one = self.network.random_node();
+                node_two = self.network.random_node();
+                }
+
+            self.network.add_connection(node_one, node_two, 0.5);
         }
 
         // 3% add new node. 
