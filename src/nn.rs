@@ -7,7 +7,7 @@ use rand::prelude::*;
 pub struct Node {
     input_sum: f64,
     output_sum: f64,
-    layer: u64,
+    pub layer: u64,
 }
 
 impl Node {
@@ -195,6 +195,12 @@ impl Network {
         return (self.nodes.len() - 1) as u64;
     }
     
+    pub fn random_node(&self) -> usize {
+        let mut rng = rand::thread_rng();
+        let y: f64 = rng.gen();
+        return (y * (self.nodes.len()-1) as f64) as usize;
+    }
+
     pub fn random_edge(&self) -> u64 {
         let mut rng = rand::thread_rng();
         let y: f64 = rng.gen();
@@ -262,12 +268,17 @@ impl Network {
         return (self.nodes.len() - 1) as u64;
     }
 
+    pub fn are_connected(&self, _node_one: usize, _node_two: usize) -> bool {
+        let pos_check = self.edges.iter().position(|edge| edge.to_node == _node_one as u64
+                                                   && edge.from_node == _node_two as u64);
+        match pos_check {
+            Some(T) => return true,
+            None => return false,
+        }
+    }
+
     pub fn add_connection(&mut self, _node_one: usize, _node_two: usize, weight: f64) -> usize {
         // todo: don't add in edges if the edge already exists.
-
-
-
-
         let node_one = &self.nodes[_node_one];
         let node_two = &self.nodes[_node_two];
         if node_one.layer == node_two.layer {

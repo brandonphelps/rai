@@ -152,8 +152,9 @@ impl TestNetwork {
             self.network.edges[edge ].weight = rng.gen::<f64>();
         }
         else {
-            let normal = Normal::new(0.0, 1.0);
-            self.network.edges[edge ].weight += rng.sample::<f64, _>(&normal);
+            let normal = Normal::new(0.0, 0.5);
+            let delta = rng.sample::<f64, _>(&normal);
+            self.network.edges[edge ].weight += delta;
             if self.network.edges[edge ].weight  > 1.0 {
                 self.network.edges[edge ].weight = 1.0;
             }
@@ -198,7 +199,7 @@ impl Individual for TestNetwork {
         // 80% chance to mutate edges node. 
         if rng.gen::<f64>() < 0.8 {
             for edge_index in 0..self.network.edges.len() {
-                self.mutate_edge(edge_index)
+                self.mutate_edge(edge_index);
             }
         }
 
