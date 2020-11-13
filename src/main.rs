@@ -1,4 +1,5 @@
 use rand::seq::SliceRandom;
+#[allow(deprecated)]
 use rand::distributions::{Normal, Distribution};
 use std::cmp::Reverse;
 use rand::prelude::*;
@@ -7,6 +8,7 @@ use std::{thread, time};
 
 mod hrm;
 mod nn;
+mod neat;
 
 trait Individual {
     // can this return just a numeric traited instance?
@@ -203,6 +205,7 @@ impl Individual for TestNetwork {
             }
         }
 
+        // todo: needs a is network fully connected or it'll infite loop here.  
         // 5% add new connection
         if rng.gen::<f64>() < 0.05 {
             let mut node_one = self.network.random_node();
@@ -214,7 +217,7 @@ impl Individual for TestNetwork {
                 node_two = self.network.random_node();
                 }
 
-            self.network.add_connection(node_one, node_two, 0.5);
+            self.network.add_connection(node_one, node_two, 0.5, 1);
         }
 
         // 3% add new node. 
