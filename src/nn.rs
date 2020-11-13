@@ -26,7 +26,6 @@ fn sigmoid(value: f64) -> f64 {
 pub struct Edge {
     pub from_node: u64,
     to_node: u64,
-    pub inno_id: u64,
     pub weight: f64,
     pub enabled: bool
 }
@@ -36,14 +35,8 @@ impl Edge {
         return Edge{from_node: self.from_node,
                     to_node: self.to_node,
                     weight: self.weight,
-                    inno_id: self.inno_id,
                     enabled: self.enabled};
     }
-}
-
-#[derive(Debug)]
-pub struct Innovation {
-    
 }
     
 
@@ -88,17 +81,14 @@ impl Network {
         network.bias_node_id = (network.nodes.len()-1) as u64;
 
         if fully_connect {
-            let mut inno_id = 0;
             for _input_n in 0..input_node_count {
                 for _output_n in 0..output_node_count {
                     println!("Constructing egde: {} -> {}", _input_n, _output_n + input_node_count);
                     network.edges.push(Edge {
                         from_node: _input_n as u64,
                         to_node: (_output_n + input_node_count) as u64,
-                        inno_id: inno_id,
                         weight: 0.5,
                         enabled: true });
-                    inno_id += 1;
                 }
             }
 
@@ -109,10 +99,8 @@ impl Network {
                 network.edges.push(Edge {
                     from_node: network.bias_node_id,
                     to_node: (_output_n + input_node_count)as u64,
-                    inno_id: inno_id,
                     weight: 1.0,
                     enabled: true });
-                inno_id += 1;
             }
         }
 
@@ -233,27 +221,16 @@ impl Network {
 
         let edge1 = Edge{from_node: edge.from_node,
                          to_node: (self.nodes.len() - 1) as u64,
-                         inno_id: 2,
                          weight: edge1_w,
                          enabled: true};
 
         let edge2 = Edge{from_node: (self.nodes.len() - 1) as u64,
                          to_node: edge.to_node,
-                         inno_id: 2,
                          weight: edge2_w,
-                         enabled: true};
-
-
-        // bias edge 
-        let edge3 = Edge{from_node: self.bias_node_id,
-                         to_node: (self.nodes.len() - 1) as u64,
-                         inno_id: 2,
-                         weight: (edge1_w + edge2_w) / 2.0,
                          enabled: true};
 
         self.edges.push(edge1);
         self.edges.push(edge2);
-        // self.edges.push(edge3);
         
         if self.nodes[outgoing_node_id as usize].layer == current_node_layer.into() {
             for node_i in 0..self.nodes.len()-1 {
@@ -277,7 +254,7 @@ impl Network {
         }
     }
 
-    pub fn add_connection(&mut self, _node_one: usize, _node_two: usize, weight: f64, inno_id: u64) -> usize {
+    pub fn add_connection(&mut self, _node_one: usize, _node_two: usize, weight: f64) -> usize {
         // todo: don't add in edges if the edge already exists.
         let node_one = &self.nodes[_node_one];
         let node_two = &self.nodes[_node_two];
@@ -297,7 +274,6 @@ impl Network {
 
             edge = Edge{from_node: _node_two as u64,
                             to_node: _node_one as u64,
-                            inno_id: inno_id,
                             weight: weight,
                             enabled: true};
         } else {
@@ -312,7 +288,6 @@ impl Network {
 
             edge = Edge{from_node: _node_one as u64,
                             to_node: _node_two as u64,
-                            inno_id: inno_id,
                             weight: weight,
                             enabled: true};
         }
@@ -328,10 +303,10 @@ mod tests {
 
     fn construct_and_network() -> Network {
         let mut network = Network::new(2, 1, false);
-        let edge1 = network.add_connection(0, 2, 20.0, 1);
+        let edge1 = network.add_connection(0, 2, 20.0);
         // let node1 = network.add_node(edge1, 20.0, 20.0) as usize;
-        let edge2 = network.add_connection(1, 2, 20.0, 1);
-        let edge3 = network.add_connection(3, 2, -30.0, 1);
+        let edge2 = network.add_connection(1, 2, 20.0);
+        let edge3 = network.add_connection(3, 2, -30.0);
         return network;
     }
 
@@ -339,9 +314,9 @@ mod tests {
         let mut network = Network::new(2, 1, false);
         
         // node 0 - > end node
-        let edge1 = network.add_connection(0, 2, 1.0, 1);
+        let edge1 = network.add_connection(0, 2, 1.0);
         // node 1 - > end node
-        let edge2 = network.add_connection(1, 2, -1.0, 1);
+        let edge2 = network.add_connection(1, 2, -1.0);
         
         // node 0 -> node 2 - > end node
         let node1_index = network.add_node(edge1, 20.0, 20.0);
@@ -349,15 +324,15 @@ mod tests {
         // node 1 -> node 3 - > end node
         let node2_index = network.add_node(edge2, -20.0, 20.0);
 
-        network.add_connection(3, node1_index as usize, -10.0, 1);
-        network.add_connection(3, node2_index as usize, 30.0, 1);
-        network.add_connection(3, 2 as usize, -30.0, 1);
+        network.add_connection(3, node1_index as usize, -10.0);
+        network.add_connection(3, node2_index as usize, 30.0);
+        network.add_connection(3, 2 as usize, -30.0);
         
         // node 0 -> node 3 -> end node
-        let edge3 = network.add_connection(0, node2_index as usize, -20.0, 1);
+        let edge3 = network.add_connection(0, node2_index as usize, -20.0);
 
         // node 1 -> node 2 -> end node
-        let edge4 = network.add_connection(1, node1_index as usize, 20.0, 1);
+        let edge4 = network.add_connection(1, node1_index as usize, 20.0);
         return network;
     }
 
@@ -380,7 +355,7 @@ mod tests {
     fn test_simple_add() {
         let mut network = Network::new(1, 1, false);
 
-        network.add_connection(0, 1, 0.5, 1);
+        network.add_connection(0, 1, 0.5);
 
         let input_value = vec![1.0, 2.0];
         println!("First evaulation");

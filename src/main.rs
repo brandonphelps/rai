@@ -135,15 +135,19 @@ where
 #[derive(Debug)]
 struct TestNetwork  {
     pub network: nn::Network,
+    pub inno_ids: Vec<u64>,
     fitness: f64,
 }
 
 impl TestNetwork {
     fn new(input_count: u32, output_count: u32) -> TestNetwork {
         let mut network = nn::Network::new(input_count, output_count, true);
+
+        let mut inno_ids: Vec<u64> = Vec::new();
         return TestNetwork {
             network: network,
-            fitness: 0.0
+            fitness: 0.0,
+            inno_ids: inno_ids
         };
     }
 
@@ -217,7 +221,7 @@ impl Individual for TestNetwork {
                 node_two = self.network.random_node();
                 }
 
-            self.network.add_connection(node_one, node_two, 0.5, 1);
+            self.network.add_connection(node_one, node_two, 0.5);
         }
 
         // 3% add new node. 
@@ -274,7 +278,12 @@ impl Crossover for TestNetwork {
             child_network.nodes.push(node.clone());
         }
         
-        TestNetwork{network: child_network, fitness: 0.0}
+        // todo: finishe
+        let inno_ds: Vec<u64> = Vec::new();
+        TestNetwork{network: child_network,
+                    fitness: 0.0,
+                    inno_ids: inno_ds
+        }
     }
 }
 
