@@ -42,6 +42,12 @@ impl Edge {
 }
 
 #[derive(Debug)]
+pub struct Innovation {
+    
+}
+    
+
+#[derive(Debug)]
 pub struct Network {
 
     // first I nodes are input nodes
@@ -104,7 +110,7 @@ impl Network {
                     from_node: network.bias_node_id,
                     to_node: (_output_n + input_node_count)as u64,
                     inno_id: inno_id,
-                    weight: 400.0,
+                    weight: 1.0,
                     enabled: true });
                 inno_id += 1;
             }
@@ -257,7 +263,7 @@ impl Network {
     }
 
     pub fn add_connection(&mut self, _node_one: usize, _node_two: usize, weight: f64) -> usize {
-        // don't add in edges if the edge already exists. 
+        // todo: don't add in edges if the edge already exists. 
         let edge = Edge{from_node: _node_one as u64,
                         to_node: _node_two as u64,
                         inno_id: 1,
@@ -463,3 +469,5 @@ mod tests {
         
     }
 }
+
+

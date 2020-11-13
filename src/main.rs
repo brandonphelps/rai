@@ -1,6 +1,9 @@
 use rand::seq::SliceRandom;
+use rand::distributions::{Normal, Distribution};
 use std::cmp::Reverse;
 use rand::prelude::*;
+use prgrs::{Prgrs, writeln, Length};
+use std::{thread, time};
 
 mod hrm;
 mod nn;
@@ -8,7 +11,7 @@ mod nn;
 trait Individual {
     // can this return just a numeric traited instance?
     // post calculated fitness. 
-    fn fitness(&self) -> u128;
+    fn fitness(&self) -> f64;
     fn update_fitness(&mut self) -> ();
     fn print(&self) -> ();
     fn mutate(&mut self) -> ();
@@ -56,9 +59,9 @@ impl Individual for SinF {
 
     }
 
-    fn fitness(&self) -> u128 {
+    fn fitness(&self) -> f64 {
         let _p = self.value * self.value.sin().powf(2.0);
-        return ((_p + 100.0) * 1000.0) as u128;
+        return ((_p + 100.0) * 1000.0);
     }
 
     fn mutate(&mut self) -> () {
@@ -130,7 +133,7 @@ where
 #[derive(Debug)]
 struct TestNetwork  {
     pub network: nn::Network,
-    fitness: u128,
+    fitness: f64,
 }
 
 impl TestNetwork {
@@ -138,14 +141,32 @@ impl TestNetwork {
         let mut network = nn::Network::new(input_count, output_count, true);
         return TestNetwork {
             network: network,
-            fitness: 0
+            fitness: 0.0
         };
+    }
+
+
+    fn mutate_edge(&mut self, edge: usize ) -> () {
+        let mut rng = rand::thread_rng();
+        if rng.gen::<f64>() < 0.1 {
+            self.network.edges[edge ].weight = rng.gen::<f64>();
+        }
+        else {
+            let normal = Normal::new(0.0, 1.0);
+            self.network.edges[edge ].weight += rng.sample::<f64, _>(&normal);
+            if self.network.edges[edge ].weight  > 1.0 {
+                self.network.edges[edge ].weight = 1.0;
+            }
+            else if self.network.edges[edge ].weight < -1.0 {
+                self.network.edges[edge ].weight = -1.0;
+            }
+        }
     }
 }
 
 impl Individual for TestNetwork {
 
-    fn fitness(&self) -> u128 {
+    fn fitness(&self) -> f64 {
         return self.fitness;
     }
 
@@ -154,51 +175,59 @@ impl Individual for TestNetwork {
         // self.network.pretty_print();
         let mut output = self.network.feed_input(vec![0.0, 0.0]);
         assert_eq!(output.len(), 1);
-        // println!("Input: 0, 0: {:?}", output[0]);
         fitness += (output[0] - 0.0).powf(2.0);
-        //println!("Fitness: {:?}", fitness);
         output = self.network.feed_input(vec![0.0, 1.0]);
-        // println!("Input: 0, 1: {:?}", output);
         fitness += (output[0] - 1.0).powf(2.0);
-        // println!("Fitness: {:?}", fitness);
         output = self.network.feed_input(vec![1.0, 0.0]);
-        println!("Input: 1, 0: {:?}", output);
         fitness += (output[0] - 1.0).powf(2.0);
-        println!("Fitness: {:?}", fitness);
-        fitness = fitness / 3.0;
-        // println!("Final fitness: {:?}", fitness);
-        if fitness != 0.0 {
-            self.fitness = (1.0 / fitness) as u128;
+        output = self.network.feed_input(vec![1.0, 1.0]);
+        fitness += (output[0] - 0.0).powf(2.0);
+        fitness = fitness / 4.0;
+
+        if fitness == 0.0 {
+            self.fitness = 10000000.0;
         }
         else {
-            self.fitness = 10000;
+            fitness -= (self.network.nodes.len() as f64 * 0.1);
+            self.fitness = (1.0 / fitness);
         }
     }
 
     fn mutate(&mut self) -> () {
         let mut rng = rand::thread_rng();
-        // 90% chance to add another node. 
-        if rng.gen::<f64>() < 0.9 {
-            let edge = self.network.random_non_bias_edge();
-            println!("Add node");
-            self.network.add_node(edge as usize, 0.4, 0.5);
-        }
-
-        for f_edge in self.network.edges.iter_mut() {
-            if f_edge.enabled && f_edge.from_node != self.network.bias_node_id {
-                // chance to change weight of an edge
-                if rng.gen::<f64>() < 0.3 {
-                    if rng.gen::<f64>() < 0.5 {
-                        println!("Weight gain");
-                        f_edge.weight += 4.0;
-                    }
-                    else {
-                        println!("Weight lose");
-                        f_edge.weight -= 4.0;
-                    }
-                }
+        // 80% chance to mutate edges node. 
+        if rng.gen::<f64>() < 0.8 {
+            for edge_index in 0..self.network.edges.len() {
+                self.mutate_edge(edge_index)
             }
         }
+
+        // 5% add new connection
+        if rng.gen::<f64>() < 0.05 {
+            // pass
+        }
+
+        // 3% add new node. 
+        if rng.gen::<f64>() < 0.03 {
+            let edge = self.network.random_non_bias_edge();
+            self.network.add_node(edge as usize, 0.4, 0.5);
+        }
+        
+        // for f_edge in self.network.edges.iter_mut() {
+        //     if f_edge.enabled && f_edge.from_node != self.network.bias_node_id {
+        //         // chance to change weight of an edge
+        //         if rng.gen::<f64>() < 0.5 {
+        //             if rng.gen::<f64>() < 0.5 {
+        //                 // println!("Weight gain");
+        //                 f_edge.weight += 0.4;
+        //             }
+        //             else {
+        //                 // println!("Weight lose");
+        //                 f_edge.weight -= 0.4;
+        //             }
+        //         }
+        //     }
+        // }
     }
 
     fn print(&self) -> () {
@@ -232,7 +261,7 @@ impl Crossover for TestNetwork {
             child_network.nodes.push(node.clone());
         }
         
-        TestNetwork{network: child_network, fitness: 0}
+        TestNetwork{network: child_network, fitness: 0.0}
     }
 }
 
@@ -245,10 +274,10 @@ impl Crossover for TestNetwork {
 
 fn main() {
     let population_count = 300;
-    let parent_count = 20;
-    let offspring_count = 30;
+    let parent_count = 40;
+    let offspring_count = 500;
     let mut iteration_count = 0;
-    let max_iter_count = 100;
+    let max_iter_count = 10000;
     // let mut specific_pop: Vec<SinF> = Vec::new();
     let mut specific_pop: Vec<TestNetwork> = Vec::new();
 
@@ -271,8 +300,11 @@ fn main() {
     // fitness evaluation
 
     do_fitness_func(&specific_pop);
+    let mut average_history_per_iter: Vec<f64> = Vec::new();
 
-    while iteration_count < max_iter_count {
+    for i in Prgrs::new(0..max_iter_count, max_iter_count).set_length_move(Length::Proportional(0.5)) {
+    //}
+    //while iteration_count < max_iter_count {
         // Select Parents. 
         let parents = select_parents(&specific_pop, parent_count);
         let mut offspring = generate_offspring(&parents, offspring_count);
@@ -281,28 +313,52 @@ fn main() {
 
         for offpin in offspring.iter_mut() {
             offpin.update_fitness();
-            println!("{}", offpin.fitness());
+            // println!("{}", offpin.fitness());
         }
 
         // add in the offspring
         specific_pop.append(&mut offspring);
         
         // cull population 
-        specific_pop.sort_by_key(|indiv| Reverse(indiv.fitness()));
+        specific_pop.sort_by_key(|indiv| Reverse((indiv.fitness() * 1000.0) as i128));
         specific_pop.truncate(population_count);
 
         assert!(specific_pop.len() == population_count);
 
         iteration_count += 1;
+
+        let mut average_fit = 0.0;
+        for pop in specific_pop.iter() {
+            average_fit += pop.fitness();
+        }
+
+        let str = format!("{}", average_fit / (specific_pop.len() as f64));
+        println!("{}", str);
+        average_history_per_iter.push(average_fit / (specific_pop.len() as f64));
     }
 
     // generate fitness values.
 
-    specific_pop.sort_by_key(|indiv| Reverse(indiv.fitness()));
+    specific_pop.sort_by_key(|indiv| Reverse((indiv.fitness() * 1000.0) as i128));
     println!("Top Ten");
     for offp in 1..10 {
-        println!("{} {:?} {}", offp, specific_pop[offp], specific_pop[offp].fitness());
+        println!("{} {:#?} {}", offp, specific_pop[offp], specific_pop[offp].fitness());
     }
+
+    let mut top = &mut specific_pop[0].network;
+
+    println!("Results");
+    println!("{:?}", top.feed_input(vec![0.0, 0.0]));
+    println!("{:?}", top.feed_input(vec![0.0, 1.0]));
+    println!("{:?}", top.feed_input(vec![1.0, 0.0]));
+    println!("{:?}", top.feed_input(vec![1.0, 1.0]));
+
+
+    
+    // println!("{:?}", top.network.feed_input(vec![0.0, 1.0]));
+    // println!("{:?}", top.network.feed_input(vec![1.0, 0.0]));
+    // println!("{:?}", top.network.feed_input(vec![1.0, 1.0]));
+
 
     // let j = hrm::Program::new();
 
