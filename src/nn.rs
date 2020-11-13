@@ -263,12 +263,49 @@ impl Network {
     }
 
     pub fn add_connection(&mut self, _node_one: usize, _node_two: usize, weight: f64) -> usize {
-        // todo: don't add in edges if the edge already exists. 
-        let edge = Edge{from_node: _node_one as u64,
-                        to_node: _node_two as u64,
-                        inno_id: 1,
-                        weight: weight,
-                        enabled: true};
+        // todo: don't add in edges if the edge already exists.
+
+
+
+
+        let node_one = &self.nodes[_node_one];
+        let node_two = &self.nodes[_node_two];
+        if node_one.layer == node_two.layer {
+            return 0;
+        }
+        let mut edge;
+        // allow for nodes to be in reverse order, so if node 1 layer is greater than node 2, swap. 
+        if node_one.layer > node_two.layer {
+            let pos_check = self.edges.iter().position(|edge| edge.to_node == _node_one as u64
+                                                       && edge.from_node == _node_two as u64);
+            match pos_check {
+                Some(T) => return T,
+                None => (),
+            }
+
+
+            edge = Edge{from_node: _node_two as u64,
+                            to_node: _node_one as u64,
+                            inno_id: 1,
+                            weight: weight,
+                            enabled: true};
+        } else {
+
+            let pos_check = self.edges.iter().position(|edge| edge.to_node == _node_two as u64
+                                                       && edge.from_node == _node_one as u64);
+            match pos_check {
+                Some(T) => return T,
+                None => (),
+            }
+
+
+            edge = Edge{from_node: _node_one as u64,
+                            to_node: _node_two as u64,
+                            inno_id: 1,
+                            weight: weight,
+                            enabled: true};
+        }
+        
         self.edges.push(edge);
         return self.edges.len() - 1;
     }
