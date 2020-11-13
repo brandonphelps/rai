@@ -498,6 +498,20 @@ mod tests {
     }
 
     #[test]
+    fn test_fully_connected() {
+        let network = Network::new(2, 40, true);
+        assert!(network.is_fully_connected());
+
+        // todo: add more neteworks with connections.
+
+        let mut net = Network::new(3, 5, true);
+        net.add_node(2, 1.0, 2.0);
+        println!("{:#?}", net);
+        assert!(!net.is_fully_connected());
+    }
+    
+
+    #[test]
     fn test_sigmoid() {
 
         let r = sigmoid(0.0);
