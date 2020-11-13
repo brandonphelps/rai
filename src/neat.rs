@@ -86,7 +86,6 @@ mod tests {
         let mut innovation_history = vec![];
         let mut global_inno_num = 2;
         
-        
         let new_inno_num = ConnHistory::get_inno_number(&mut global_inno_num, &mut innovation_history, &network, 0, 12);
         
         let conn_history = &innovation_history[0];

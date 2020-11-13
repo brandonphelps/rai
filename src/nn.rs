@@ -55,9 +55,6 @@ pub struct Network {
 }
 
 impl Network {
-    fn fully_connect(&mut self) -> () {
-
-    }
 
 
     pub fn new(input_node_count: u32, output_node_count: u32, fully_connect: bool ) -> Network {
@@ -105,6 +102,29 @@ impl Network {
         }
 
         return network;
+    }
+
+    pub fn is_fully_connected(&self) -> bool {
+        let mut max_connections = 0;
+        let mut num_nodes_in_layer: Vec<u64> = Vec::new();
+
+        for n in 0..self.layer_count {
+            num_nodes_in_layer.push(0);
+        }
+
+        for node in self.nodes.iter() {
+            num_nodes_in_layer[node.layer as usize] += 1;
+        }
+
+        for i in 0..self.layer_count-1 {
+            let mut nodes_in_front = 0;
+            for j in i+1..self.layer_count {
+                nodes_in_front += num_nodes_in_layer[j as usize];
+            }
+            max_connections += num_nodes_in_layer[i as usize] * nodes_in_front;
+        }
+
+        return (max_connections as usize) == self.edges.len();
     }
 
     pub fn pretty_print(&self) -> () {
