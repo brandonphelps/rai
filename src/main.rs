@@ -139,11 +139,17 @@ struct TestNetwork  {
     fitness: f64,
 }
 
+static GLOBAL_INNO_ID: u64 = 0;
+
 impl TestNetwork {
     fn new(input_count: u32, output_count: u32) -> TestNetwork {
         let mut network = nn::Network::new(input_count, output_count, true);
 
         let mut inno_ids: Vec<u64> = Vec::new();
+        for (edge_index, edge) in network.edges.iter().enumerate() {
+            inno_ids.push(edge_index as u64);
+        }
+
         return TestNetwork {
             network: network,
             fitness: 0.0,
@@ -155,17 +161,17 @@ impl TestNetwork {
     fn mutate_edge(&mut self, edge: usize ) -> () {
         let mut rng = rand::thread_rng();
         if rng.gen::<f64>() < 0.1 {
-            self.network.edges[edge ].weight = rng.gen::<f64>();
+            self.network.edges[edge].weight = rng.gen::<f64>();
         }
         else {
             let normal = Normal::new(0.0, 0.5);
             let delta = rng.sample::<f64, _>(&normal);
-            self.network.edges[edge ].weight += delta;
-            if self.network.edges[edge ].weight  > 1.0 {
-                self.network.edges[edge ].weight = 1.0;
+            self.network.edges[edge].weight += delta;
+            if self.network.edges[edge].weight  > 1.0 {
+                self.network.edges[edge].weight = 1.0;
             }
-            else if self.network.edges[edge ].weight < -1.0 {
-                self.network.edges[edge ].weight = -1.0;
+            else if self.network.edges[edge].weight < -1.0 {
+                self.network.edges[edge].weight = -1.0;
             }
         }
     }
@@ -216,11 +222,9 @@ impl Individual for TestNetwork {
             let mut node_two = self.network.random_node();
             while self.network.are_connected(node_one, node_two) ||
                 self.network.nodes[node_one].layer == self.network.nodes[node_two].layer {
-
-                node_one = self.network.random_node();
-                node_two = self.network.random_node();
+                    node_one = self.network.random_node();
+                    node_two = self.network.random_node();
                 }
-
             self.network.add_connection(node_one, node_two, 0.5);
         }
 
