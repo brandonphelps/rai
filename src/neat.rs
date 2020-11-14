@@ -1,11 +1,10 @@
 
 
-// struct Species {
-//     excess_coeff: f64;
-//     weight_diff_coeff: f64;
-//     compat_threashold: f64;
-// }
-
+struct Species {
+    excess_coeff: f64,
+    weight_diff_coeff: f64,
+    compat_threashold: f64,
+}
 
 // impl Species {
 //     pub fn same_species(&self, other: &nn::Network) {
@@ -59,7 +58,6 @@ impl InnovationHistory {
 
         return connect_inno_num;
     }
-
 }
 
 

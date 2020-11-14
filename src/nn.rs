@@ -297,7 +297,7 @@ impl Network {
         }
     }
 
-    pub fn add_connection(&mut self, _node_one: usize, _node_two: usize, weight: f64) -> usize {
+    pub fn add_connection(&mut self, _node_one: usize, _node_two: usize, weight: f64, inno_hist: Option<&mut InnovationHistory>) -> usize {
         // todo: don't add in edges if the edge already exists.
         let node_one = &self.nodes[_node_one];
         let node_two = &self.nodes[_node_two];
@@ -348,10 +348,10 @@ mod tests {
 
     fn construct_and_network() -> Network {
         let mut network = Network::new(2, 1, false);
-        let edge1 = network.add_connection(0, 2, 20.0);
+        let edge1 = network.add_connection(0, 2, 20.0, None);
         // let node1 = network.add_node(edge1, 20.0, 20.0) as usize;
-        let edge2 = network.add_connection(1, 2, 20.0);
-        let edge3 = network.add_connection(3, 2, -30.0);
+        let edge2 = network.add_connection(1, 2, 20.0, None);
+        let edge3 = network.add_connection(3, 2, -30.0, None);
         return network;
     }
 
@@ -359,9 +359,9 @@ mod tests {
         let mut network = Network::new(2, 1, false);
         
         // node 0 - > end node
-        let edge1 = network.add_connection(0, 2, 1.0);
+        let edge1 = network.add_connection(0, 2, 1.0, None);
         // node 1 - > end node
-        let edge2 = network.add_connection(1, 2, -1.0);
+        let edge2 = network.add_connection(1, 2, -1.0, None);
         
         // node 0 -> node 2 - > end node
         let node1_index = network.add_node(edge1, 20.0, 20.0, None);
@@ -369,15 +369,15 @@ mod tests {
         // node 1 -> node 3 - > end node
         let node2_index = network.add_node(edge2, -20.0, 20.0, None);
 
-        network.add_connection(3, node1_index as usize, -10.0);
-        network.add_connection(3, node2_index as usize, 30.0);
-        network.add_connection(3, 2 as usize, -30.0);
+        network.add_connection(3, node1_index as usize, -10.0, None);
+        network.add_connection(3, node2_index as usize, 30.0, None);
+        network.add_connection(3, 2 as usize, -30.0, None);
         
         // node 0 -> node 3 -> end node
-        let edge3 = network.add_connection(0, node2_index as usize, -20.0);
+        let edge3 = network.add_connection(0, node2_index as usize, -20.0, None);
 
         // node 1 -> node 2 -> end node
-        let edge4 = network.add_connection(1, node1_index as usize, 20.0);
+        let edge4 = network.add_connection(1, node1_index as usize, 20.0, None);
         return network;
     }
 
@@ -400,7 +400,7 @@ mod tests {
     fn test_simple_add() {
         let mut network = Network::new(1, 1, false);
 
-        network.add_connection(0, 1, 0.5);
+        network.add_connection(0, 1, 0.5, None);
 
         let input_value = vec![1.0, 2.0];
         println!("First evaulation");

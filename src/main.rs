@@ -178,7 +178,7 @@ impl Individual for TestNetwork {
                     node_one = self.network.random_node();
                     node_two = self.network.random_node();
                 }
-            self.network.add_connection(node_one, node_two, rng.gen::<f64>());
+            self.network.add_connection(node_one, node_two, rng.gen::<f64>(), None);
         }
 
         // 3% add new node. 
