@@ -238,13 +238,29 @@ impl Network {
         }
         return inno_ids;
     }
-        
+
+
+    fn construct_edge(&self, from_id: usize, to_id: usize, edge_weight: f64, inno_handler: Option<&mut InnovationHistory>) -> Edge {
+        let mut inno_id = 2;
+        if let Some(inno_history) = inno_handler {
+            let network_inno_ids = self.get_inno_ids();
+            inno_id = inno_history.get_inno_number(&network_inno_ids,
+                                                   from_id,
+                                                   to_id);
+        }
+        return Edge{ from_node: from_id as u64,
+                     to_node: to_id as u64,
+                     weight: edge_weight,
+                     enabled: true,
+                     inno_id: inno_id as u64};
+    }
 
     /// Takes an edge and inserts a node inline. 
     pub fn add_node(&mut self, _edge_index: usize, edge1_w: f64, edge2_w: f64, inno_handler: Option<&mut InnovationHistory>) -> u64 {
         self.edges[_edge_index].enabled = false;
 
         let edge = &self.edges[_edge_index];
+        let incoming_node_id = edge.from_node;
         let outgoing_node_id = edge.to_node;
 
         // get teh node the edge we are breaking up was pointing to. 
@@ -258,33 +274,47 @@ impl Network {
             layer: current_node_layer
         };
         self.nodes.push(m);
-        
-        let new_inno_id = match inno_handler {
-            Some(inno_history) => {
-                let edge_to_node_id = edge.to_node as usize;
-                let edge_from_node_id = edge.from_node as usize;
-                let network_inno_ids = self.get_inno_ids();
-                inno_history.get_inno_number(&network_inno_ids,
-                                             edge_from_node_id,
-                                             edge_to_node_id)
-            },
-            None => {
-                2
-            },
-        };
+
+        let new_inno_id = 0;
+        let edge1 = self.construct_edge(incoming_node_id as usize,
+                                        (self.nodes.len() - 1),
+                                        edge1_w,
+                                        inno_handler);
+                                        
+        // let edge5 = self.construct_edge(incoming_node_id as usize,
+        //                                 (self.nodes.len() - 1),
+        //                                 edge1_w,
+        //                                 &inno_handler);
+
+        // if let Some(inno_history) = inno_handler {
+        // }
 
 
-        let edge1 = Edge{from_node: edge.from_node,
-                         to_node: (self.nodes.len() - 1) as u64,
-                         weight: edge1_w,
-                         enabled: true,
-                         inno_id: new_inno_id as u64};
-        {
-            self.edges.push(edge1);
-        }
+        // let new_inno_id = match inno_handler {
+        //     Some(&mut inno_history) => {
+        //         let network_inno_ids = self.get_inno_ids();
+        //         inno_history.get_inno_number(&network_inno_ids,
+        //                                      incoming_node_id as usize,
+        //                                      outgoing_node_id as usize)
+        //     },
+        //     None => {
+        //         2
+        //     },
+        // };
+
+        // let edge1 = Edge{from_node: incoming_node_id,
+        //                  to_node: (self.nodes.len() - 1) as u64,
+        //                  weight: edge1_w,
+        //                  enabled: true,
+        //                  inno_id: new_inno_id as u64};
+
+        self.edges.push(edge1);
+
+
+
 
         let edge2 = Edge{from_node: (self.nodes.len() - 1) as u64,
-                         to_node: edge.to_node,
+                         to_node: outgoing_node_id,
                          weight: edge2_w,
                          enabled: true,
                          inno_id: new_inno_id as u64};
@@ -365,10 +395,10 @@ mod tests {
 
     fn construct_and_network() -> Network {
         let mut network = Network::new(2, 1, false);
-        let edge1 = network.add_connection(0, 2, 20.0, None);
+        let _edge1 = network.add_connection(0, 2, 20.0, None);
         // let node1 = network.add_node(edge1, 20.0, 20.0) as usize;
-        let edge2 = network.add_connection(1, 2, 20.0, None);
-        let edge3 = network.add_connection(3, 2, -30.0, None);
+        let _edge2 = network.add_connection(1, 2, 20.0, None);
+        let _edge3 = network.add_connection(3, 2, -30.0, None);
         return network;
     }
 
@@ -391,10 +421,10 @@ mod tests {
         network.add_connection(3, 2 as usize, -30.0, None);
         
         // node 0 -> node 3 -> end node
-        let edge3 = network.add_connection(0, node2_index as usize, -20.0, None);
+        let _edge3 = network.add_connection(0, node2_index as usize, -20.0, None);
 
         // node 1 -> node 2 -> end node
-        let edge4 = network.add_connection(1, node1_index as usize, 20.0, None);
+        let _edge4 = network.add_connection(1, node1_index as usize, 20.0, None);
         return network;
     }
 
@@ -474,7 +504,7 @@ mod tests {
         let mut node_count = 4 + 400 + 1;
         assert_eq!(network.nodes.len(), node_count);
 
-        for i in 0..100 {
+        for _i in 0..100 {
             let random_edge = network.random_non_bias_edge();
             network.add_node(random_edge as usize, 1.0, 3.0, None);
             node_count += 1;
@@ -496,7 +526,7 @@ mod tests {
         let mut node_count = 4 + 400 + 1;
         assert_eq!(network.nodes.len(), node_count);
 
-        for i in 0..100 {
+        for _i in 0..100 {
             let random_edge = network.random_non_bias_edge();
             network.add_node(random_edge as usize, 1.0, 3.0, None);
             node_count += 1;

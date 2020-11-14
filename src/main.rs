@@ -1,3 +1,4 @@
+#![feature(nll)]
 use rand::seq::SliceRandom;
 #[allow(deprecated)]
 use rand::distributions::{Normal, Distribution};
@@ -304,7 +305,7 @@ where
 
 
 
-fn main() {
+fn t_main() {
     let population_count = 20;
     let parent_count = 10;
     let offspring_count = 40;
@@ -406,15 +407,47 @@ fn main() {
 
 // todo look at this bench amrk thing https://stackoverflow.com/questions/60916194/how-to-sort-a-vector-in-descending-order-in-rust
 
-fn t_main() {
-    let mut network = TestNetwork::new(2, 1);
-
-    network.update_fitness();
-    for i in 0..4 {
-        network.network.pretty_print();
-        network.mutate();
-        network.update_fitness();
+fn print_sometimes(ref value: &Option<&mut String>) {
+    if let Some(ref m) = value {
+        println!("{}", m);
     }
+    if let Some(m) = &value {
+        println!("{}", *m);
+    }
+}
+
+fn modify_sometimes(mut value: &mut Option<&mut String>) {
+    if let Some(ref mut m) = value {
+        m.push(' ');
+        m.push('F');
+        m.push('O');
+        m.push('O');
+
+        println!("{}", m);
+    }
+}
+
+
+fn main() {
+    let p = &mut String::from("hello world");
+    let mut default_msg = &mut String::from("default message");
+    let mut msg = &mut Some(p);
+
+    {
+        if let Some(ref m) = msg {
+            println!("{}", m);
+        }
+        
+        print_sometimes(&msg);
+        modify_sometimes(&mut msg);
+    }
+
+    if let Some(ref m) = msg {
+        println!("{}", m);
+    }
+
+    // let unwrapped_msg = msg.unwrap_or(default_msg);
+    // println!("{}", unwrapped_msg);
 }
 
 
@@ -433,10 +466,10 @@ mod tests {
 
         let node2 = network.add_node(0, 0.4, 0.5, Some(&mut innovation_history));
 
-        let node_ref = &network.nodes[node2 as usize];
+        let _node_ref = &network.nodes[node2 as usize];
         println!("{:#?}", network);
         assert!(false);
 
-        let edge1 = network.add_connection(0, 2, 1.0, Some(&mut innovation_history));
+        let _edge1 = network.add_connection(0, 2, 1.0, Some(&mut innovation_history));
     }
 }
