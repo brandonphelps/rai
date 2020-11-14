@@ -416,7 +416,7 @@ fn print_sometimes(ref value: &Option<&mut String>) {
     }
 }
 
-fn modify_sometimes(mut value: &mut Option<&mut String>) {
+fn modify_sometimes(value: &mut Option<&mut String>) {
     if let Some(ref mut m) = value {
         m.push(' ');
         m.push('F');

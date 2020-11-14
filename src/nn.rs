@@ -240,10 +240,11 @@ impl Network {
     }
 
 
-    fn construct_edge(&self, from_id: usize, to_id: usize, edge_weight: f64, inno_handler: Option<&mut InnovationHistory>) -> Edge {
+    fn construct_edge(&self, from_id: usize, to_id: usize, edge_weight: f64, mut inno_handler: &mut Option<&mut InnovationHistory>) -> Edge {
         let mut inno_id = 2;
-        if let Some(inno_history) = inno_handler {
+        if let Some(ref mut inno_history) = inno_handler {
             let network_inno_ids = self.get_inno_ids();
+            println!("Have a ref to inno history getting new id number");
             inno_id = inno_history.get_inno_number(&network_inno_ids,
                                                    from_id,
                                                    to_id);
@@ -256,7 +257,7 @@ impl Network {
     }
 
     /// Takes an edge and inserts a node inline. 
-    pub fn add_node(&mut self, _edge_index: usize, edge1_w: f64, edge2_w: f64, inno_handler: Option<&mut InnovationHistory>) -> u64 {
+    pub fn add_node(&mut self, _edge_index: usize, edge1_w: f64, edge2_w: f64, mut inno_handler: Option<&mut InnovationHistory>) -> u64 {
         self.edges[_edge_index].enabled = false;
 
         let edge = &self.edges[_edge_index];
@@ -279,7 +280,7 @@ impl Network {
         let edge1 = self.construct_edge(incoming_node_id as usize,
                                         (self.nodes.len() - 1),
                                         edge1_w,
-                                        inno_handler);
+                                        &mut inno_handler);
                                         
         // let edge5 = self.construct_edge(incoming_node_id as usize,
         //                                 (self.nodes.len() - 1),
