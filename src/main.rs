@@ -479,9 +479,9 @@ mod tests {
 	let num_outputs = 4;
         let mut network = nn::Network::new(num_inputs, num_outputs, true);
 	
-        let mut innovation_history = neat::InnovationHistory { global_inno_id: (3 * 4),
+        let mut innovation_history = neat::InnovationHistory { global_inno_id: (num_inputs + 1 * num_outputs) as usize,
                                                                conn_history: vec![] };
 
-
+        
     }
 }

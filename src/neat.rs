@@ -1,25 +1,21 @@
-
+use crate::nn::Edge;
 
 struct Species {
     excess_coeff: f64,
     weight_diff_coeff: f64,
     compat_threashold: f64,
+    champion: Vec<Edge>
 }
 
-// impl Species {
-//     pub fn same_species(&self, other: &nn::Network) {
+impl Species {
+    pub fn same_species(&self, other: &Vec<&Edge>) {
         
-//     }
+    }
 
-//     pub fn get_excess_disjoing(one: &nn::Network, two: &nn::Network) {
-//         let mut matching = 0.0;
-//         for one_edge in one.edges.iter() {
-//             for two_edge in two.edges.iter() {
-                
-//             }
-//         }
-//     }
-// }
+    pub fn get_excess_disjoing(one: &Vec<&Edge>, two: &Vec<&Edge>) {
+        let mut matching = 0.0;
+    }
+}
 
 #[derive(Debug)]
 pub struct InnovationHistory {
