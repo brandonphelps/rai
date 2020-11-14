@@ -76,62 +76,6 @@ impl Individual for SinF {
 }
 
 
-
-fn do_fitness_func<T: Individual>(individuals: &Vec<T>) -> () {
-    for ind in individuals.iter() {
-        ind.fitness();
-    }
-}
-
-fn select_parents<T: Individual>(individuals: &Vec<T>, parent_count: usize) -> Vec<&T> {
-    let mut parents: Vec<&T> = Vec::new(); 
-    for _ind in 1..parent_count  {
-        let rand_f: Option<&T> = individuals.choose(&mut rand::thread_rng());
-        match rand_f {
-            None => panic!("None!"),
-            Some(fd) => {
-                parents.push(fd)
-            },
-        };
-    }
-    return parents;
-}
-
-// todo: allow user to specify parent selection algorithm. 
-fn generate_offspring<T>(parents: &Vec<&T>, offspring_count: u128) -> Vec<T>
-where
-    T: Crossover<Output = T> + Individual
-{
-    let mut offspring: Vec<T> = Vec::new();
-
-    // breed offspring / mutate
-    let parent_one = match parents.choose(&mut rand::thread_rng()) {
-        None => panic!("None!"),
-        Some(fd) => fd,
-    };
-
-    let parent_two = match parents.choose(&mut rand::thread_rng()) {
-        None => panic!("None!"),
-        Some(fd) => fd,
-    };
-
-    for _offp in 1..offspring_count {
-        let mut child = parent_one.crossover(parent_two);
-        child.mutate();
-        offspring.push(child);
-    }
-
-    return offspring;
-}
-
-
-// fn run_dah_simulation<T>(initial_pop: Vec<T>, pop_count: u64, parent_count: u64, offspring_count: u64, iter_count: u64)
-// where
-//     T: Crossover<Output = T> + Individual
-// {
-
-// }
-
 #[derive(Debug)]
 struct TestNetwork  {
     pub network: nn::Network,
@@ -143,7 +87,7 @@ static GLOBAL_INNO_ID: u64 = 0;
 
 impl TestNetwork {
     fn new(input_count: u32, output_count: u32) -> TestNetwork {
-        let mut network = nn::Network::new(input_count, output_count, true);
+        let network = nn::Network::new(input_count, output_count, true);
 
         let mut inno_ids: Vec<u64> = Vec::new();
         for (edge_index, edge) in network.edges.iter().enumerate() {
@@ -202,7 +146,13 @@ impl Individual for TestNetwork {
         }
         else {
             fitness -= (self.network.nodes.len() as f64 * 0.1);
-            self.fitness = (1.0 / fitness);
+            if fitness < 0.0 {
+                self.fitness = 0.0000001;
+            }
+            else {
+                self.fitness = (1.0 / fitness);
+            }
+
         }
     }
 
@@ -235,22 +185,6 @@ impl Individual for TestNetwork {
             let edge = self.network.random_non_bias_edge();
             self.network.add_node(edge as usize, 0.4, 0.5);
         }
-        
-        // for f_edge in self.network.edges.iter_mut() {
-        //     if f_edge.enabled && f_edge.from_node != self.network.bias_node_id {
-        //         // chance to change weight of an edge
-        //         if rng.gen::<f64>() < 0.5 {
-        //             if rng.gen::<f64>() < 0.5 {
-        //                 // println!("Weight gain");
-        //                 f_edge.weight += 0.4;
-        //             }
-        //             else {
-        //                 // println!("Weight lose");
-        //                 f_edge.weight -= 0.4;
-        //             }
-        //         }
-        //     }
-        // }
     }
 
     fn print(&self) -> () {
@@ -293,11 +227,80 @@ impl Crossover for TestNetwork {
     }
 }
 
-#[cfg(test)]
- mod tests {
-     use super::*;
 
- }
+fn do_fitness_func<T: Individual>(individuals: &Vec<T>) -> () {
+    for ind in individuals.iter() {
+        ind.fitness();
+    }
+}
+
+fn select_parents<T: Individual>(individuals: &Vec<T>, parent_count: usize) -> Vec<&T> {
+    let mut parents: Vec<&T> = Vec::new();
+
+    let mut fitnessSum: f64 = 0.0;
+    for _ind in individuals.iter() {
+        fitnessSum += _ind.fitness();
+    }
+    let mut rng = rand::thread_rng();
+        // if rng::<f64>::gen() < 0.25 {
+        // }
+
+        // let rand_f: Option<&T> = individuals.choose(&mut rand::thread_rng());
+        // match rand_f {
+        //     None => panic!("None!"),
+        //     Some(fd) => {
+        //         parents.push(fd)
+        //     },
+        // };
+
+    for _ind in 1..parent_count  {
+        let mut runningSum: f64 = 0.0;
+        let rand: f64 = rng.gen_range(0.0, fitnessSum);
+        for p in individuals.iter() {
+            runningSum += p.fitness();
+            if runningSum > rand {
+                parents.push(&p);
+            }
+        }
+    }
+    return parents;
+}
+
+// todo: allow user to specify parent selection algorithm. 
+fn generate_offspring<T>(parents: &Vec<&T>, offspring_count: u128) -> Vec<T>
+where
+    T: Crossover<Output = T> + Individual
+{
+    let mut offspring: Vec<T> = Vec::new();
+
+    // breed offspring / mutate
+    let parent_one = match parents.choose(&mut rand::thread_rng()) {
+        None => panic!("None!"),
+        Some(fd) => fd,
+    };
+
+    let parent_two = match parents.choose(&mut rand::thread_rng()) {
+        None => panic!("None!"),
+        Some(fd) => fd,
+    };
+
+    for _offp in 1..offspring_count {
+        let mut child = parent_one.crossover(parent_two);
+        child.mutate();
+        offspring.push(child);
+    }
+
+    return offspring;
+}
+
+
+// fn run_dah_simulation<T>(initial_pop: Vec<T>, pop_count: u64, parent_count: u64, offspring_count: u64, iter_count: u64)
+// where
+//     T: Crossover<Output = T> + Individual
+// {
+
+// }
+
 
 
 fn main() {
@@ -331,9 +334,6 @@ fn main() {
     let mut average_history_per_iter: Vec<f64> = Vec::new();
 
     for i in Prgrs::new(0..max_iter_count, max_iter_count).set_length_move(Length::Proportional(0.5)) {
-    //}
-    //while iteration_count < max_iter_count {
-        // Select Parents. 
         let parents = select_parents(&specific_pop, parent_count);
         let mut offspring = generate_offspring(&parents, offspring_count);
         
@@ -341,7 +341,6 @@ fn main() {
 
         for offpin in offspring.iter_mut() {
             offpin.update_fitness();
-            // println!("{}", offpin.fitness());
         }
 
         // add in the offspring
@@ -373,7 +372,7 @@ fn main() {
         println!("{} {:#?} {}", offp, specific_pop[offp], specific_pop[offp].fitness());
     }
 
-    let mut top = &mut specific_pop[0].network;
+    let top = &mut specific_pop[0].network;
 
     println!("Results");
     println!("{:?}", top.feed_input(vec![0.0, 0.0]));

@@ -281,7 +281,7 @@ impl Network {
         if node_one.layer == node_two.layer {
             return 0;
         }
-        let mut edge;
+        let edge;
         // allow for nodes to be in reverse order, so if node 1 layer is greater than node 2, swap. 
         if node_one.layer > node_two.layer {
             let pos_check = self.edges.iter().position(|edge| edge.to_node == _node_one as u64
