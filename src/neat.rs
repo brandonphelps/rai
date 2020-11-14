@@ -23,7 +23,6 @@ impl Species {
         for edge in new_champ.iter() {
             self.champion.push(edge.clone());
         }
-
     }
 
     pub fn same_species(&self, other: &Vec<Edge>) -> bool {

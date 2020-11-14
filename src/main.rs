@@ -501,4 +501,41 @@ mod tests {
         assert!(spec.same_species(&network_two.edges));
         assert!(!spec.same_species(&network_three.edges));
     }
+
+    #[test]
+    fn test_speciate() {
+	let num_inputs = 2;
+	let num_outputs = 4;
+        let mut network = nn::Network::new(num_inputs, num_outputs, true);
+        let mut network_two = nn::Network::new(num_inputs, num_outputs, true);
+	
+        let mut innovation_history = neat::InnovationHistory { global_inno_id: ((num_inputs + 1) * num_outputs) as usize,
+                                                               conn_history: vec![] };
+        
+
+
+        assert_eq!(0, neat::Species::get_excess_disjoint(&network.edges, &network_two.edges));
+        assert_eq!(0.0, neat::Species::get_average_weight_diff(&network.edges, &network_two.edges));
+
+        let mut network_three = nn::Network::new(num_inputs, num_outputs, false);
+        assert_eq!(((num_inputs + 1) * num_outputs) as usize, neat::Species::get_excess_disjoint(&network.edges, &network_three.edges));
+
+
+        network_two.add_node(0, 0.2, 0.4, Some(&mut innovation_history));
+        assert_eq!(2, neat::Species::get_excess_disjoint(&network.edges, &network_two.edges)); 
+        network_two.add_node(5, 0.2, 0.4, Some(&mut innovation_history));
+        assert_eq!(4, neat::Species::get_excess_disjoint(&network.edges, &network_two.edges)); 
+
+        println!("Network one");
+        network.pretty_print();
+        println!("Network two");
+        network_two.pretty_print();
+
+        let mut spec = neat::Species::new(0.5, 0.4, 1.2);
+        
+        spec.set_champion(&network.edges);
+        assert!(spec.same_species(&network.edges));
+        assert!(!spec.same_species(&network_two.edges));
+        assert!(!spec.same_species(&network_three.edges));
+    }
 }
