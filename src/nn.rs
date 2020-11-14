@@ -2,7 +2,7 @@
 //#[macro_use]
 // extern crate more_asserts;
 use rand::prelude::*;
-use crate::neat::{ConnHistory, InnovationHistory};
+use crate::neat::InnovationHistory;
 
 #[derive(Debug)]
 pub struct Node {
@@ -246,14 +246,11 @@ impl Network {
         self.nodes.push(m);
 
         
-        let mut temp_global_id = 0;
-        let mut temp_con_history: Vec<ConnHistory> = Vec::new();
         let mut temp_inno_ids: Vec<u64> = Vec::new();
 
         let new_inno_id = match inno_handler {
             Some(inno_history) => {
-                inno_history.get_inno_number(&mut temp_con_history,
-                                             &temp_inno_ids,
+                inno_history.get_inno_number(&temp_inno_ids,
                                              edge.from_node as usize,
                                              edge.to_node as usize)
             },
@@ -367,10 +364,10 @@ mod tests {
         let edge2 = network.add_connection(1, 2, -1.0);
         
         // node 0 -> node 2 - > end node
-        let node1_index = network.add_node(edge1, 20.0, 20.0);
+        let node1_index = network.add_node(edge1, 20.0, 20.0, None);
 
         // node 1 -> node 3 - > end node
-        let node2_index = network.add_node(edge2, -20.0, 20.0);
+        let node2_index = network.add_node(edge2, -20.0, 20.0, None);
 
         network.add_connection(3, node1_index as usize, -10.0);
         network.add_connection(3, node2_index as usize, 30.0);
@@ -390,7 +387,7 @@ mod tests {
         let mut output = network.feed_input(vec![0.3]);
         assert_eq!(network.layer_count, 2);
         assert_eq!(output.len(), 3);
-        network.add_node(2, 1.0, 2.0);
+        network.add_node(2, 1.0, 2.0, None);
         output = network.feed_input(vec![0.4]);
         assert_eq!(network.layer_count, 3);
         assert_eq!(output.len(), 3);
@@ -462,7 +459,7 @@ mod tests {
 
         for i in 0..100 {
             let random_edge = network.random_non_bias_edge();
-            network.add_node(random_edge as usize, 1.0, 3.0);
+            network.add_node(random_edge as usize, 1.0, 3.0, None);
             node_count += 1;
             assert_eq!(network.nodes.len(), node_count);
             for edge in network.edges.iter() {
@@ -484,7 +481,7 @@ mod tests {
 
         for i in 0..100 {
             let random_edge = network.random_non_bias_edge();
-            network.add_node(random_edge as usize, 1.0, 3.0);
+            network.add_node(random_edge as usize, 1.0, 3.0, None);
             node_count += 1;
             assert_eq!(network.nodes.len(), node_count);
             for edge in network.edges.iter() {
@@ -533,7 +530,7 @@ mod tests {
         // todo: add more neteworks with connections.
 
         let mut net = Network::new(3, 5, true);
-        net.add_node(2, 1.0, 2.0);
+        net.add_node(2, 1.0, 2.0, None);
         println!("{:#?}", net);
         assert!(!net.is_fully_connected());
     }

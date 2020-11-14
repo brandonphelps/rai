@@ -25,16 +25,16 @@
 #[derive(Debug)]
 pub struct InnovationHistory {
     global_inno_id: usize,
-    conn_history: Vec<ConnHistory>,
+    pub conn_history: Vec<ConnHistory>,
 }
 
 impl InnovationHistory {
-    pub fn get_inno_number(&mut self, innovation_hist: &mut Vec<ConnHistory>, network_inno_ids: &Vec<u64>, from_node: usize, to_node: usize) -> usize {
+    pub fn get_inno_number(&mut self, network_inno_ids: &Vec<u64>, from_node: usize, to_node: usize) -> usize {
         let mut is_new = true;
         // todo: change zero to next conn number.
         let mut connect_inno_num = self.global_inno_id;
         self.global_inno_id += 1;
-        for conn_history in innovation_hist.iter() {
+        for conn_history in self.conn_history.iter() {
             match conn_history.inno_numbers.iter().position(|inno_num|
                                                            conn_history.matches(network_inno_ids,
                                                                                 from_node,
@@ -54,7 +54,7 @@ impl InnovationHistory {
                 new_inno_nums.push(edge.clone());
             }
 
-            innovation_hist.push(ConnHistory::new(from_node, to_node, connect_inno_num, new_inno_nums));
+            self.conn_history.push(ConnHistory::new(from_node, to_node, connect_inno_num, new_inno_nums));
         }
 
         return connect_inno_num;
@@ -108,16 +108,14 @@ mod tests {
     #[test]
     fn test_matches() {
         let network: Vec<u64> = Vec::new();
-        let mut innovation_history = vec![];
-        let mut global_inno_num = 2;
-        
-        let new_inno_num = ConnHistory::get_inno_number(&mut global_inno_num, &mut innovation_history, &network, 0, 12);
-        
-        let conn_history = &innovation_history[0];
-
+        let mut innovation_history = InnovationHistory {
+            global_inno_id: 2,
+            conn_history: vec![]
+        };
+        let new_inno_num = innovation_history.get_inno_number(&network, 0, 12);
+        let conn_history = &innovation_history.conn_history[0];
         println!("{:#?}", conn_history);
-
-        assert!(conn_history.matches(&network, 0, 4));
+        assert!(conn_history.matches(&network, 0, 12));
         
     }
 }
