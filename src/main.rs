@@ -2,9 +2,9 @@ use rand::seq::SliceRandom;
 #[allow(deprecated)]
 use rand::distributions::{Normal, Distribution};
 use std::cmp::Reverse;
-use rand::prelude::*;
-use prgrs::{Prgrs, writeln, Length};
 use std::{thread, time};
+use rand::prelude::*;
+use prgrs::{Prgrs, Length};
 
 mod hrm;
 mod nn;
@@ -63,7 +63,7 @@ impl Individual for SinF {
 
     fn fitness(&self) -> f64 {
         let _p = self.value * self.value.sin().powf(2.0);
-        return ((_p + 100.0) * 1000.0);
+        return (_p + 100.0) * 1000.0;
     }
 
     fn mutate(&mut self) -> () {
@@ -139,21 +139,22 @@ impl Individual for TestNetwork {
         fitness += (output[0] - 1.0).powf(2.0);
         output = self.network.feed_input(vec![1.0, 1.0]);
         fitness += (output[0] - 0.0).powf(2.0);
-        fitness = fitness / 4.0;
+        fitness /= 4.0;
 
         if fitness == 0.0 {
             self.fitness = 10000000.0;
         }
         else {
-            fitness -= (self.network.nodes.len() as f64 * 0.1);
-            if fitness < 0.0 {
-                self.fitness = 0.0000001;
-            }
-            else {
-                self.fitness = (1.0 / fitness);
-            }
-
+            // fitness -= (self.network.nodes.len() as f64 * 0.1);
+            // if fitness < 0.0 {
+            //     self.fitness = 0.0000001;
+            // }
+            // else {
+            self.fitness = 1.0 / fitness;
+            //}
         }
+        println!("Fitness: {:?}", self.fitness);
+        thread::sleep(time::Duration::from_millis(1000));
     }
 
     fn mutate(&mut self) -> () {
@@ -177,13 +178,13 @@ impl Individual for TestNetwork {
                     node_one = self.network.random_node();
                     node_two = self.network.random_node();
                 }
-            self.network.add_connection(node_one, node_two, 0.5);
+            self.network.add_connection(node_one, node_two, rng.gen::<f64>());
         }
 
         // 3% add new node. 
         if rng.gen::<f64>() < 0.03 {
             let edge = self.network.random_non_bias_edge();
-            self.network.add_node(edge as usize, 0.4, 0.5);
+            self.network.add_node(edge as usize, rng.gen::<f64>(), rng.gen::<f64>(), None);
         }
     }
 
@@ -304,9 +305,9 @@ where
 
 
 fn main() {
-    let population_count = 300;
-    let parent_count = 40;
-    let offspring_count = 500;
+    let population_count = 20;
+    let parent_count = 10;
+    let offspring_count = 40;
     let mut iteration_count = 0;
     let max_iter_count = 10000;
     // let mut specific_pop: Vec<SinF> = Vec::new();
@@ -367,14 +368,10 @@ fn main() {
     // generate fitness values.
 
     specific_pop.sort_by_key(|indiv| Reverse((indiv.fitness() * 1000.0) as i128));
-    println!("Top Ten");
-    for offp in 1..10 {
-        println!("{} {:#?} {}", offp, specific_pop[offp], specific_pop[offp].fitness());
-    }
-
     let top = &mut specific_pop[0].network;
 
     println!("Results");
+    println!("{:#?}", top);
     println!("{:?}", top.feed_input(vec![0.0, 0.0]));
     println!("{:?}", top.feed_input(vec![0.0, 1.0]));
     println!("{:?}", top.feed_input(vec![1.0, 0.0]));

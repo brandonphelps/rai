@@ -1,36 +1,39 @@
 
-use crate::nn;
 
-struct Species {
-    
-}
+// struct Species {
+//     excess_coeff: f64;
+//     weight_diff_coeff: f64;
+//     compat_threashold: f64;
+// }
 
+
+// impl Species {
+//     pub fn same_species(&self, other: &nn::Network) {
+        
+//     }
+
+//     pub fn get_excess_disjoing(one: &nn::Network, two: &nn::Network) {
+//         let mut matching = 0.0;
+//         for one_edge in one.edges.iter() {
+//             for two_edge in two.edges.iter() {
+                
+//             }
+//         }
+//     }
+// }
 
 #[derive(Debug)]
-struct ConnHistory {
-    from_node: usize,
-    to_node: usize,
-    inno_number: usize,
-    inno_numbers: Vec<u64>,
+pub struct InnovationHistory {
+    global_inno_id: usize,
+    conn_history: Vec<ConnHistory>,
 }
 
-
-impl ConnHistory {
-    pub fn new(from_node: usize, to_node: usize, inno_number: usize, inno_numbers: Vec<u64>) -> ConnHistory {
-        return ConnHistory{from_node: from_node,
-                           to_node: to_node,
-                           inno_number: inno_number,
-                           inno_numbers: inno_numbers };
-    }
-
-    /// inserts and returns a new inno_id or if already existing returns current one.
-    pub fn get_inno_number(global_innovation_num: &mut usize, innovation_hist: &mut Vec<ConnHistory>, network_inno_ids: &Vec<u64>, from_node: usize, to_node: usize) -> usize {
-
+impl InnovationHistory {
+    pub fn get_inno_number(&mut self, innovation_hist: &mut Vec<ConnHistory>, network_inno_ids: &Vec<u64>, from_node: usize, to_node: usize) -> usize {
         let mut is_new = true;
-
         // todo: change zero to next conn number.
-        let mut connect_inno_num = global_innovation_num.clone();
-        *global_innovation_num += 1;
+        let mut connect_inno_num = self.global_inno_id;
+        self.global_inno_id += 1;
         for conn_history in innovation_hist.iter() {
             match conn_history.inno_numbers.iter().position(|inno_num|
                                                            conn_history.matches(network_inno_ids,
@@ -56,6 +59,28 @@ impl ConnHistory {
 
         return connect_inno_num;
     }
+
+}
+
+
+#[derive(Debug)]
+pub struct ConnHistory {
+    from_node: usize,
+    to_node: usize,
+    inno_number: usize,
+    inno_numbers: Vec<u64>,
+}
+
+
+impl ConnHistory {
+    pub fn new(from_node: usize, to_node: usize, inno_number: usize, inno_numbers: Vec<u64>) -> ConnHistory {
+        return ConnHistory{from_node: from_node,
+                           to_node: to_node,
+                           inno_number: inno_number,
+                           inno_numbers: inno_numbers };
+    }
+
+    /// inserts and returns a new inno_id or if already existing returns current one.
     
 
     pub fn matches(&self, network_inno_ids: &Vec<u64>, from_node: usize, to_node: usize) -> bool {

@@ -2,6 +2,7 @@
 //#[macro_use]
 // extern crate more_asserts;
 use rand::prelude::*;
+use crate::neat::{ConnHistory, InnovationHistory};
 
 #[derive(Debug)]
 pub struct Node {
@@ -27,7 +28,8 @@ pub struct Edge {
     pub from_node: u64,
     to_node: u64,
     pub weight: f64,
-    pub enabled: bool
+    pub enabled: bool,
+    pub inno_id: u64
 }
 
 impl Edge {
@@ -35,7 +37,8 @@ impl Edge {
         return Edge{from_node: self.from_node,
                     to_node: self.to_node,
                     weight: self.weight,
-                    enabled: self.enabled};
+                    enabled: self.enabled,
+                    inno_id: self.inno_id};
     }
 }
     
@@ -51,7 +54,7 @@ pub struct Network {
     pub input_node_count: u32,
     pub output_node_count: u32,
     pub layer_count: u32,
-    pub bias_node_id: u64
+    pub bias_node_id: u64,
 }
 
 impl Network {
@@ -78,26 +81,28 @@ impl Network {
         network.bias_node_id = (network.nodes.len()-1) as u64;
 
         if fully_connect {
+            let mut local_inno_id = 0;
             for _input_n in 0..input_node_count {
                 for _output_n in 0..output_node_count {
-                    println!("Constructing egde: {} -> {}", _input_n, _output_n + input_node_count);
                     network.edges.push(Edge {
                         from_node: _input_n as u64,
                         to_node: (_output_n + input_node_count) as u64,
+                        // todo: could be random or zero.
                         weight: 0.5,
-                        enabled: true });
+                        enabled: true,
+                        inno_id: local_inno_id});
+                    local_inno_id += 1;
                 }
             }
-
-            println!("Connectin bias node");
             // connect bias nodes up 
             for _output_n in 0..output_node_count {
-                println!("Constructing egde: {} -> {}", network.bias_node_id, _output_n + input_node_count);
                 network.edges.push(Edge {
                     from_node: network.bias_node_id,
                     to_node: (_output_n + input_node_count)as u64,
                     weight: 1.0,
-                    enabled: true });
+                    enabled: true,
+                    inno_id: local_inno_id});
+                local_inno_id += 1;
             }
         }
 
@@ -221,12 +226,13 @@ impl Network {
         while self.edges[edge_index as usize].from_node == self.bias_node_id  {
             edge_index = self.random_edge();
         }
+
         return edge_index;
     }
 
 
     /// Takes an edge and inserts a node inline. 
-    pub fn add_node(&mut self, _edge_index: usize, edge1_w: f64, edge2_w: f64) -> u64 {
+    pub fn add_node(&mut self, _edge_index: usize, edge1_w: f64, edge2_w: f64, inno_handler: Option<&mut InnovationHistory>) -> u64 {
         let edge = &mut self.edges[_edge_index];
         edge.enabled = false;
         let outgoing_node_id = edge.to_node;
@@ -239,15 +245,35 @@ impl Network {
         let m = Node{ input_sum: 0.0, output_sum: 0.0, layer: current_node_layer};
         self.nodes.push(m);
 
+        
+        let mut temp_global_id = 0;
+        let mut temp_con_history: Vec<ConnHistory> = Vec::new();
+        let mut temp_inno_ids: Vec<u64> = Vec::new();
+
+        let new_inno_id = match inno_handler {
+            Some(inno_history) => {
+                inno_history.get_inno_number(&mut temp_con_history,
+                                             &temp_inno_ids,
+                                             edge.from_node as usize,
+                                             edge.to_node as usize)
+            },
+            None => {
+                2
+            },
+        };
+
+
         let edge1 = Edge{from_node: edge.from_node,
                          to_node: (self.nodes.len() - 1) as u64,
                          weight: edge1_w,
-                         enabled: true};
+                         enabled: true,
+                         inno_id: new_inno_id as u64};
 
         let edge2 = Edge{from_node: (self.nodes.len() - 1) as u64,
                          to_node: edge.to_node,
                          weight: edge2_w,
-                         enabled: true};
+                         enabled: true,
+                         inno_id: new_inno_id as u64};
 
         self.edges.push(edge1);
         self.edges.push(edge2);
@@ -293,9 +319,10 @@ impl Network {
 
 
             edge = Edge{from_node: _node_two as u64,
-                            to_node: _node_one as u64,
-                            weight: weight,
-                            enabled: true};
+                        to_node: _node_one as u64,
+                        weight: weight,
+                        enabled: true,
+                        inno_id: 1};
         } else {
 
             let pos_check = self.edges.iter().position(|edge| edge.to_node == _node_two as u64
@@ -307,9 +334,10 @@ impl Network {
 
 
             edge = Edge{from_node: _node_one as u64,
-                            to_node: _node_two as u64,
-                            weight: weight,
-                            enabled: true};
+                        to_node: _node_two as u64,
+                        weight: weight,
+                        enabled: true,
+                        inno_id: 1};
         }
         
         self.edges.push(edge);
