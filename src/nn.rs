@@ -230,11 +230,21 @@ impl Network {
         return edge_index;
     }
 
+    fn get_inno_ids(&self) -> Vec<u64> {
+        let mut inno_ids: Vec<u64> = Vec::new();
+        
+        for edge in self.edges.iter() {
+            inno_ids.push(edge.inno_id);
+        }
+        return inno_ids;
+    }
+        
 
     /// Takes an edge and inserts a node inline. 
     pub fn add_node(&mut self, _edge_index: usize, edge1_w: f64, edge2_w: f64, inno_handler: Option<&mut InnovationHistory>) -> u64 {
-        let edge = &mut self.edges[_edge_index];
-        edge.enabled = false;
+        self.edges[_edge_index].enabled = false;
+
+        let edge = &self.edges[_edge_index];
         let outgoing_node_id = edge.to_node;
 
         // get teh node the edge we are breaking up was pointing to. 
@@ -242,17 +252,21 @@ impl Network {
         let current_node_layer = node.layer + 1;
         
         // new node. 
-        let m = Node{ input_sum: 0.0, output_sum: 0.0, layer: current_node_layer};
+        let m = Node {
+            input_sum: 0.0,
+            output_sum: 0.0,
+            layer: current_node_layer
+        };
         self.nodes.push(m);
-
         
-        let mut temp_inno_ids: Vec<u64> = Vec::new();
-
         let new_inno_id = match inno_handler {
             Some(inno_history) => {
-                inno_history.get_inno_number(&temp_inno_ids,
-                                             edge.from_node as usize,
-                                             edge.to_node as usize)
+                let edge_to_node_id = edge.to_node as usize;
+                let edge_from_node_id = edge.from_node as usize;
+                let network_inno_ids = self.get_inno_ids();
+                inno_history.get_inno_number(&network_inno_ids,
+                                             edge_from_node_id,
+                                             edge_to_node_id)
             },
             None => {
                 2
@@ -265,6 +279,9 @@ impl Network {
                          weight: edge1_w,
                          enabled: true,
                          inno_id: new_inno_id as u64};
+        {
+            self.edges.push(edge1);
+        }
 
         let edge2 = Edge{from_node: (self.nodes.len() - 1) as u64,
                          to_node: edge.to_node,
@@ -272,7 +289,7 @@ impl Network {
                          enabled: true,
                          inno_id: new_inno_id as u64};
 
-        self.edges.push(edge1);
+
         self.edges.push(edge2);
         
         if self.nodes[outgoing_node_id as usize].layer == current_node_layer.into() {
@@ -438,7 +455,7 @@ mod tests {
     // looks to test that all connections go forward rather than backwards. 
     #[test]
     fn test_connections_forward_construction() {
-        let mut network = Network::new(4, 400, true);
+        let network = Network::new(4, 400, true);
 
         for edge in network.edges.iter() {
             let from_node = &network.nodes[edge.from_node as usize];

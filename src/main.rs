@@ -416,3 +416,27 @@ fn t_main() {
         network.update_fitness();
     }
 }
+
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    /// test if the innovation history with edge and node additions works.
+    #[test]
+    fn test_innovation_history() {
+        let mut innovation_history = neat::InnovationHistory { global_inno_id: (2 * 4 + 2),
+                                                               conn_history: vec![] };
+
+        let mut network = nn::Network::new(2, 4, true);
+
+
+        let node2 = network.add_node(0, 0.4, 0.5, Some(&mut innovation_history));
+
+        let node_ref = &network.nodes[node2 as usize];
+        println!("{:#?}", network);
+        assert!(false);
+
+        let edge1 = network.add_connection(0, 2, 1.0, Some(&mut innovation_history));
+    }
+}

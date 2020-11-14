@@ -23,7 +23,7 @@ struct Species {
 
 #[derive(Debug)]
 pub struct InnovationHistory {
-    global_inno_id: usize,
+    pub global_inno_id: usize,
     pub conn_history: Vec<ConnHistory>,
 }
 
