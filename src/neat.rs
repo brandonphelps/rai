@@ -81,8 +81,6 @@ impl ConnHistory {
     }
 
     /// inserts and returns a new inno_id or if already existing returns current one.
-    
-
     pub fn matches(&self, network_inno_ids: &Vec<u64>, from_node: usize, to_node: usize) -> bool {
         // ConnHistory must have the same number of numbers as edges
         if network_inno_ids.len() == self.inno_numbers.len() {
@@ -107,15 +105,30 @@ mod tests {
 
     #[test]
     fn test_matches() {
-        let network: Vec<u64> = Vec::new();
+        let mut network: Vec<u64> = Vec::new();
+        for edge_count in 0..12 {
+            network.push(edge_count);
+        }
+        let global_inno_id = 2;
+
         let mut innovation_history = InnovationHistory {
-            global_inno_id: 2,
+            global_inno_id: global_inno_id,
             conn_history: vec![]
         };
-        let new_inno_num = innovation_history.get_inno_number(&network, 0, 12);
+
+        let new_inno_num = innovation_history.get_inno_number(&network, 0, 2);
+        assert_eq!(new_inno_num, 2);
         let conn_history = &innovation_history.conn_history[0];
+
         println!("{:#?}", conn_history);
-        assert!(conn_history.matches(&network, 0, 12));
+        println!("{:#?}", innovation_history);
+
+        assert!(conn_history.matches(&network, 0, 2));
+
+
+        // new connection that hasn't been seen before. 
+        let new_inno_num = innovation_history.get_inno_number(&network, 0, 20);
+        assert_eq!(new_inno_num, global_inno_id+1);
         
     }
 }
