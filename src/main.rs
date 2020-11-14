@@ -489,5 +489,8 @@ mod tests {
 
         let mut network_three = nn::Network::new(num_inputs, num_outputs, false);
         assert_eq!(((num_inputs + 1) * num_outputs) as usize, neat::Species::get_excess_disjoint(&network.edges, &network_three.edges));
+
+
+        assert_eq!(0.0, neat::Species::get_average_weight_diff(&network.edges, &network_two.edges));
     }
 }

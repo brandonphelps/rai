@@ -28,6 +28,25 @@ impl Species {
         }
         return one.len() + two.len() - 2 * matching;
     }
+
+    pub fn get_average_weight_diff(one: &Vec<Edge>, two: &Vec<Edge>) -> f64 {
+        let mut matching = 0;
+        let mut total_diff = 0.0;
+
+        for edge_one in one.iter() {
+            for edge_two in two.iter() {
+                if edge_one.inno_id == edge_two.inno_id {
+                    matching += 1;
+                    total_diff += (edge_one.weight - edge_two.weight).abs();
+                    break;
+                }
+            }
+        }
+        if matching == 0 { // divide by zero.
+            return 100.0; // todo make this an option?
+        }
+        return total_diff / matching as f64;
+    }
 }
 
 #[derive(Debug)]
