@@ -8,8 +8,29 @@ pub struct Species {
 }
 
 impl Species {
-    pub fn same_species(&self, other: &Vec<&Edge>) {
-        
+
+    pub fn new(excess_coeff: f64, weight_diff_coeff: f64, compat_threashold: f64) -> Species {
+        return Species {
+            excess_coeff: excess_coeff,
+            weight_diff_coeff: weight_diff_coeff,
+            compat_threashold: compat_threashold,
+            champion: vec![]
+        };
+    }
+    
+    pub fn set_champion(&mut self, new_champ: &Vec<Edge>) -> () {
+        self.champion.clear();
+        for edge in new_champ.iter() {
+            self.champion.push(edge.clone());
+        }
+
+    }
+
+    pub fn same_species(&self, other: &Vec<Edge>) -> bool {
+        let excess_disjoin = Species::get_excess_disjoint(&self.champion, other);
+        let average_weight_diff = Species::get_average_weight_diff(&self.champion, other);
+        let compat = (self.excess_coeff * excess_disjoin as f64) + (self.weight_diff_coeff * average_weight_diff);
+        return self.compat_threashold > compat;
     }
 
     /// returns the number of excess and disjoint edges.

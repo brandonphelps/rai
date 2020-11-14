@@ -492,5 +492,13 @@ mod tests {
 
 
         assert_eq!(0.0, neat::Species::get_average_weight_diff(&network.edges, &network_two.edges));
+
+
+        let mut spec = neat::Species::new(0.5, 0.4, 1.2);
+        
+        spec.set_champion(&network.edges);
+        assert!(spec.same_species(&network.edges));
+        assert!(spec.same_species(&network_two.edges));
+        assert!(!spec.same_species(&network_three.edges));
     }
 }
