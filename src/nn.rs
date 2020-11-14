@@ -281,6 +281,11 @@ impl Network {
                                         (self.nodes.len() - 1),
                                         edge1_w,
                                         &mut inno_handler);
+        self.edges.push(edge1);
+        let edge2 = self.construct_edge((self.nodes.len() - 1),
+                                         outgoing_node_id as usize,
+                                        edge2_w,
+                                        &mut inno_handler);
                                         
         // let edge5 = self.construct_edge(incoming_node_id as usize,
         //                                 (self.nodes.len() - 1),
@@ -308,18 +313,6 @@ impl Network {
         //                  weight: edge1_w,
         //                  enabled: true,
         //                  inno_id: new_inno_id as u64};
-
-        self.edges.push(edge1);
-
-
-
-
-        let edge2 = Edge{from_node: (self.nodes.len() - 1) as u64,
-                         to_node: outgoing_node_id,
-                         weight: edge2_w,
-                         enabled: true,
-                         inno_id: new_inno_id as u64};
-
 
         self.edges.push(edge2);
         

@@ -458,7 +458,7 @@ mod tests {
     /// test if the innovation history with edge and node additions works.
     #[test]
     fn test_innovation_history() {
-        let mut innovation_history = neat::InnovationHistory { global_inno_id: (2 * 4 + 2),
+        let mut innovation_history = neat::InnovationHistory { global_inno_id: (3 * 4),
                                                                conn_history: vec![] };
 
         let mut network = nn::Network::new(2, 4, true);
