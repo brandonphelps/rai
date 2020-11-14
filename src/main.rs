@@ -1,4 +1,3 @@
-#![feature(nll)]
 use rand::seq::SliceRandom;
 #[allow(deprecated)]
 use rand::distributions::{Normal, Distribution};
@@ -167,7 +166,6 @@ impl Individual for TestNetwork {
             }
         }
 
-        // todo: needs a is network fully connected or it'll infite loop here.  
         // 5% add new connection
         if rng.gen::<f64>() < 0.05 && ! self.network.is_fully_connected() {
             let mut node_one = self.network.random_node();
@@ -464,12 +462,26 @@ mod tests {
         let mut network = nn::Network::new(2, 4, true);
 
 
+
         let node2 = network.add_node(0, 0.4, 0.5, Some(&mut innovation_history));
-
+	// adding nodes adds two edges, therefor there are two mutations and thus we expect 2 items.
+	assert_eq!(innovation_history.conn_history.len(), 2);
         let _node_ref = &network.nodes[node2 as usize];
-        println!("{:#?}", network);
-        assert!(false);
 
-        let _edge1 = network.add_connection(0, 2, 1.0, Some(&mut innovation_history));
+        let _edge1 = network.add_connection(1, node2 as usize, 1.0, Some(&mut innovation_history));
+        println!("{:#?}", network);
+        println!("{:#?}", innovation_history);
+    }
+
+    #[test]
+    fn test_species() {
+	let num_inputs = 2;
+	let num_outputs = 4;
+        let mut network = nn::Network::new(num_inputs, num_outputs, true);
+	
+        let mut innovation_history = neat::InnovationHistory { global_inno_id: (3 * 4),
+                                                               conn_history: vec![] };
+
+
     }
 }

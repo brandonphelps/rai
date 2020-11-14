@@ -286,34 +286,6 @@ impl Network {
                                          outgoing_node_id as usize,
                                         edge2_w,
                                         &mut inno_handler);
-                                        
-        // let edge5 = self.construct_edge(incoming_node_id as usize,
-        //                                 (self.nodes.len() - 1),
-        //                                 edge1_w,
-        //                                 &inno_handler);
-
-        // if let Some(inno_history) = inno_handler {
-        // }
-
-
-        // let new_inno_id = match inno_handler {
-        //     Some(&mut inno_history) => {
-        //         let network_inno_ids = self.get_inno_ids();
-        //         inno_history.get_inno_number(&network_inno_ids,
-        //                                      incoming_node_id as usize,
-        //                                      outgoing_node_id as usize)
-        //     },
-        //     None => {
-        //         2
-        //     },
-        // };
-
-        // let edge1 = Edge{from_node: incoming_node_id,
-        //                  to_node: (self.nodes.len() - 1) as u64,
-        //                  weight: edge1_w,
-        //                  enabled: true,
-        //                  inno_id: new_inno_id as u64};
-
         self.edges.push(edge2);
         
         if self.nodes[outgoing_node_id as usize].layer == current_node_layer.into() {
@@ -338,7 +310,7 @@ impl Network {
         }
     }
 
-    pub fn add_connection(&mut self, _node_one: usize, _node_two: usize, weight: f64, inno_hist: Option<&mut InnovationHistory>) -> usize {
+    pub fn add_connection(&mut self, _node_one: usize, _node_two: usize, weight: f64, mut inno_hist: Option<&mut InnovationHistory>) -> usize {
         // todo: don't add in edges if the edge already exists.
         let node_one = &self.nodes[_node_one];
         let node_two = &self.nodes[_node_two];
@@ -355,12 +327,7 @@ impl Network {
                 None => (),
             }
 
-
-            edge = Edge{from_node: _node_two as u64,
-                        to_node: _node_one as u64,
-                        weight: weight,
-                        enabled: true,
-                        inno_id: 1};
+	    edge = self.construct_edge(_node_two, _node_one, weight, &mut inno_hist);
         } else {
 
             let pos_check = self.edges.iter().position(|edge| edge.to_node == _node_two as u64
@@ -369,15 +336,8 @@ impl Network {
                 Some(T) => return T,
                 None => (),
             }
-
-
-            edge = Edge{from_node: _node_one as u64,
-                        to_node: _node_two as u64,
-                        weight: weight,
-                        enabled: true,
-                        inno_id: 1};
+	    edge = self.construct_edge(_node_one, _node_two, weight, &mut inno_hist);
         }
-        
         self.edges.push(edge);
         return self.edges.len() - 1;
     }
