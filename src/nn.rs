@@ -278,12 +278,12 @@ impl Network {
 
         let new_inno_id = 0;
         let edge1 = self.construct_edge(incoming_node_id as usize,
-                                        (self.nodes.len() - 1),
+                                        self.nodes.len() - 1,
                                         edge1_w,
                                         &mut inno_handler);
         self.edges.push(edge1);
-        let edge2 = self.construct_edge((self.nodes.len() - 1),
-                                         outgoing_node_id as usize,
+        let edge2 = self.construct_edge(self.nodes.len() - 1,
+                                        outgoing_node_id as usize,
                                         edge2_w,
                                         &mut inno_handler);
         self.edges.push(edge2);

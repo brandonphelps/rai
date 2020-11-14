@@ -478,10 +478,16 @@ mod tests {
 	let num_inputs = 2;
 	let num_outputs = 4;
         let mut network = nn::Network::new(num_inputs, num_outputs, true);
+        let mut network_two = nn::Network::new(num_inputs, num_outputs, true);
 	
-        let mut innovation_history = neat::InnovationHistory { global_inno_id: (num_inputs + 1 * num_outputs) as usize,
+        let mut innovation_history = neat::InnovationHistory { global_inno_id: ((num_inputs + 1) * num_outputs) as usize,
                                                                conn_history: vec![] };
-
         
+
+
+        assert_eq!(0, neat::Species::get_excess_disjoint(&network.edges, &network_two.edges));
+
+        let mut network_three = nn::Network::new(num_inputs, num_outputs, false);
+        assert_eq!(((num_inputs + 1) * num_outputs) as usize, neat::Species::get_excess_disjoint(&network.edges, &network_three.edges));
     }
 }

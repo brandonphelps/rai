@@ -1,6 +1,6 @@
 use crate::nn::Edge;
 
-struct Species {
+pub struct Species {
     excess_coeff: f64,
     weight_diff_coeff: f64,
     compat_threashold: f64,
@@ -12,8 +12,21 @@ impl Species {
         
     }
 
-    pub fn get_excess_disjoing(one: &Vec<&Edge>, two: &Vec<&Edge>) {
-        let mut matching = 0.0;
+    /// returns the number of excess and disjoint edges.
+    /// i.e the number of extra edges and the number of non matching edges. 
+    pub fn get_excess_disjoint(one: &Vec<Edge>, two: &Vec<Edge>) -> usize {
+        let mut matching = 0;
+        println!("Edge 1 length: {}", one.len());
+        println!("Edge 2 length: {}", two.len());
+        for edge_one in one.iter() {
+            for edge_two in two.iter() {
+                if edge_one.inno_id == edge_two.inno_id {
+                    matching += 1;
+                    break;
+                }
+            }
+        }
+        return one.len() + two.len() - 2 * matching;
     }
 }
 
