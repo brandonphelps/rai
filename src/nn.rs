@@ -4,7 +4,7 @@
 use crate::neat::InnovationHistory;
 use rand::prelude::*;
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Node {
     input_sum: f64,
     output_sum: f64,
@@ -25,7 +25,7 @@ fn sigmoid(value: f64) -> f64 {
     return 1.0 / (1.0 + std::f64::consts::E.powf(-1.0 * value));
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Edge {
     pub from_node: u64,
     to_node: u64,
@@ -46,7 +46,7 @@ impl Edge {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Network {
     // first I nodes are input nodes
     // after which the output nodes are next.

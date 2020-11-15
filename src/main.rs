@@ -81,7 +81,6 @@ impl Individual for SinF {
 #[derive(Debug)]
 struct TestNetwork {
     pub network: nn::Network,
-    pub inno_ids: Vec<u64>,
     fitness: f64,
 }
 
@@ -91,15 +90,16 @@ impl TestNetwork {
     fn new(input_count: u32, output_count: u32) -> TestNetwork {
         let network = nn::Network::new(input_count, output_count, true);
 
-        let mut inno_ids: Vec<u64> = Vec::new();
-        for (edge_index, edge) in network.edges.iter().enumerate() {
-            inno_ids.push(edge_index as u64);
-        }
-
         return TestNetwork {
             network: network,
             fitness: 0.0,
-            inno_ids: inno_ids,
+        };
+    }
+
+    fn from_network(network: nn::Network) -> TestNetwork {
+        return TestNetwork {
+            network: network,
+            fitness: 0.0
         };
     }
 
@@ -189,21 +189,21 @@ impl Individual for TestNetwork {
     fn print(&self) -> () {}
 }
 
-impl Crossover for TestNetwork {
-    type Output = TestNetwork;
+impl Crossover for nn::Network {
+    type Output = nn::Network;
 
-    fn crossover(&self, _rhs: &TestNetwork) -> TestNetwork {
+    fn crossover(&self, _rhs: &nn::Network) -> nn::Network {
         let mut child_network = nn::Network::new(
-            _rhs.network.input_node_count,
-            _rhs.network.output_node_count,
+            _rhs.input_node_count,
+            _rhs.output_node_count,
             false,
         );
 
-        child_network.layer_count = self.network.layer_count;
-        child_network.bias_node_id = self.network.bias_node_id;
+        child_network.layer_count = self.layer_count;
+        child_network.bias_node_id = self.bias_node_id;
 
         let mut rng = rand::thread_rng();
-        for edge in self.network.edges.iter() {
+        for edge in self.edges.iter() {
             let mut new_edge = edge.clone();
             if rng.gen::<f64>() < 0.9 {
                 new_edge.enabled = true;
@@ -213,16 +213,22 @@ impl Crossover for TestNetwork {
             child_network.edges.push(new_edge);
         }
 
-        for node in self.network.nodes.iter() {
+        for node in self.nodes.iter() {
             child_network.nodes.push(node.clone());
         }
+        return child_network;
+    }
+}
 
-        // todo: finishe
-        let inno_ds: Vec<u64> = Vec::new();
+
+impl Crossover for TestNetwork {
+    type Output = TestNetwork;
+
+    fn crossover(&self, _rhs: &TestNetwork) -> TestNetwork {
+        let child_network = self.network.crossover(&_rhs.network);
         TestNetwork {
             network: child_network,
             fitness: 0.0,
-            inno_ids: inno_ds,
         }
     }
 }
@@ -241,16 +247,6 @@ fn select_parents<T: Individual>(individuals: &Vec<T>, parent_count: usize) -> V
         fitness_sum += _ind.fitness();
     }
     let mut rng = rand::thread_rng();
-    // if rng::<f64>::gen() < 0.25 {
-    // }
-
-    // let rand_f: Option<&T> = individuals.choose(&mut rand::thread_rng());
-    // match rand_f {
-    //     None => panic!("None!"),
-    //     Some(fd) => {
-    //         parents.push(fd)
-    //     },
-    // };
 
     for _ind in 1..parent_count {
         let mut running_sum: f64 = 0.0;
@@ -300,7 +296,7 @@ where
 // }
 
 fn main() {
-    let population_count = 20;
+    let population_count = 200;
     let parent_count = 10;
     let offspring_count = 40;
     let mut _iteration_count = 0;
@@ -325,40 +321,90 @@ fn main() {
 
     // fitness evaluation
 
+    let mut species: Vec<neat::Species> = Vec::new();
+    {
+        for test_n in specific_pop.iter() {
+            let mut found_spec = false;
+            for spec in species.iter_mut() {
+                if spec.same_species(&test_n.network.edges) {
+                    println!("same species");
+                    spec.individuals.push(&test_n.network);
+                    found_spec = true;
+                }
+            }
+            if ! found_spec {
+                let mut new_spec = neat::Species::new(1.5, 0.8, 4.0);
+                // new_spec.individuals.push(&test_n.network);
+                new_spec.set_champion(&test_n.network);
+                species.push(new_spec);
+            }
+        }
+    }
+
+    let mut innovation_history = neat::InnovationHistory {
+        // todo mark 3 and 1 as input + (1)bias * output
+        global_inno_id: (3 * 1),
+        conn_history: vec![],
+    };
+
+
+    assert_eq!(1, species.len());
+
     do_fitness_func(&specific_pop);
     let mut average_history_per_iter: Vec<f64> = Vec::new();
 
     for _i in
         Prgrs::new(0..max_iter_count, max_iter_count).set_length_move(Length::Proportional(0.5))
     {
-        let parents = select_parents(&specific_pop, parent_count);
-        let mut offspring = generate_offspring(&parents, offspring_count);
+        let mut offspring: Vec<TestNetwork> = Vec::new();
+        for spec in species.iter() {
+            // add in the champ of the species in. 
+            offspring.push(TestNetwork::from_network(spec.champion.unwrap().clone()));
+            for _child_num in 0..10 {
+                offspring.push(TestNetwork::from_network(spec.generate_offspring(&innovation_history)));
+            }
+        }
 
-        do_fitness_func(&offspring);
-
+        // do_fitness_func(&offspring);
         for offpin in offspring.iter_mut() {
             offpin.update_fitness();
         }
 
-        // add in the offspring
+        // // add in the offspring
         specific_pop.append(&mut offspring);
 
-        // cull population
+        // // cull population
         specific_pop.sort_by_key(|indiv| Reverse((indiv.fitness() * 1000.0) as i128));
         specific_pop.truncate(population_count);
 
-        assert!(specific_pop.len() == population_count);
-
-        _iteration_count += 1;
+        // assert!(specific_pop.len() == population_count);
 
         let mut average_fit = 0.0;
         for pop in specific_pop.iter() {
             average_fit += pop.fitness();
         }
-
-        let str = format!("{}", average_fit / (specific_pop.len() as f64));
-        println!("{}", str);
+        println!("{}", average_fit / (specific_pop.len() as f64));
         average_history_per_iter.push(average_fit / (specific_pop.len() as f64));
+
+        species.clear();
+
+        // todo: turn this into a function
+        for test_n in specific_pop.iter() {
+            let mut found_spec = false;
+            for spec in species.iter_mut() {
+                if spec.same_species(&test_n.network.edges) {
+                    println!("same species");
+                    spec.individuals.push(&test_n.network);
+                    found_spec = true;
+                }
+            }
+            if ! found_spec {
+                let mut new_spec = neat::Species::new(1.5, 0.8, 4.0);
+                // new_spec.individuals.push(&test_n.network);
+                new_spec.set_champion(&test_n.network);
+                species.push(new_spec);
+            }
+        }
     }
 
     // generate fitness values.

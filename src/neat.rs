@@ -1,34 +1,77 @@
-use crate::nn::Edge;
+use crate::nn::{Network, Edge};
+use rand::prelude::*;
 
-pub struct Species {
+// todo: how do i make this available in multiple files?
+trait Crossover<Rhs = Self> {
+    type Output;
+
+    fn crossover(&self, rhs: &Rhs) -> Self::Output;
+}
+
+
+impl Crossover for Network {
+    type Output = Network;
+
+    /// Creates a new network from two networks.  
+    fn crossover(&self, _rhs: &Network) -> Network {
+        let mut child_network = Network::new(
+            _rhs.input_node_count,
+            _rhs.output_node_count,
+            false,
+        );
+
+        child_network.layer_count = self.layer_count;
+        child_network.bias_node_id = self.bias_node_id;
+
+        let mut rng = rand::thread_rng();
+        for edge in self.edges.iter() {
+            let mut new_edge = edge.clone();
+            if rng.gen::<f64>() < 0.9 {
+                new_edge.enabled = true;
+            } else {
+                new_edge.enabled = false;
+            }
+            child_network.edges.push(new_edge);
+        }
+
+        for node in self.nodes.iter() {
+            child_network.nodes.push(node.clone());
+        }
+        return child_network;
+    }
+}
+
+pub struct Species<'a> {
     excess_coeff: f64,
     weight_diff_coeff: f64,
     compat_threashold: f64,
-    champion: Vec<Edge>,
+    pub champion: Option<&'a Network>,
+    pub individuals: Vec<&'a Network>,
 }
 
-impl Species {
-    pub fn new(excess_coeff: f64, weight_diff_coeff: f64, compat_threashold: f64) -> Species {
+impl<'a> Species<'a> {
+    pub fn new(excess_coeff: f64, weight_diff_coeff: f64, compat_threashold: f64) -> Species<'a> {
         return Species {
             excess_coeff: excess_coeff,
             weight_diff_coeff: weight_diff_coeff,
             compat_threashold: compat_threashold,
-            champion: vec![],
+            champion: None,
+            individuals: vec![],
         };
     }
 
-    pub fn set_champion(&mut self, new_champ: &Vec<Edge>) -> () {
-        self.champion.clear();
-        for edge in new_champ.iter() {
-            self.champion.push(edge.clone());
-        }
+    pub fn set_champion(&mut self, new_champ: &'a Network) -> () {
+        self.champion = Some(new_champ);
     }
 
     pub fn same_species(&self, other: &Vec<Edge>) -> bool {
-        let excess_disjoin = Species::get_excess_disjoint(&self.champion, other);
-        let average_weight_diff = Species::get_average_weight_diff(&self.champion, other);
+        let excess_disjoin = Species::get_excess_disjoint(&self.champion.unwrap().edges, other);
+        println!("excess_disjoin: {}", excess_disjoin);
+        let average_weight_diff = Species::get_average_weight_diff(&self.champion.unwrap().edges, other);
+        println!("weight diff: {}", average_weight_diff);
         let compat = (self.excess_coeff * excess_disjoin as f64)
             + (self.weight_diff_coeff * average_weight_diff);
+        println!("{}", compat);
         return self.compat_threashold > compat;
     }
 
@@ -36,8 +79,6 @@ impl Species {
     /// i.e the number of extra edges and the number of non matching edges.
     pub fn get_excess_disjoint(one: &Vec<Edge>, two: &Vec<Edge>) -> usize {
         let mut matching = 0;
-        println!("Edge 1 length: {}", one.len());
-        println!("Edge 2 length: {}", two.len());
         for edge_one in one.iter() {
             for edge_two in two.iter() {
                 if edge_one.inno_id == edge_two.inno_id {
@@ -53,6 +94,9 @@ impl Species {
         let mut matching = 0;
         let mut total_diff = 0.0;
 
+        println!("{:#?}", one);
+        println!("{:#?}", two);
+
         for edge_one in one.iter() {
             for edge_two in two.iter() {
                 if edge_one.inno_id == edge_two.inno_id {
@@ -62,11 +106,24 @@ impl Species {
                 }
             }
         }
+
         if matching == 0 {
             // divide by zero.
             return 100.0; // todo make this an option?
         }
         return total_diff / matching as f64;
+    }
+
+    pub fn generate_offspring(&self, inno_history: &InnovationHistory) -> Network {
+        let mut rng = rand::thread_rng();
+
+        if rng.gen::<f64>() < 0.25 {
+            return self.individuals[0].clone();
+        }
+
+        let p_one = self.individuals.choose(&mut rng).unwrap();
+        let p_two = self.individuals.choose(&mut rng).unwrap();
+        return p_one.crossover(p_two);
     }
 }
 
