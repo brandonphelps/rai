@@ -1,7 +1,7 @@
-use crate::nn::{Network, Edge};
-use crate::evo_algo::{Individual, Crossover};
-use rand::prelude::*;
+use crate::evo_algo::{Crossover, Individual};
+use crate::nn::{Edge, Network};
 use rand::distributions::{Distribution, Normal};
+use rand::prelude::*;
 use rand::seq::SliceRandom;
 
 fn matching_edge(parent2: &Network, inno_id: u64) -> Option<&Edge> {
@@ -13,17 +13,12 @@ fn matching_edge(parent2: &Network, inno_id: u64) -> Option<&Edge> {
     return None;
 }
 
-
 impl Crossover for Network {
     type Output = Network;
 
     /// Creates a new network from two networks.  
     fn crossover(&self, _rhs: &Network) -> Network {
-        let mut child_network = Network::new(
-            _rhs.input_node_count,
-            _rhs.output_node_count,
-            false,
-        );
+        let mut child_network = Network::new(_rhs.input_node_count, _rhs.output_node_count, false);
 
         child_network.layer_count = self.layer_count;
         child_network.bias_node_id = self.bias_node_id;
@@ -32,14 +27,14 @@ impl Crossover for Network {
         for edge in self.edges.iter() {
             let parent2_edge_maybe = matching_edge(_rhs, edge.inno_id);
             let mut child_edge_enabled = true;
-            // if parent 2 also contains the same edge then determine which to use. 
+            // if parent 2 also contains the same edge then determine which to use.
             if let Some(parent2_edge) = parent2_edge_maybe {
                 if !edge.enabled || !parent2_edge.enabled {
                     if rng.gen::<f64>() < 0.75 {
                         child_edge_enabled = false;
                     }
                 }
-                // determine if edge froms from parent1 or parent2 
+                // determine if edge froms from parent1 or parent2
                 let mut new_edge;
                 if rng.gen::<f64>() < 0.5 {
                     new_edge = edge.clone();
@@ -49,7 +44,6 @@ impl Crossover for Network {
                     new_edge.enabled = child_edge_enabled;
                 }
                 child_network.edges.push(new_edge);
-
             } else {
                 // disjoint edge from parent 1 and parent 2.
                 child_network.edges.push(edge.clone());
@@ -61,10 +55,7 @@ impl Crossover for Network {
         }
         return child_network;
     }
-
-
 }
-
 
 #[derive(Debug)]
 pub struct TestNetwork {
@@ -85,7 +76,7 @@ impl TestNetwork {
     pub fn from_network(network: Network) -> TestNetwork {
         return TestNetwork {
             network: network,
-            fitness: 0.0
+            fitness: 0.0,
         };
     }
 
@@ -116,8 +107,12 @@ impl TestNetwork {
         // 3% add new node.
         if rng.gen::<f64>() < 0.03 {
             let edge = self.network.random_non_bias_edge();
-            self.network
-                .add_node(edge as usize, rng.gen::<f64>(), rng.gen::<f64>(), Some(inno_history));
+            self.network.add_node(
+                edge as usize,
+                rng.gen::<f64>(),
+                rng.gen::<f64>(),
+                Some(inno_history),
+            );
         }
     }
 
@@ -207,7 +202,6 @@ impl Individual for TestNetwork {
     fn print(&self) -> () {}
 }
 
-
 impl Crossover for TestNetwork {
     type Output = TestNetwork;
 
@@ -219,8 +213,6 @@ impl Crossover for TestNetwork {
         }
     }
 }
-
-
 
 pub struct Species<'a> {
     excess_coeff: f64,
@@ -247,8 +239,10 @@ impl<'a> Species<'a> {
     }
 
     pub fn same_species(&self, other: &Vec<Edge>) -> bool {
-        let excess_disjoin = Species::get_excess_disjoint(&self.champion.unwrap().network.edges, other);
-        let average_weight_diff = Species::get_average_weight_diff(&self.champion.unwrap().network.edges, other);
+        let excess_disjoin =
+            Species::get_excess_disjoint(&self.champion.unwrap().network.edges, other);
+        let average_weight_diff =
+            Species::get_average_weight_diff(&self.champion.unwrap().network.edges, other);
 
         let compat = (self.excess_coeff * excess_disjoin as f64)
             + (self.weight_diff_coeff * average_weight_diff);
@@ -257,7 +251,7 @@ impl<'a> Species<'a> {
     }
 
     /// returns the average fitness of the individuals within
-    /// make sure that all individuals have their update_fitness funcs called before this one. 
+    /// make sure that all individuals have their update_fitness funcs called before this one.
     pub fn average_fitness(&self) -> f64 {
         // todo: does rust have a fancy functional programming func here?
         let mut avg_fitness = 0.0;
@@ -266,7 +260,6 @@ impl<'a> Species<'a> {
         }
         return avg_fitness / self.individuals.len() as f64;
     }
-
 
     /// returns the number of excess and disjoint edges.
     /// i.e the number of extra edges and the number of non matching edges.
@@ -314,7 +307,6 @@ impl<'a> Species<'a> {
         let p_one = &self.individuals.choose(&mut rng).unwrap().network;
         let p_two = &self.individuals.choose(&mut rng).unwrap().network;
         return p_one.crossover(&p_two);
-        
     }
 }
 
@@ -325,18 +317,18 @@ pub struct InnovationHistory {
 }
 
 impl InnovationHistory {
-    pub fn get_inno_number(&mut self,
-                           network_inno_ids: &Vec<u64>,
-                           from_node: usize,
-                           to_node: usize) -> usize {
-
+    pub fn get_inno_number(
+        &mut self,
+        network_inno_ids: &Vec<u64>,
+        from_node: usize,
+        to_node: usize,
+    ) -> usize {
         let mut is_new = true;
         // todo: change zero to next conn number.
         let mut connect_inno_num = self.global_inno_id;
         self.global_inno_id += 1;
         for conn_history in self.conn_history.iter() {
             if conn_history.matches(network_inno_ids, from_node, to_node) {
-            
                 is_new = false;
                 connect_inno_num = conn_history.inno_number;
                 break;

@@ -1,4 +1,3 @@
-
 pub trait Individual {
     // can this return just a numeric traited instance?
     // post calculated fitness.
@@ -8,7 +7,6 @@ pub trait Individual {
     fn mutate(&mut self) -> ();
     // fn crossover(&self, other: Box<dyn Individual>) -> Box<dyn Individual>;
 }
-
 
 pub trait Crossover<Rhs = Self> {
     type Output;

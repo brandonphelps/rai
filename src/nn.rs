@@ -322,9 +322,10 @@ impl Network {
     }
 
     pub fn are_connected(&self, _node_one: usize, _node_two: usize) -> bool {
-        self.edges.iter().position(|edge| {
-            edge.to_node == _node_one as u64 && edge.from_node == _node_two as u64
-        }).is_some()
+        self.edges
+            .iter()
+            .position(|edge| edge.to_node == _node_one as u64 && edge.from_node == _node_two as u64)
+            .is_some()
     }
 
     pub fn add_connection(
@@ -353,7 +354,6 @@ impl Network {
 
             edge = self.construct_edge(_node_two, _node_one, weight, &mut inno_hist);
         } else {
-
             let pos_check = self.edges.iter().position(|edge| {
                 edge.to_node == _node_two as u64 && edge.from_node == _node_one as u64
             });
@@ -362,7 +362,6 @@ impl Network {
                 None => (),
             }
             edge = self.construct_edge(_node_one, _node_two, weight, &mut inno_hist);
-
         }
         self.edges.push(edge);
         return self.edges.len() - 1;

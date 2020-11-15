@@ -9,13 +9,13 @@ use std::cmp::Reverse;
 use std::{thread, time};
 
 // are these important?
+mod evo_algo;
 mod hrm;
 mod neat;
 mod nn;
-mod evo_algo;
 
-use evo_algo::{Individual, Crossover};
-use neat::{TestNetwork};
+use evo_algo::{Crossover, Individual};
+use neat::TestNetwork;
 
 use std::sync::atomic::{AtomicUsize, Ordering};
 
@@ -66,7 +66,6 @@ impl Individual for SinF {
         print!("{:?}", self)
     }
 }
-
 
 fn do_fitness_func<T: Individual>(individuals: &Vec<T>) -> () {
     for ind in individuals.iter() {
@@ -146,7 +145,6 @@ fn main() {
     // }
 
     for _n in 1..population_count + 1 {
-        // pop.push(Box::new(SinF::new((n as f64/100.0))));
         let mut random_network = TestNetwork::new(2, 1);
         random_network.update_fitness();
         specific_pop.push(random_network);
@@ -175,7 +173,7 @@ fn main() {
                     found_spec = true;
                 }
             }
-            if ! found_spec {
+            if !found_spec {
                 let mut new_spec = neat::Species::new(1.5, 0.8, 4.0);
                 new_spec.set_champion(&test_n);
                 species.push(new_spec);
@@ -191,19 +189,28 @@ fn main() {
         average_fit /= (specific_pop.len() as f64);
 
         for spec in species.iter() {
-            // add in the champ of the species in. 
-            offspring.push(TestNetwork::from_network(spec.champion.unwrap().network.clone()));
+            // add in the champ of the species in.
+            offspring.push(TestNetwork::from_network(
+                spec.champion.unwrap().network.clone(),
+            ));
             let spec_av_fit = spec.average_fitness();
             // -1 for champion
-            let num_children = ((spec_av_fit / average_fit) * population_count as f64).floor() as u64 - 1;
-            println!("Num children: {} {} {} ", spec_av_fit, spec_av_fit / average_fit,  num_children);
+            let num_children =
+                ((spec_av_fit / average_fit) * population_count as f64).floor() as u64 - 1;
+            println!(
+                "Num children: {} {} {} ",
+                spec_av_fit,
+                spec_av_fit / average_fit,
+                num_children
+            );
             for _child_num in 0..num_children {
-                let mut new_child = TestNetwork::from_network(spec.generate_offspring(&innovation_history));
+                let mut new_child =
+                    TestNetwork::from_network(spec.generate_offspring(&innovation_history));
                 new_child.custom_mutate(&mut innovation_history);
                 offspring.push(new_child);
             }
         }
-        
+
         let species_count = species.len();
         species.clear();
 
@@ -219,7 +226,12 @@ fn main() {
         specific_pop.truncate(population_count);
 
         assert!(specific_pop.len() == population_count);
-        println!("Species({}) average fitness {} number of innovations: {}", species_count, average_fit, innovation_history.conn_history.len());
+        println!(
+            "Species({}) average fitness {} number of innovations: {}",
+            species_count,
+            average_fit,
+            innovation_history.conn_history.len()
+        );
         average_history_per_iter.push(average_fit / (specific_pop.len() as f64));
     }
 
@@ -298,7 +310,6 @@ fn t_main() {
         println!("{}", m);
     }
 
-    
     // let unwrapped_msg = msg.unwrap_or(default_msg);
     // println!("{}", unwrapped_msg);
 }
