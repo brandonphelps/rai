@@ -82,16 +82,15 @@ impl InnovationHistory {
         let mut connect_inno_num = self.global_inno_id;
         self.global_inno_id += 1;
         for conn_history in self.conn_history.iter() {
-            match conn_history.inno_numbers.iter().position(|inno_num|
-                                                           conn_history.matches(network_inno_ids,
-                                                                                from_node,
-                                                                                to_node)) {
-                Some(t) => {
-                    is_new = false;
-                    connect_inno_num = conn_history.inno_number;
-                    break;
-                },
-                None => (),
+            if conn_history.
+                inno_numbers.
+                iter().position(|inno_num|
+                                conn_history.matches(network_inno_ids,
+                                                     from_node,
+                                                     to_node)).is_some() {
+                is_new = false;
+                connect_inno_num = conn_history.inno_number;
+                break;
             }
         }
 

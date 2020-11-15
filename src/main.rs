@@ -1,3 +1,4 @@
+
 use rand::seq::SliceRandom;
 #[allow(deprecated)]
 use rand::distributions::{Normal, Distribution};
@@ -28,6 +29,7 @@ trait Crossover<Rhs=Self> {
 
 use std::sync::atomic::{AtomicUsize, Ordering};
 
+#[allow(non_upper_case_globals)]
 static SortedIdCount: AtomicUsize = AtomicUsize::new(0);
 static SinFIdCount: AtomicUsize = AtomicUsize::new(0);
 
