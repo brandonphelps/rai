@@ -15,7 +15,7 @@ mod nn;
 mod evo_algo;
 
 use evo_algo::{Individual, Crossover};
-
+use neat::{TestNetwork};
 
 use std::sync::atomic::{AtomicUsize, Ordering};
 
@@ -67,192 +67,6 @@ impl Individual for SinF {
     }
 }
 
-#[derive(Debug)]
-struct TestNetwork {
-    pub network: nn::Network,
-    fitness: f64,
-}
-
-static GLOBAL_INNO_ID: u64 = 0;
-
-impl TestNetwork {
-    fn new(input_count: u32, output_count: u32) -> TestNetwork {
-        let network = nn::Network::new(input_count, output_count, true);
-
-        return TestNetwork {
-            network: network,
-            fitness: 0.0,
-        };
-    }
-
-    fn from_network(network: nn::Network) -> TestNetwork {
-        return TestNetwork {
-            network: network,
-            fitness: 0.0
-        };
-    }
-
-    fn custom_mutate(&mut self, inno_history: &mut neat::InnovationHistory) -> () {
-        let mut rng = rand::thread_rng();
-        // 80% chance to mutate edges node.
-        if rng.gen::<f64>() < 0.8 {
-            for edge_index in 0..self.network.edges.len() {
-                self.mutate_edge(edge_index);
-            }
-        }
-
-        // 5% add new connection
-        if rng.gen::<f64>() < 0.05 && !self.network.is_fully_connected() {
-            let mut node_one = self.network.random_node();
-            let mut node_two = self.network.random_node();
-
-            while self.network.are_connected(node_one, node_two)
-                || self.network.nodes[node_one].layer == self.network.nodes[node_two].layer
-            {
-                node_one = self.network.random_node();
-                node_two = self.network.random_node();
-            }
-            self.network
-                .add_connection(node_one, node_two, rng.gen::<f64>(), Some(inno_history));
-        }
-
-        // 3% add new node.
-        if rng.gen::<f64>() < 0.03 {
-            let edge = self.network.random_non_bias_edge();
-            self.network
-                .add_node(edge as usize, rng.gen::<f64>(), rng.gen::<f64>(), Some(inno_history));
-        }
-    }
-
-    fn mutate_edge(&mut self, edge: usize) -> () {
-        let mut rng = rand::thread_rng();
-        if rng.gen::<f64>() < 0.1 {
-            self.network.edges[edge].weight = rng.gen::<f64>();
-        } else {
-            let normal = Normal::new(0.0, 0.5);
-            let delta = rng.sample::<f64, _>(&normal);
-            self.network.edges[edge].weight += delta;
-            if self.network.edges[edge].weight > 1.0 {
-                self.network.edges[edge].weight = 1.0;
-            } else if self.network.edges[edge].weight < -1.0 {
-                self.network.edges[edge].weight = -1.0;
-            }
-        }
-    }
-}
-
-impl Individual for TestNetwork {
-    fn fitness(&self) -> f64 {
-        return self.fitness;
-    }
-
-    fn update_fitness(&mut self) -> () {
-        let mut fitness = 0.0;
-        // self.network.pretty_print();
-        let mut output = self.network.feed_input(vec![0.0, 0.0]);
-        assert_eq!(output.len(), 1);
-        fitness += (output[0] - 0.0).powf(2.0);
-        output = self.network.feed_input(vec![0.0, 1.0]);
-        fitness += (output[0] - 1.0).powf(2.0);
-        output = self.network.feed_input(vec![1.0, 0.0]);
-        fitness += (output[0] - 1.0).powf(2.0);
-        output = self.network.feed_input(vec![1.0, 1.0]);
-        fitness += (output[0] - 0.0).powf(2.0);
-        fitness /= 4.0;
-
-        if fitness == 0.0 {
-            self.fitness = 10000000.0;
-        } else {
-            // fitness -= (self.network.nodes.len() as f64 * 0.1);
-            // if fitness < 0.0 {
-            //     self.fitness = 0.0000001;
-            // }
-            // else {
-            self.fitness = 1.0 / fitness;
-            //}
-        }
-        // println!("Fitness: {:?}", self.fitness);
-        // thread::sleep(time::Duration::from_millis(1000));
-    }
-
-    fn mutate(&mut self) -> () {
-        let mut rng = rand::thread_rng();
-        // 80% chance to mutate edges node.
-        if rng.gen::<f64>() < 0.8 {
-            for edge_index in 0..self.network.edges.len() {
-                self.mutate_edge(edge_index);
-            }
-        }
-
-        // 5% add new connection
-        if rng.gen::<f64>() < 0.05 && !self.network.is_fully_connected() {
-            let mut node_one = self.network.random_node();
-            let mut node_two = self.network.random_node();
-
-            while self.network.are_connected(node_one, node_two)
-                || self.network.nodes[node_one].layer == self.network.nodes[node_two].layer
-            {
-                node_one = self.network.random_node();
-                node_two = self.network.random_node();
-            }
-            self.network
-                .add_connection(node_one, node_two, rng.gen::<f64>(), None);
-        }
-
-        // 3% add new node.
-        if rng.gen::<f64>() < 0.03 {
-            let edge = self.network.random_non_bias_edge();
-            self.network
-                .add_node(edge as usize, rng.gen::<f64>(), rng.gen::<f64>(), None);
-        }
-    }
-
-    fn print(&self) -> () {}
-}
-
-impl Crossover for nn::Network {
-    type Output = nn::Network;
-
-    fn crossover(&self, _rhs: &nn::Network) -> nn::Network {
-        let mut child_network = nn::Network::new(
-            _rhs.input_node_count,
-            _rhs.output_node_count,
-            false,
-        );
-
-        child_network.layer_count = self.layer_count;
-        child_network.bias_node_id = self.bias_node_id;
-
-        let mut rng = rand::thread_rng();
-        for edge in self.edges.iter() {
-            let mut new_edge = edge.clone();
-            if rng.gen::<f64>() < 0.9 {
-                new_edge.enabled = true;
-            } else {
-                new_edge.enabled = false;
-            }
-            child_network.edges.push(new_edge);
-        }
-
-        for node in self.nodes.iter() {
-            child_network.nodes.push(node.clone());
-        }
-        return child_network;
-    }
-}
-
-
-impl Crossover for TestNetwork {
-    type Output = TestNetwork;
-
-    fn crossover(&self, _rhs: &TestNetwork) -> TestNetwork {
-        let child_network = self.network.crossover(&_rhs.network);
-        TestNetwork {
-            network: child_network,
-            fitness: 0.0,
-        }
-    }
-}
 
 fn do_fitness_func<T: Individual>(individuals: &Vec<T>) -> () {
     for ind in individuals.iter() {
@@ -357,13 +171,13 @@ fn main() {
             let mut found_spec = false;
             for spec in species.iter_mut() {
                 if spec.same_species(&test_n.network.edges) {
-                    spec.individuals.push(&test_n.network);
+                    spec.individuals.push(&test_n);
                     found_spec = true;
                 }
             }
             if ! found_spec {
                 let mut new_spec = neat::Species::new(1.5, 0.8, 4.0);
-                new_spec.set_champion(&test_n.network);
+                new_spec.set_champion(&test_n);
                 species.push(new_spec);
             }
         }
@@ -372,7 +186,7 @@ fn main() {
         
         for spec in species.iter() {
             // add in the champ of the species in. 
-            offspring.push(TestNetwork::from_network(spec.champion.unwrap().clone()));
+            offspring.push(TestNetwork::from_network(spec.champion.unwrap().network.clone()));
             for _child_num in 0..10 {
                 let mut new_child = TestNetwork::from_network(spec.generate_offspring(&innovation_history));
                 new_child.custom_mutate(&mut innovation_history);

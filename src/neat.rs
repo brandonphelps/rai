@@ -1,14 +1,8 @@
 use crate::nn::{Network, Edge};
-use crate::evo_algo::{Individual};
+use crate::evo_algo::{Individual, Crossover};
 use rand::prelude::*;
-
-
-// todo: how do i make this available in multiple files?
-trait Crossover<Rhs = Self> {
-    type Output;
-
-    fn crossover(&self, rhs: &Rhs) -> Self::Output;
-}
+use rand::distributions::{Distribution, Normal};
+use rand::seq::SliceRandom;
 
 
 impl Crossover for Network {
@@ -43,12 +37,169 @@ impl Crossover for Network {
     }
 }
 
+
+#[derive(Debug)]
+pub struct TestNetwork {
+    pub network: Network,
+    fitness: f64,
+}
+
+impl TestNetwork {
+    pub fn new(input_count: u32, output_count: u32) -> TestNetwork {
+        let network = Network::new(input_count, output_count, true);
+
+        return TestNetwork {
+            network: network,
+            fitness: 0.0,
+        };
+    }
+
+    pub fn from_network(network: Network) -> TestNetwork {
+        return TestNetwork {
+            network: network,
+            fitness: 0.0
+        };
+    }
+
+    pub fn custom_mutate(&mut self, inno_history: &mut InnovationHistory) -> () {
+        let mut rng = rand::thread_rng();
+        // 80% chance to mutate edges node.
+        if rng.gen::<f64>() < 0.8 {
+            for edge_index in 0..self.network.edges.len() {
+                self.mutate_edge(edge_index);
+            }
+        }
+
+        // 5% add new connection
+        if rng.gen::<f64>() < 0.05 && !self.network.is_fully_connected() {
+            let mut node_one = self.network.random_node();
+            let mut node_two = self.network.random_node();
+
+            while self.network.are_connected(node_one, node_two)
+                || self.network.nodes[node_one].layer == self.network.nodes[node_two].layer
+            {
+                node_one = self.network.random_node();
+                node_two = self.network.random_node();
+            }
+            self.network
+                .add_connection(node_one, node_two, rng.gen::<f64>(), Some(inno_history));
+        }
+
+        // 3% add new node.
+        if rng.gen::<f64>() < 0.03 {
+            let edge = self.network.random_non_bias_edge();
+            self.network
+                .add_node(edge as usize, rng.gen::<f64>(), rng.gen::<f64>(), Some(inno_history));
+        }
+    }
+
+    pub fn mutate_edge(&mut self, edge: usize) -> () {
+        let mut rng = rand::thread_rng();
+        if rng.gen::<f64>() < 0.1 {
+            self.network.edges[edge].weight = rng.gen::<f64>();
+        } else {
+            let normal = Normal::new(0.0, 0.5);
+            let delta = rng.sample::<f64, _>(&normal);
+            self.network.edges[edge].weight += delta;
+            if self.network.edges[edge].weight > 1.0 {
+                self.network.edges[edge].weight = 1.0;
+            } else if self.network.edges[edge].weight < -1.0 {
+                self.network.edges[edge].weight = -1.0;
+            }
+        }
+    }
+}
+
+impl Individual for TestNetwork {
+    fn fitness(&self) -> f64 {
+        return self.fitness;
+    }
+
+    fn update_fitness(&mut self) -> () {
+        let mut fitness = 0.0;
+        // self.network.pretty_print();
+        let mut output = self.network.feed_input(vec![0.0, 0.0]);
+        assert_eq!(output.len(), 1);
+        fitness += (output[0] - 0.0).powf(2.0);
+        output = self.network.feed_input(vec![0.0, 1.0]);
+        fitness += (output[0] - 1.0).powf(2.0);
+        output = self.network.feed_input(vec![1.0, 0.0]);
+        fitness += (output[0] - 1.0).powf(2.0);
+        output = self.network.feed_input(vec![1.0, 1.0]);
+        fitness += (output[0] - 0.0).powf(2.0);
+        fitness /= 4.0;
+
+        if fitness == 0.0 {
+            self.fitness = 10000000.0;
+        } else {
+            // fitness -= (self.network.nodes.len() as f64 * 0.1);
+            // if fitness < 0.0 {
+            //     self.fitness = 0.0000001;
+            // }
+            // else {
+            self.fitness = 1.0 / fitness;
+            //}
+        }
+        // println!("Fitness: {:?}", self.fitness);
+        // thread::sleep(time::Duration::from_millis(1000));
+    }
+
+    fn mutate(&mut self) -> () {
+        let mut rng = rand::thread_rng();
+        // 80% chance to mutate edges node.
+        if rng.gen::<f64>() < 0.8 {
+            for edge_index in 0..self.network.edges.len() {
+                self.mutate_edge(edge_index);
+            }
+        }
+
+        // 5% add new connection
+        if rng.gen::<f64>() < 0.05 && !self.network.is_fully_connected() {
+            let mut node_one = self.network.random_node();
+            let mut node_two = self.network.random_node();
+
+            while self.network.are_connected(node_one, node_two)
+                || self.network.nodes[node_one].layer == self.network.nodes[node_two].layer
+            {
+                node_one = self.network.random_node();
+                node_two = self.network.random_node();
+            }
+            self.network
+                .add_connection(node_one, node_two, rng.gen::<f64>(), None);
+        }
+
+        // 3% add new node.
+        if rng.gen::<f64>() < 0.03 {
+            let edge = self.network.random_non_bias_edge();
+            self.network
+                .add_node(edge as usize, rng.gen::<f64>(), rng.gen::<f64>(), None);
+        }
+    }
+
+    fn print(&self) -> () {}
+}
+
+
+impl Crossover for TestNetwork {
+    type Output = TestNetwork;
+
+    fn crossover(&self, _rhs: &TestNetwork) -> TestNetwork {
+        let child_network = self.network.crossover(&_rhs.network);
+        TestNetwork {
+            network: child_network,
+            fitness: 0.0,
+        }
+    }
+}
+
+
+
 pub struct Species<'a> {
     excess_coeff: f64,
     weight_diff_coeff: f64,
     compat_threashold: f64,
-    pub champion: Option<&'a Network>,
-    pub individuals: Vec<&'a Network>,
+    pub champion: Option<&'a TestNetwork>,
+    pub individuals: Vec<&'a TestNetwork>,
 }
 
 impl<'a> Species<'a> {
@@ -62,14 +213,14 @@ impl<'a> Species<'a> {
         };
     }
 
-    pub fn set_champion(&mut self, new_champ: &'a Network) -> () {
+    pub fn set_champion(&mut self, new_champ: &'a TestNetwork) -> () {
         self.champion = Some(new_champ);
         self.individuals.push(new_champ);
     }
 
     pub fn same_species(&self, other: &Vec<Edge>) -> bool {
-        let excess_disjoin = Species::get_excess_disjoint(&self.champion.unwrap().edges, other);
-        let average_weight_diff = Species::get_average_weight_diff(&self.champion.unwrap().edges, other);
+        let excess_disjoin = Species::get_excess_disjoint(&self.champion.unwrap().network.edges, other);
+        let average_weight_diff = Species::get_average_weight_diff(&self.champion.unwrap().network.edges, other);
 
         let compat = (self.excess_coeff * excess_disjoin as f64)
             + (self.weight_diff_coeff * average_weight_diff);
@@ -129,12 +280,12 @@ impl<'a> Species<'a> {
         let mut rng = rand::thread_rng();
 
         if rng.gen::<f64>() < 0.25 {
-            return self.individuals[0].clone();
+            return self.individuals[0].network.clone();
         }
 
-        let p_one = self.individuals.choose(&mut rng).unwrap();
-        let p_two = self.individuals.choose(&mut rng).unwrap();
-        return p_one.crossover(p_two);
+        let p_one = &self.individuals.choose(&mut rng).unwrap().network;
+        let p_two = &self.individuals.choose(&mut rng).unwrap().network;
+        return p_one.crossover(&p_two);
         
     }
 }
@@ -146,10 +297,6 @@ pub struct InnovationHistory {
 }
 
 impl InnovationHistory {
-
-
-
-    
     pub fn get_inno_number(&mut self,
                            network_inno_ids: &Vec<u64>,
                            from_node: usize,
