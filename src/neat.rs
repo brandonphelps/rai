@@ -62,16 +62,16 @@ impl<'a> Species<'a> {
 
     pub fn set_champion(&mut self, new_champ: &'a Network) -> () {
         self.champion = Some(new_champ);
+        self.individuals.push(new_champ);
     }
 
     pub fn same_species(&self, other: &Vec<Edge>) -> bool {
         let excess_disjoin = Species::get_excess_disjoint(&self.champion.unwrap().edges, other);
-        println!("excess_disjoin: {}", excess_disjoin);
         let average_weight_diff = Species::get_average_weight_diff(&self.champion.unwrap().edges, other);
-        println!("weight diff: {}", average_weight_diff);
+
         let compat = (self.excess_coeff * excess_disjoin as f64)
             + (self.weight_diff_coeff * average_weight_diff);
-        println!("{}", compat);
+
         return self.compat_threashold > compat;
     }
 
@@ -93,9 +93,6 @@ impl<'a> Species<'a> {
     pub fn get_average_weight_diff(one: &Vec<Edge>, two: &Vec<Edge>) -> f64 {
         let mut matching = 0;
         let mut total_diff = 0.0;
-
-        println!("{:#?}", one);
-        println!("{:#?}", two);
 
         for edge_one in one.iter() {
             for edge_two in two.iter() {
@@ -124,6 +121,7 @@ impl<'a> Species<'a> {
         let p_one = self.individuals.choose(&mut rng).unwrap();
         let p_two = self.individuals.choose(&mut rng).unwrap();
         return p_one.crossover(p_two);
+        
     }
 }
 
@@ -157,6 +155,7 @@ impl InnovationHistory {
         }
 
         if is_new {
+            println!("New innovation id");
             let mut new_inno_nums = Vec::<u64>::new();
             for edge in network_inno_ids.iter() {
                 new_inno_nums.push(edge.clone());

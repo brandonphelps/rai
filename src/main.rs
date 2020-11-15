@@ -103,6 +103,38 @@ impl TestNetwork {
         };
     }
 
+    fn custom_mutate(&mut self, inno_history: &mut neat::InnovationHistory) -> () {
+        let mut rng = rand::thread_rng();
+        // 80% chance to mutate edges node.
+        if rng.gen::<f64>() < 0.8 {
+            for edge_index in 0..self.network.edges.len() {
+                self.mutate_edge(edge_index);
+            }
+        }
+
+        // 5% add new connection
+        if rng.gen::<f64>() < 0.05 && !self.network.is_fully_connected() {
+            let mut node_one = self.network.random_node();
+            let mut node_two = self.network.random_node();
+
+            while self.network.are_connected(node_one, node_two)
+                || self.network.nodes[node_one].layer == self.network.nodes[node_two].layer
+            {
+                node_one = self.network.random_node();
+                node_two = self.network.random_node();
+            }
+            self.network
+                .add_connection(node_one, node_two, rng.gen::<f64>(), Some(inno_history));
+        }
+
+        // 3% add new node.
+        if rng.gen::<f64>() < 0.03 {
+            let edge = self.network.random_non_bias_edge();
+            self.network
+                .add_node(edge as usize, rng.gen::<f64>(), rng.gen::<f64>(), Some(inno_history));
+        }
+    }
+
     fn mutate_edge(&mut self, edge: usize) -> () {
         let mut rng = rand::thread_rng();
         if rng.gen::<f64>() < 0.1 {
@@ -320,64 +352,63 @@ fn main() {
     }
 
     // fitness evaluation
-
-    let mut species: Vec<neat::Species> = Vec::new();
-    {
-        for test_n in specific_pop.iter() {
-            let mut found_spec = false;
-            for spec in species.iter_mut() {
-                if spec.same_species(&test_n.network.edges) {
-                    println!("same species");
-                    spec.individuals.push(&test_n.network);
-                    found_spec = true;
-                }
-            }
-            if ! found_spec {
-                let mut new_spec = neat::Species::new(1.5, 0.8, 4.0);
-                // new_spec.individuals.push(&test_n.network);
-                new_spec.set_champion(&test_n.network);
-                species.push(new_spec);
-            }
-        }
-    }
-
     let mut innovation_history = neat::InnovationHistory {
         // todo mark 3 and 1 as input + (1)bias * output
         global_inno_id: (3 * 1),
         conn_history: vec![],
     };
 
-
-    assert_eq!(1, species.len());
-
-    do_fitness_func(&specific_pop);
     let mut average_history_per_iter: Vec<f64> = Vec::new();
 
     for _i in
         Prgrs::new(0..max_iter_count, max_iter_count).set_length_move(Length::Proportional(0.5))
     {
-        let mut offspring: Vec<TestNetwork> = Vec::new();
-        for spec in species.iter() {
-            // add in the champ of the species in. 
-            offspring.push(TestNetwork::from_network(spec.champion.unwrap().clone()));
-            for _child_num in 0..10 {
-                offspring.push(TestNetwork::from_network(spec.generate_offspring(&innovation_history)));
+        let mut species: Vec<neat::Species> = Vec::new();
+        // why can't this forloop be outside this forloop? something
+        // about the specific_pop updating is mutable borrow after an immutable barrow on something?
+        for test_n in specific_pop.iter() {
+            let mut found_spec = false;
+            for spec in species.iter_mut() {
+                if spec.same_species(&test_n.network.edges) {
+                    spec.individuals.push(&test_n.network);
+                    found_spec = true;
+                }
+            }
+            if ! found_spec {
+                println!("Found new species: {}", _i);
+                let mut new_spec = neat::Species::new(1.5, 0.8, 4.0);
+                new_spec.set_champion(&test_n.network);
+                species.push(new_spec);
             }
         }
+
+        let mut offspring: Vec<TestNetwork> = Vec::new();
+        {
+            for spec in species.iter() {
+                // add in the champ of the species in. 
+                offspring.push(TestNetwork::from_network(spec.champion.unwrap().clone()));
+                for _child_num in 0..10 {
+                    let mut new_child = TestNetwork::from_network(spec.generate_offspring(&innovation_history));
+                    new_child.custom_mutate(&mut innovation_history);
+                    offspring.push(new_child);
+                }
+            }
+        }
+        species.clear();
 
         // do_fitness_func(&offspring);
         for offpin in offspring.iter_mut() {
             offpin.update_fitness();
         }
 
-        // // add in the offspring
+        // add in the offspring
         specific_pop.append(&mut offspring);
 
         // // cull population
         specific_pop.sort_by_key(|indiv| Reverse((indiv.fitness() * 1000.0) as i128));
         specific_pop.truncate(population_count);
 
-        // assert!(specific_pop.len() == population_count);
+        assert!(specific_pop.len() == population_count);
 
         let mut average_fit = 0.0;
         for pop in specific_pop.iter() {
@@ -385,26 +416,6 @@ fn main() {
         }
         println!("{}", average_fit / (specific_pop.len() as f64));
         average_history_per_iter.push(average_fit / (specific_pop.len() as f64));
-
-        species.clear();
-
-        // todo: turn this into a function
-        for test_n in specific_pop.iter() {
-            let mut found_spec = false;
-            for spec in species.iter_mut() {
-                if spec.same_species(&test_n.network.edges) {
-                    println!("same species");
-                    spec.individuals.push(&test_n.network);
-                    found_spec = true;
-                }
-            }
-            if ! found_spec {
-                let mut new_spec = neat::Species::new(1.5, 0.8, 4.0);
-                // new_spec.individuals.push(&test_n.network);
-                new_spec.set_champion(&test_n.network);
-                species.push(new_spec);
-            }
-        }
     }
 
     // generate fitness values.
@@ -482,6 +493,7 @@ fn t_main() {
         println!("{}", m);
     }
 
+    
     // let unwrapped_msg = msg.unwrap_or(default_msg);
     // println!("{}", unwrapped_msg);
 }

@@ -256,7 +256,6 @@ impl Network {
         let mut inno_id = 2;
         if let Some(ref mut inno_history) = inno_handler {
             let network_inno_ids = self.get_inno_ids();
-            println!("Have a ref to inno history getting new id number");
             inno_id = inno_history.get_inno_number(&network_inno_ids, from_id, to_id);
         }
         return Edge {
