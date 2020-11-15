@@ -131,9 +131,9 @@ where
 // }
 
 fn main() {
-    let population_count = 200;
+    let population_count = 2000;
     let mut _iteration_count = 0;
-    let max_iter_count = 10;
+    let max_iter_count = 100;
     // let mut specific_pop: Vec<SinF> = Vec::new();
     let mut specific_pop: Vec<TestNetwork> = Vec::new();
 
@@ -219,7 +219,7 @@ fn main() {
         specific_pop.truncate(population_count);
 
         assert!(specific_pop.len() == population_count);
-        println!("Species({}) average fitness {}", species_count, average_fit);
+        println!("Species({}) average fitness {} number of innovations: {}", species_count, average_fit, innovation_history.conn_history.len());
         average_history_per_iter.push(average_fit / (specific_pop.len() as f64));
     }
 

@@ -4,6 +4,15 @@ use rand::prelude::*;
 use rand::distributions::{Distribution, Normal};
 use rand::seq::SliceRandom;
 
+fn matching_edge(parent2: &Network, inno_id: u64) -> Option<&Edge> {
+    for edge in parent2.edges.iter() {
+        if edge.inno_id == inno_id {
+            return Some(&edge);
+        }
+    }
+    return None;
+}
+
 
 impl Crossover for Network {
     type Output = Network;
@@ -21,13 +30,30 @@ impl Crossover for Network {
 
         let mut rng = rand::thread_rng();
         for edge in self.edges.iter() {
-            let mut new_edge = edge.clone();
-            if rng.gen::<f64>() < 0.9 {
-                new_edge.enabled = true;
+            let parent2_edge_maybe = matching_edge(_rhs, edge.inno_id);
+            let mut child_edge_enabled = true;
+            // if parent 2 also contains the same edge then determine which to use. 
+            if let Some(parent2_edge) = parent2_edge_maybe {
+                if !edge.enabled || !parent2_edge.enabled {
+                    if rng.gen::<f64>() < 0.75 {
+                        child_edge_enabled = false;
+                    }
+                }
+                // determine if edge froms from parent1 or parent2 
+                let mut new_edge;
+                if rng.gen::<f64>() < 0.5 {
+                    new_edge = edge.clone();
+                    new_edge.enabled = child_edge_enabled;
+                } else {
+                    new_edge = parent2_edge.clone();
+                    new_edge.enabled = child_edge_enabled;
+                }
+                child_network.edges.push(new_edge);
+
             } else {
-                new_edge.enabled = false;
+                // disjoint edge from parent 1 and parent 2.
+                child_network.edges.push(edge.clone());
             }
-            child_network.edges.push(new_edge);
         }
 
         for node in self.nodes.iter() {
@@ -35,6 +61,8 @@ impl Crossover for Network {
         }
         return child_network;
     }
+
+
 }
 
 
