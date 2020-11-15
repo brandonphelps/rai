@@ -1,5 +1,7 @@
+#![allow(unused_imports)]
+#![allow(dead_code)]
+#![allow(deprecated)]
 use prgrs::{Length, Prgrs};
-#[allow(deprecated)]
 use rand::distributions::{Distribution, Normal};
 use rand::prelude::*;
 use rand::seq::SliceRandom;
@@ -148,8 +150,8 @@ impl Individual for TestNetwork {
             self.fitness = 1.0 / fitness;
             //}
         }
-        println!("Fitness: {:?}", self.fitness);
-        thread::sleep(time::Duration::from_millis(1000));
+        // println!("Fitness: {:?}", self.fitness);
+        // thread::sleep(time::Duration::from_millis(1000));
     }
 
     fn mutate(&mut self) -> () {
@@ -234,9 +236,9 @@ fn do_fitness_func<T: Individual>(individuals: &Vec<T>) -> () {
 fn select_parents<T: Individual>(individuals: &Vec<T>, parent_count: usize) -> Vec<&T> {
     let mut parents: Vec<&T> = Vec::new();
 
-    let mut fitnessSum: f64 = 0.0;
+    let mut fitness_sum: f64 = 0.0;
     for _ind in individuals.iter() {
-        fitnessSum += _ind.fitness();
+        fitness_sum += _ind.fitness();
     }
     let mut rng = rand::thread_rng();
     // if rng::<f64>::gen() < 0.25 {
@@ -251,11 +253,11 @@ fn select_parents<T: Individual>(individuals: &Vec<T>, parent_count: usize) -> V
     // };
 
     for _ind in 1..parent_count {
-        let mut runningSum: f64 = 0.0;
-        let rand: f64 = rng.gen_range(0.0, fitnessSum);
+        let mut running_sum: f64 = 0.0;
+        let rand: f64 = rng.gen_range(0.0, fitness_sum);
         for p in individuals.iter() {
-            runningSum += p.fitness();
-            if runningSum > rand {
+            running_sum += p.fitness();
+            if running_sum > rand {
                 parents.push(&p);
             }
         }
@@ -297,11 +299,11 @@ where
 
 // }
 
-fn t_main() {
+fn main() {
     let population_count = 20;
     let parent_count = 10;
     let offspring_count = 40;
-    let mut iteration_count = 0;
+    let mut _iteration_count = 0;
     let max_iter_count = 10000;
     // let mut specific_pop: Vec<SinF> = Vec::new();
     let mut specific_pop: Vec<TestNetwork> = Vec::new();
@@ -326,7 +328,7 @@ fn t_main() {
     do_fitness_func(&specific_pop);
     let mut average_history_per_iter: Vec<f64> = Vec::new();
 
-    for i in
+    for _i in
         Prgrs::new(0..max_iter_count, max_iter_count).set_length_move(Length::Proportional(0.5))
     {
         let parents = select_parents(&specific_pop, parent_count);
@@ -347,7 +349,7 @@ fn t_main() {
 
         assert!(specific_pop.len() == population_count);
 
-        iteration_count += 1;
+        _iteration_count += 1;
 
         let mut average_fit = 0.0;
         for pop in specific_pop.iter() {
@@ -415,9 +417,9 @@ fn modify_sometimes(value: &mut Option<&mut String>) {
     }
 }
 
-fn main() {
+fn t_main() {
     let p = &mut String::from("hello world");
-    let mut default_msg = &mut String::from("default message");
+    let _default_msg = &mut String::from("default message");
     let mut msg = &mut Some(p);
 
     {
@@ -466,10 +468,10 @@ mod tests {
     fn test_species() {
         let num_inputs = 2;
         let num_outputs = 4;
-        let mut network = nn::Network::new(num_inputs, num_outputs, true);
-        let mut network_two = nn::Network::new(num_inputs, num_outputs, true);
+        let network = nn::Network::new(num_inputs, num_outputs, true);
+        let network_two = nn::Network::new(num_inputs, num_outputs, true);
 
-        let mut innovation_history = neat::InnovationHistory {
+        let _innovation_history = neat::InnovationHistory {
             global_inno_id: ((num_inputs + 1) * num_outputs) as usize,
             conn_history: vec![],
         };
@@ -479,7 +481,7 @@ mod tests {
             neat::Species::get_excess_disjoint(&network.edges, &network_two.edges)
         );
 
-        let mut network_three = nn::Network::new(num_inputs, num_outputs, false);
+        let network_three = nn::Network::new(num_inputs, num_outputs, false);
         assert_eq!(
             ((num_inputs + 1) * num_outputs) as usize,
             neat::Species::get_excess_disjoint(&network.edges, &network_three.edges)
@@ -502,7 +504,7 @@ mod tests {
     fn test_speciate() {
         let num_inputs = 2;
         let num_outputs = 4;
-        let mut network = nn::Network::new(num_inputs, num_outputs, true);
+        let network = nn::Network::new(num_inputs, num_outputs, true);
         let mut network_two = nn::Network::new(num_inputs, num_outputs, true);
 
         let mut innovation_history = neat::InnovationHistory {
@@ -519,7 +521,7 @@ mod tests {
             neat::Species::get_average_weight_diff(&network.edges, &network_two.edges)
         );
 
-        let mut network_three = nn::Network::new(num_inputs, num_outputs, false);
+        let network_three = nn::Network::new(num_inputs, num_outputs, false);
         assert_eq!(
             ((num_inputs + 1) * num_outputs) as usize,
             neat::Species::get_excess_disjoint(&network.edges, &network_three.edges)

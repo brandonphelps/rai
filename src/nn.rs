@@ -117,7 +117,7 @@ impl Network {
         let mut max_connections = 0;
         let mut num_nodes_in_layer: Vec<u64> = Vec::new();
 
-        for n in 0..self.layer_count {
+        for _n in 0..self.layer_count {
             num_nodes_in_layer.push(0);
         }
 
@@ -251,7 +251,7 @@ impl Network {
         from_id: usize,
         to_id: usize,
         edge_weight: f64,
-        mut inno_handler: &mut Option<&mut InnovationHistory>,
+        inno_handler: &mut Option<&mut InnovationHistory>,
     ) -> Edge {
         let mut inno_id = 2;
         if let Some(ref mut inno_history) = inno_handler {
@@ -294,7 +294,6 @@ impl Network {
         };
         self.nodes.push(m);
 
-        let new_inno_id = 0;
         let edge1 = self.construct_edge(
             incoming_node_id as usize,
             self.nodes.len() - 1,
@@ -324,13 +323,9 @@ impl Network {
     }
 
     pub fn are_connected(&self, _node_one: usize, _node_two: usize) -> bool {
-        let pos_check = self.edges.iter().position(|edge| {
+        self.edges.iter().position(|edge| {
             edge.to_node == _node_one as u64 && edge.from_node == _node_two as u64
-        });
-        match pos_check {
-            Some(T) => return true,
-            None => return false,
-        }
+        }).is_some()
     }
 
     pub fn add_connection(
@@ -353,20 +348,22 @@ impl Network {
                 edge.to_node == _node_one as u64 && edge.from_node == _node_two as u64
             });
             match pos_check {
-                Some(T) => return T,
+                Some(t) => return t,
                 None => (),
             }
 
             edge = self.construct_edge(_node_two, _node_one, weight, &mut inno_hist);
         } else {
+
             let pos_check = self.edges.iter().position(|edge| {
                 edge.to_node == _node_two as u64 && edge.from_node == _node_one as u64
             });
             match pos_check {
-                Some(T) => return T,
+                Some(t) => return t,
                 None => (),
             }
             edge = self.construct_edge(_node_one, _node_two, weight, &mut inno_hist);
+
         }
         self.edges.push(edge);
         return self.edges.len() - 1;

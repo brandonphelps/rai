@@ -77,23 +77,22 @@ pub struct InnovationHistory {
 }
 
 impl InnovationHistory {
-    pub fn get_inno_number(
-        &mut self,
-        network_inno_ids: &Vec<u64>,
-        from_node: usize,
-        to_node: usize,
-    ) -> usize {
+
+
+
+    
+    pub fn get_inno_number(&mut self,
+                           network_inno_ids: &Vec<u64>,
+                           from_node: usize,
+                           to_node: usize) -> usize {
+
         let mut is_new = true;
         // todo: change zero to next conn number.
         let mut connect_inno_num = self.global_inno_id;
         self.global_inno_id += 1;
         for conn_history in self.conn_history.iter() {
-            if conn_history
-                .inno_numbers
-                .iter()
-                .position(|inno_num| conn_history.matches(network_inno_ids, from_node, to_node))
-                .is_some()
-            {
+            if conn_history.matches(network_inno_ids, from_node, to_node) {
+            
                 is_new = false;
                 connect_inno_num = conn_history.inno_number;
                 break;
