@@ -1,19 +1,12 @@
-
-
-struct Instruction {
-
-}
-
+struct Instruction {}
 
 pub struct Program {
-    // points to the next instruction to be evaluated. 
+    // points to the next instruction to be evaluated.
     program_counter: u64,
     program_instruction: Vec<Instruction>,
-        
 }
 
 impl Program {
-
     // pub fn new() -> Program {
     //     return Program{program_counter: 0, program_instruction: Vec::new()};
     // }
@@ -25,7 +18,6 @@ impl Program {
     //     self.program_counter += 1;
     // }
 
-    
     // fn eval(&mut self, op: Instruction) -> () {
     //     println!("Evaluate!");
     // }

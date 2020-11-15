@@ -4,20 +4,19 @@ pub struct Species {
     excess_coeff: f64,
     weight_diff_coeff: f64,
     compat_threashold: f64,
-    champion: Vec<Edge>
+    champion: Vec<Edge>,
 }
 
 impl Species {
-
     pub fn new(excess_coeff: f64, weight_diff_coeff: f64, compat_threashold: f64) -> Species {
         return Species {
             excess_coeff: excess_coeff,
             weight_diff_coeff: weight_diff_coeff,
             compat_threashold: compat_threashold,
-            champion: vec![]
+            champion: vec![],
         };
     }
-    
+
     pub fn set_champion(&mut self, new_champ: &Vec<Edge>) -> () {
         self.champion.clear();
         for edge in new_champ.iter() {
@@ -28,12 +27,13 @@ impl Species {
     pub fn same_species(&self, other: &Vec<Edge>) -> bool {
         let excess_disjoin = Species::get_excess_disjoint(&self.champion, other);
         let average_weight_diff = Species::get_average_weight_diff(&self.champion, other);
-        let compat = (self.excess_coeff * excess_disjoin as f64) + (self.weight_diff_coeff * average_weight_diff);
+        let compat = (self.excess_coeff * excess_disjoin as f64)
+            + (self.weight_diff_coeff * average_weight_diff);
         return self.compat_threashold > compat;
     }
 
     /// returns the number of excess and disjoint edges.
-    /// i.e the number of extra edges and the number of non matching edges. 
+    /// i.e the number of extra edges and the number of non matching edges.
     pub fn get_excess_disjoint(one: &Vec<Edge>, two: &Vec<Edge>) -> usize {
         let mut matching = 0;
         println!("Edge 1 length: {}", one.len());
@@ -62,7 +62,8 @@ impl Species {
                 }
             }
         }
-        if matching == 0 { // divide by zero.
+        if matching == 0 {
+            // divide by zero.
             return 100.0; // todo make this an option?
         }
         return total_diff / matching as f64;
@@ -76,37 +77,46 @@ pub struct InnovationHistory {
 }
 
 impl InnovationHistory {
-    pub fn get_inno_number(&mut self, network_inno_ids: &Vec<u64>, from_node: usize, to_node: usize) -> usize {
+    pub fn get_inno_number(
+        &mut self,
+        network_inno_ids: &Vec<u64>,
+        from_node: usize,
+        to_node: usize,
+    ) -> usize {
         let mut is_new = true;
         // todo: change zero to next conn number.
         let mut connect_inno_num = self.global_inno_id;
         self.global_inno_id += 1;
         for conn_history in self.conn_history.iter() {
-            if conn_history.
-                inno_numbers.
-                iter().position(|inno_num|
-                                conn_history.matches(network_inno_ids,
-                                                     from_node,
-                                                     to_node)).is_some() {
+            if conn_history
+                .inno_numbers
+                .iter()
+                .position(|inno_num| conn_history.matches(network_inno_ids, from_node, to_node))
+                .is_some()
+            {
                 is_new = false;
                 connect_inno_num = conn_history.inno_number;
                 break;
             }
         }
 
-        if is_new { 
+        if is_new {
             let mut new_inno_nums = Vec::<u64>::new();
             for edge in network_inno_ids.iter() {
                 new_inno_nums.push(edge.clone());
             }
 
-            self.conn_history.push(ConnHistory::new(from_node, to_node, connect_inno_num, new_inno_nums));
+            self.conn_history.push(ConnHistory::new(
+                from_node,
+                to_node,
+                connect_inno_num,
+                new_inno_nums,
+            ));
         }
 
         return connect_inno_num;
     }
 }
-
 
 #[derive(Debug)]
 pub struct ConnHistory {
@@ -116,13 +126,19 @@ pub struct ConnHistory {
     inno_numbers: Vec<u64>,
 }
 
-
 impl ConnHistory {
-    pub fn new(from_node: usize, to_node: usize, inno_number: usize, inno_numbers: Vec<u64>) -> ConnHistory {
-        return ConnHistory{from_node: from_node,
-                           to_node: to_node,
-                           inno_number: inno_number,
-                           inno_numbers: inno_numbers };
+    pub fn new(
+        from_node: usize,
+        to_node: usize,
+        inno_number: usize,
+        inno_numbers: Vec<u64>,
+    ) -> ConnHistory {
+        return ConnHistory {
+            from_node: from_node,
+            to_node: to_node,
+            inno_number: inno_number,
+            inno_numbers: inno_numbers,
+        };
     }
 
     /// inserts and returns a new inno_id or if already existing returns current one.
@@ -132,7 +148,11 @@ impl ConnHistory {
             if from_node == self.from_node && to_node == self.to_node {
                 for inno_index in 0..network_inno_ids.len() {
                     let net_inno_id = &network_inno_ids[inno_index];
-                    if ! self.inno_numbers.iter().any(|inno_id| net_inno_id == inno_id) {
+                    if !self
+                        .inno_numbers
+                        .iter()
+                        .any(|inno_id| net_inno_id == inno_id)
+                    {
                         return false;
                     }
                 }
@@ -158,7 +178,7 @@ mod tests {
 
         let mut innovation_history = InnovationHistory {
             global_inno_id: global_inno_id,
-            conn_history: vec![]
+            conn_history: vec![],
         };
 
         let new_inno_num = innovation_history.get_inno_number(&network, 0, 2);
@@ -170,10 +190,8 @@ mod tests {
 
         assert!(conn_history.matches(&network, 0, 2));
 
-
-        // new connection that hasn't been seen before. 
+        // new connection that hasn't been seen before.
         let new_inno_num = innovation_history.get_inno_number(&network, 0, 20);
-        assert_eq!(new_inno_num, global_inno_id+1);
-        
+        assert_eq!(new_inno_num, global_inno_id + 1);
     }
 }

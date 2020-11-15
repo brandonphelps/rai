@@ -1,8 +1,8 @@
 // can't use this here ?
 //#[macro_use]
 // extern crate more_asserts;
-use rand::prelude::*;
 use crate::neat::InnovationHistory;
+use rand::prelude::*;
 
 #[derive(Debug)]
 pub struct Node {
@@ -13,9 +13,11 @@ pub struct Node {
 
 impl Node {
     pub fn clone(&self) -> Node {
-        Node{input_sum:0.0,
-             output_sum:0.0,
-             layer:self.layer}
+        Node {
+            input_sum: 0.0,
+            output_sum: 0.0,
+            layer: self.layer,
+        }
     }
 }
 
@@ -29,23 +31,23 @@ pub struct Edge {
     to_node: u64,
     pub weight: f64,
     pub enabled: bool,
-    pub inno_id: u64
+    pub inno_id: u64,
 }
 
 impl Edge {
     pub fn clone(&self) -> Edge {
-        return Edge{from_node: self.from_node,
-                    to_node: self.to_node,
-                    weight: self.weight,
-                    enabled: self.enabled,
-                    inno_id: self.inno_id};
+        return Edge {
+            from_node: self.from_node,
+            to_node: self.to_node,
+            weight: self.weight,
+            enabled: self.enabled,
+            inno_id: self.inno_id,
+        };
     }
 }
-    
 
 #[derive(Debug)]
 pub struct Network {
-
     // first I nodes are input nodes
     // after which the output nodes are next.
     pub nodes: Vec<Node>,
@@ -58,15 +60,15 @@ pub struct Network {
 }
 
 impl Network {
-
-
-    pub fn new(input_node_count: u32, output_node_count: u32, fully_connect: bool ) -> Network {
-        let mut network = Network{nodes: Vec::new(),
-                                  edges: Vec::new(),
-                                  input_node_count: input_node_count,
-                                  output_node_count: output_node_count,
-                                  layer_count: 2,
-                                  bias_node_id: 0};
+    pub fn new(input_node_count: u32, output_node_count: u32, fully_connect: bool) -> Network {
+        let mut network = Network {
+            nodes: Vec::new(),
+            edges: Vec::new(),
+            input_node_count: input_node_count,
+            output_node_count: output_node_count,
+            layer_count: 2,
+            bias_node_id: 0,
+        };
         for _input_n in 0..input_node_count {
             network.new_node(0);
         }
@@ -78,7 +80,7 @@ impl Network {
         // bias node.
         network.new_node(0);
 
-        network.bias_node_id = (network.nodes.len()-1) as u64;
+        network.bias_node_id = (network.nodes.len() - 1) as u64;
 
         if fully_connect {
             let mut local_inno_id = 0;
@@ -90,18 +92,20 @@ impl Network {
                         // todo: could be random or zero.
                         weight: 0.5,
                         enabled: true,
-                        inno_id: local_inno_id});
+                        inno_id: local_inno_id,
+                    });
                     local_inno_id += 1;
                 }
             }
-            // connect bias nodes up 
+            // connect bias nodes up
             for _output_n in 0..output_node_count {
                 network.edges.push(Edge {
                     from_node: network.bias_node_id,
-                    to_node: (_output_n + input_node_count)as u64,
+                    to_node: (_output_n + input_node_count) as u64,
                     weight: 1.0,
                     enabled: true,
-                    inno_id: local_inno_id});
+                    inno_id: local_inno_id,
+                });
                 local_inno_id += 1;
             }
         }
@@ -121,9 +125,9 @@ impl Network {
             num_nodes_in_layer[node.layer as usize] += 1;
         }
 
-        for i in 0..self.layer_count-1 {
+        for i in 0..self.layer_count - 1 {
             let mut nodes_in_front = 0;
-            for j in i+1..self.layer_count {
+            for j in i + 1..self.layer_count {
                 nodes_in_front += num_nodes_in_layer[j as usize];
             }
             max_connections += num_nodes_in_layer[i as usize] * nodes_in_front;
@@ -143,16 +147,14 @@ impl Network {
         for layer in 0..self.layer_count {
             println!("Layer: {}", layer);
             for edge in self.edges.iter() {
-                if edge.enabled && self.nodes[edge.from_node as usize].layer == layer.into() { 
+                if edge.enabled && self.nodes[edge.from_node as usize].layer == layer.into() {
                     println!("{:#?}", edge);
                 }
             }
         }
     }
 
-
-    pub fn feed_input(&mut self, inputs: Vec<f64> ) -> Vec<f64> {
-
+    pub fn feed_input(&mut self, inputs: Vec<f64>) -> Vec<f64> {
         let mut output = Vec::new();
         for i in 0..self.input_node_count {
             self.nodes[i as usize].output_sum = inputs[i as usize];
@@ -170,10 +172,11 @@ impl Network {
                     // set the output sum of the node so it can be used as input for next layer
                     if layer != 0 {
                         // println!("output: {} of {} {}", sigmoid(self.nodes[node_index].input_sum), node_index, self.nodes[node_index].input_sum);
-                        self.nodes[node_index].output_sum = sigmoid(self.nodes[node_index].input_sum);
+                        self.nodes[node_index].output_sum =
+                            sigmoid(self.nodes[node_index].input_sum);
                     }
 
-                    // 
+                    //
                     for edge in self.edges.iter() {
                         if edge.from_node as usize == node_index {
                             if edge.enabled {
@@ -189,7 +192,7 @@ impl Network {
             // self.pretty_print()
         }
 
-        for output_i in 0..self.output_node_count { 
+        for output_i in 0..self.output_node_count {
             let o_node = &self.nodes[(output_i + self.input_node_count) as usize];
             output.push(o_node.output_sum);
         }
@@ -203,27 +206,31 @@ impl Network {
     }
 
     pub fn new_node(&mut self, layer: u64) -> u64 {
-        let m = Node{ input_sum: 0.0, output_sum: 0.0, layer: layer};
+        let m = Node {
+            input_sum: 0.0,
+            output_sum: 0.0,
+            layer: layer,
+        };
         self.nodes.push(m);
         return (self.nodes.len() - 1) as u64;
     }
-    
+
     pub fn random_node(&self) -> usize {
         let mut rng = rand::thread_rng();
         let y: f64 = rng.gen();
-        return (y * (self.nodes.len()-1) as f64) as usize;
+        return (y * (self.nodes.len() - 1) as f64) as usize;
     }
 
     pub fn random_edge(&self) -> u64 {
         let mut rng = rand::thread_rng();
         let y: f64 = rng.gen();
-        return (y * (self.edges.len()-1) as f64) as u64;
+        return (y * (self.edges.len() - 1) as f64) as u64;
     }
 
     pub fn random_non_bias_edge(&self) -> u64 {
         let mut edge_index: u64 = self.random_edge();
 
-        while self.edges[edge_index as usize].from_node == self.bias_node_id  {
+        while self.edges[edge_index as usize].from_node == self.bias_node_id {
             edge_index = self.random_edge();
         }
 
@@ -232,64 +239,79 @@ impl Network {
 
     fn get_inno_ids(&self) -> Vec<u64> {
         let mut inno_ids: Vec<u64> = Vec::new();
-        
+
         for edge in self.edges.iter() {
             inno_ids.push(edge.inno_id);
         }
         return inno_ids;
     }
 
-
-    fn construct_edge(&self, from_id: usize, to_id: usize, edge_weight: f64, mut inno_handler: &mut Option<&mut InnovationHistory>) -> Edge {
+    fn construct_edge(
+        &self,
+        from_id: usize,
+        to_id: usize,
+        edge_weight: f64,
+        mut inno_handler: &mut Option<&mut InnovationHistory>,
+    ) -> Edge {
         let mut inno_id = 2;
         if let Some(ref mut inno_history) = inno_handler {
             let network_inno_ids = self.get_inno_ids();
             println!("Have a ref to inno history getting new id number");
-            inno_id = inno_history.get_inno_number(&network_inno_ids,
-                                                   from_id,
-                                                   to_id);
+            inno_id = inno_history.get_inno_number(&network_inno_ids, from_id, to_id);
         }
-        return Edge{ from_node: from_id as u64,
-                     to_node: to_id as u64,
-                     weight: edge_weight,
-                     enabled: true,
-                     inno_id: inno_id as u64};
+        return Edge {
+            from_node: from_id as u64,
+            to_node: to_id as u64,
+            weight: edge_weight,
+            enabled: true,
+            inno_id: inno_id as u64,
+        };
     }
 
-    /// Takes an edge and inserts a node inline. 
-    pub fn add_node(&mut self, _edge_index: usize, edge1_w: f64, edge2_w: f64, mut inno_handler: Option<&mut InnovationHistory>) -> u64 {
+    /// Takes an edge and inserts a node inline.
+    pub fn add_node(
+        &mut self,
+        _edge_index: usize,
+        edge1_w: f64,
+        edge2_w: f64,
+        mut inno_handler: Option<&mut InnovationHistory>,
+    ) -> u64 {
         self.edges[_edge_index].enabled = false;
 
         let edge = &self.edges[_edge_index];
         let incoming_node_id = edge.from_node;
         let outgoing_node_id = edge.to_node;
 
-        // get teh node the edge we are breaking up was pointing to. 
+        // get teh node the edge we are breaking up was pointing to.
         let node = &self.nodes[edge.from_node as usize];
         let current_node_layer = node.layer + 1;
-        
-        // new node. 
+
+        // new node.
         let m = Node {
             input_sum: 0.0,
             output_sum: 0.0,
-            layer: current_node_layer
+            layer: current_node_layer,
         };
         self.nodes.push(m);
 
         let new_inno_id = 0;
-        let edge1 = self.construct_edge(incoming_node_id as usize,
-                                        self.nodes.len() - 1,
-                                        edge1_w,
-                                        &mut inno_handler);
+        let edge1 = self.construct_edge(
+            incoming_node_id as usize,
+            self.nodes.len() - 1,
+            edge1_w,
+            &mut inno_handler,
+        );
         self.edges.push(edge1);
-        let edge2 = self.construct_edge(self.nodes.len() - 1,
-                                        outgoing_node_id as usize,
-                                        edge2_w,
-                                        &mut inno_handler);
+        let edge2 = self.construct_edge(
+            self.nodes.len() - 1,
+            outgoing_node_id as usize,
+            edge2_w,
+            &mut inno_handler,
+        );
         self.edges.push(edge2);
-        
+
         if self.nodes[outgoing_node_id as usize].layer == current_node_layer.into() {
-            for node_i in 0..self.nodes.len()-1 {
+            for node_i in 0..self.nodes.len() - 1 {
                 let node_t = &mut self.nodes[node_i];
                 if node_t.layer >= current_node_layer {
                     node_t.layer += 1;
@@ -302,15 +324,22 @@ impl Network {
     }
 
     pub fn are_connected(&self, _node_one: usize, _node_two: usize) -> bool {
-        let pos_check = self.edges.iter().position(|edge| edge.to_node == _node_one as u64
-                                                   && edge.from_node == _node_two as u64);
+        let pos_check = self.edges.iter().position(|edge| {
+            edge.to_node == _node_one as u64 && edge.from_node == _node_two as u64
+        });
         match pos_check {
             Some(T) => return true,
             None => return false,
         }
     }
 
-    pub fn add_connection(&mut self, _node_one: usize, _node_two: usize, weight: f64, mut inno_hist: Option<&mut InnovationHistory>) -> usize {
+    pub fn add_connection(
+        &mut self,
+        _node_one: usize,
+        _node_two: usize,
+        weight: f64,
+        mut inno_hist: Option<&mut InnovationHistory>,
+    ) -> usize {
         // todo: don't add in edges if the edge already exists.
         let node_one = &self.nodes[_node_one];
         let node_two = &self.nodes[_node_two];
@@ -318,25 +347,26 @@ impl Network {
             return 0;
         }
         let edge;
-        // allow for nodes to be in reverse order, so if node 1 layer is greater than node 2, swap. 
+        // allow for nodes to be in reverse order, so if node 1 layer is greater than node 2, swap.
         if node_one.layer > node_two.layer {
-            let pos_check = self.edges.iter().position(|edge| edge.to_node == _node_one as u64
-                                                       && edge.from_node == _node_two as u64);
+            let pos_check = self.edges.iter().position(|edge| {
+                edge.to_node == _node_one as u64 && edge.from_node == _node_two as u64
+            });
             match pos_check {
                 Some(T) => return T,
                 None => (),
             }
 
-	    edge = self.construct_edge(_node_two, _node_one, weight, &mut inno_hist);
+            edge = self.construct_edge(_node_two, _node_one, weight, &mut inno_hist);
         } else {
-
-            let pos_check = self.edges.iter().position(|edge| edge.to_node == _node_two as u64
-                                                       && edge.from_node == _node_one as u64);
+            let pos_check = self.edges.iter().position(|edge| {
+                edge.to_node == _node_two as u64 && edge.from_node == _node_one as u64
+            });
             match pos_check {
                 Some(T) => return T,
                 None => (),
             }
-	    edge = self.construct_edge(_node_one, _node_two, weight, &mut inno_hist);
+            edge = self.construct_edge(_node_one, _node_two, weight, &mut inno_hist);
         }
         self.edges.push(edge);
         return self.edges.len() - 1;
@@ -358,12 +388,12 @@ mod tests {
 
     fn construct_xor_network() -> Network {
         let mut network = Network::new(2, 1, false);
-        
+
         // node 0 - > end node
         let edge1 = network.add_connection(0, 2, 1.0, None);
         // node 1 - > end node
         let edge2 = network.add_connection(1, 2, -1.0, None);
-        
+
         // node 0 -> node 2 - > end node
         let node1_index = network.add_node(edge1, 20.0, 20.0, None);
 
@@ -373,7 +403,7 @@ mod tests {
         network.add_connection(3, node1_index as usize, -10.0, None);
         network.add_connection(3, node2_index as usize, 30.0, None);
         network.add_connection(3, 2 as usize, -30.0, None);
-        
+
         // node 0 -> node 3 -> end node
         let _edge3 = network.add_connection(0, node2_index as usize, -20.0, None);
 
@@ -395,7 +425,6 @@ mod tests {
         println!("Output of graph");
         network.pretty_print();
     }
-
 
     #[test]
     fn test_simple_add() {
@@ -419,7 +448,6 @@ mod tests {
         assert_eq!(output_values[0], 0.6224593312018546);
     }
 
-
     #[test]
     fn test_xor_network_one_one() {
         let mut network = construct_xor_network();
@@ -433,10 +461,9 @@ mod tests {
         assert_eq!(output_values.len(), 1);
         assert!(output_values[0] < 0.1);
         assert!(output_values[0] > -0.1);
-
     }
 
-    // looks to test that all connections go forward rather than backwards. 
+    // looks to test that all connections go forward rather than backwards.
     #[test]
     fn test_connections_forward_construction() {
         let network = Network::new(4, 400, true);
@@ -449,10 +476,9 @@ mod tests {
         }
     }
 
-
     #[test]
     // check to see as we add in nodes that edges preserve
-    // forward feed direction. 
+    // forward feed direction.
     fn test_connections_add_node_forward() {
         let mut network = Network::new(4, 400, true);
         let mut node_count = 4 + 400 + 1;
@@ -474,7 +500,7 @@ mod tests {
 
     #[test]
     // check to see as we add in nodes that edges preserve
-    // forward feed direction. 
+    // forward feed direction.
     fn test_connections_add_connection_forward() {
         let mut network = Network::new(4, 400, true);
         let mut node_count = 4 + 400 + 1;
@@ -520,7 +546,7 @@ mod tests {
         and_one_zero: (construct_and_network(), vec![1.0, 0.0], vec![-0.1, 0.1]),
         and_zero_one: (construct_and_network(), vec![0.0, 1.0], vec![-0.1, 0.1]),
         and_zero_zero: (construct_and_network(), vec![0.0, 0.0], vec![-0.1, 0.1]),
-            
+
     }
 
     #[test]
@@ -535,11 +561,9 @@ mod tests {
         println!("{:#?}", net);
         assert!(!net.is_fully_connected());
     }
-    
 
     #[test]
     fn test_sigmoid() {
-
         let r = sigmoid(0.0);
         println!("Sigmoid of 0 is: {}", r);
         if r > 0.52 {
@@ -549,8 +573,5 @@ mod tests {
             println!("Result of r: {}", r);
             assert!(false);
         }
-        
     }
 }
-
-
