@@ -130,9 +130,9 @@ where
 // }
 
 fn main() {
-    let population_count = 2000;
+    let population_count = 200;
     let mut _iteration_count = 0;
-    let max_iter_count = 100;
+    let max_iter_count = 10000000;
     // let mut specific_pop: Vec<SinF> = Vec::new();
     let mut specific_pop: Vec<TestNetwork> = Vec::new();
 
@@ -197,12 +197,6 @@ fn main() {
             // -1 for champion
             let num_children =
                 ((spec_av_fit / average_fit) * population_count as f64).floor() as u64 - 1;
-            println!(
-                "Num children: {} {} {} ",
-                spec_av_fit,
-                spec_av_fit / average_fit,
-                num_children
-            );
             for _child_num in 0..num_children {
                 let mut new_child =
                     TestNetwork::from_network(spec.generate_offspring(&innovation_history));
@@ -246,27 +240,6 @@ fn main() {
     println!("{:?}", top.feed_input(vec![0.0, 1.0]));
     println!("{:?}", top.feed_input(vec![1.0, 0.0]));
     println!("{:?}", top.feed_input(vec![1.0, 1.0]));
-
-    // println!("{:?}", top.network.feed_input(vec![0.0, 1.0]));
-    // println!("{:?}", top.network.feed_input(vec![1.0, 0.0]));
-    // println!("{:?}", top.network.feed_input(vec![1.0, 1.0]));
-
-    // let j = hrm::Program::new();
-
-    // let rand_t: Option<&(u32, u32)> = results.choose(&mut rand::thread_rng());
-    // let newSinF = match rand_t {
-    //     None => panic!("None"),
-    //     Some(T) => {
-    //         match rand_f {
-    //             None => panic!("No idea double None"),
-    //             Some(F) => {
-    //                 specific_pop[F.1 as usize].crossover(&specific_pop[T.1 as usize])
-    //             },
-    //         }
-    //     }
-    // };
-
-    // println!("New sinze F: {:?}", newSinF);
 }
 
 // todo look at this bench amrk thing https://stackoverflow.com/questions/60916194/how-to-sort-a-vector-in-descending-order-in-rust
