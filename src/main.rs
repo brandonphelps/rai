@@ -438,6 +438,7 @@ fn main() {
         
         print_sometimes(&msg);
         modify_sometimes(&mut msg);
+        print_sometimes(&msg);
     }
 
     if let Some(ref m) = msg {
