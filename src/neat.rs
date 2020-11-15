@@ -1,5 +1,7 @@
 use crate::nn::{Network, Edge};
+use crate::evo_algo::{Individual};
 use rand::prelude::*;
+
 
 // todo: how do i make this available in multiple files?
 trait Crossover<Rhs = Self> {
@@ -74,6 +76,18 @@ impl<'a> Species<'a> {
 
         return self.compat_threashold > compat;
     }
+
+    /// returns the average fitness of the individuals within
+    /// make sure that all individuals have their update_fitness funcs called before this one. 
+    pub fn average_fitness(&self) -> f64 {
+        // todo: does rust have a fancy functional programming func here?
+        let mut avg_fitness = 0.0;
+        for ind in self.individuals.iter() {
+            avg_fitness += ind.fitness();
+        }
+        return avg_fitness / self.individuals.len() as f64;
+    }
+
 
     /// returns the number of excess and disjoint edges.
     /// i.e the number of extra edges and the number of non matching edges.
@@ -155,7 +169,6 @@ impl InnovationHistory {
         }
 
         if is_new {
-            println!("New innovation id");
             let mut new_inno_nums = Vec::<u64>::new();
             for edge in network_inno_ids.iter() {
                 new_inno_nums.push(edge.clone());

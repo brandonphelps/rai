@@ -8,25 +8,14 @@ use rand::seq::SliceRandom;
 use std::cmp::Reverse;
 use std::{thread, time};
 
+// are these important?
 mod hrm;
 mod neat;
 mod nn;
+mod evo_algo;
 
-trait Individual {
-    // can this return just a numeric traited instance?
-    // post calculated fitness.
-    fn fitness(&self) -> f64;
-    fn update_fitness(&mut self) -> ();
-    fn print(&self) -> ();
-    fn mutate(&mut self) -> ();
-    // fn crossover(&self, other: Box<dyn Individual>) -> Box<dyn Individual>;
-}
+use evo_algo::{Individual, Crossover};
 
-trait Crossover<Rhs = Self> {
-    type Output;
-
-    fn crossover(&self, rhs: &Rhs) -> Self::Output;
-}
 
 use std::sync::atomic::{AtomicUsize, Ordering};
 
@@ -329,8 +318,6 @@ where
 
 fn main() {
     let population_count = 200;
-    let parent_count = 10;
-    let offspring_count = 40;
     let mut _iteration_count = 0;
     let max_iter_count = 10000;
     // let mut specific_pop: Vec<SinF> = Vec::new();
@@ -375,7 +362,6 @@ fn main() {
                 }
             }
             if ! found_spec {
-                println!("Found new species: {}", _i);
                 let mut new_spec = neat::Species::new(1.5, 0.8, 4.0);
                 new_spec.set_champion(&test_n.network);
                 species.push(new_spec);
@@ -383,17 +369,18 @@ fn main() {
         }
 
         let mut offspring: Vec<TestNetwork> = Vec::new();
-        {
-            for spec in species.iter() {
-                // add in the champ of the species in. 
-                offspring.push(TestNetwork::from_network(spec.champion.unwrap().clone()));
-                for _child_num in 0..10 {
-                    let mut new_child = TestNetwork::from_network(spec.generate_offspring(&innovation_history));
-                    new_child.custom_mutate(&mut innovation_history);
-                    offspring.push(new_child);
-                }
+        
+        for spec in species.iter() {
+            // add in the champ of the species in. 
+            offspring.push(TestNetwork::from_network(spec.champion.unwrap().clone()));
+            for _child_num in 0..10 {
+                let mut new_child = TestNetwork::from_network(spec.generate_offspring(&innovation_history));
+                new_child.custom_mutate(&mut innovation_history);
+                offspring.push(new_child);
             }
         }
+        
+        let species_count = species.len();
         species.clear();
 
         // do_fitness_func(&offspring);
@@ -414,7 +401,8 @@ fn main() {
         for pop in specific_pop.iter() {
             average_fit += pop.fitness();
         }
-        println!("{}", average_fit / (specific_pop.len() as f64));
+        
+        println!("Species({}) average fitness {}", species_count, average_fit / (specific_pop.len() as f64));
         average_history_per_iter.push(average_fit / (specific_pop.len() as f64));
     }
 
