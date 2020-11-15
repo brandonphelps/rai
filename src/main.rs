@@ -133,7 +133,7 @@ where
 fn main() {
     let population_count = 200;
     let mut _iteration_count = 0;
-    let max_iter_count = 10000;
+    let max_iter_count = 10;
     // let mut specific_pop: Vec<SinF> = Vec::new();
     let mut specific_pop: Vec<TestNetwork> = Vec::new();
 
@@ -183,11 +183,21 @@ fn main() {
         }
 
         let mut offspring: Vec<TestNetwork> = Vec::new();
-        
+
+        let mut average_fit = 0.0;
+        for pop in specific_pop.iter() {
+            average_fit += pop.fitness();
+        }
+        average_fit /= (specific_pop.len() as f64);
+
         for spec in species.iter() {
             // add in the champ of the species in. 
             offspring.push(TestNetwork::from_network(spec.champion.unwrap().network.clone()));
-            for _child_num in 0..10 {
+            let spec_av_fit = spec.average_fitness();
+            // -1 for champion
+            let num_children = ((spec_av_fit / average_fit) * population_count as f64).floor() as u64 - 1;
+            println!("Num children: {} {} {} ", spec_av_fit, spec_av_fit / average_fit,  num_children);
+            for _child_num in 0..num_children {
                 let mut new_child = TestNetwork::from_network(spec.generate_offspring(&innovation_history));
                 new_child.custom_mutate(&mut innovation_history);
                 offspring.push(new_child);
@@ -197,7 +207,6 @@ fn main() {
         let species_count = species.len();
         species.clear();
 
-        // do_fitness_func(&offspring);
         for offpin in offspring.iter_mut() {
             offpin.update_fitness();
         }
@@ -210,13 +219,7 @@ fn main() {
         specific_pop.truncate(population_count);
 
         assert!(specific_pop.len() == population_count);
-
-        let mut average_fit = 0.0;
-        for pop in specific_pop.iter() {
-            average_fit += pop.fitness();
-        }
-        
-        println!("Species({}) average fitness {}", species_count, average_fit / (specific_pop.len() as f64));
+        println!("Species({}) average fitness {}", species_count, average_fit);
         average_history_per_iter.push(average_fit / (specific_pop.len() as f64));
     }
 
