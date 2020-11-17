@@ -3,6 +3,7 @@ name = "rai"
 version = "0.1.0"
 authors = ["brandon phelps <bwp44f@mst.edu>"]
 edition = "2018"
+build="build.rs"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
@@ -10,3 +11,8 @@ edition = "2018"
 rand="0.7.3"
 more-asserts="0.2"
 prgrs="0.6.4"
+
+[dependencies.sdl2]
+version="0.34"
+default-features = false
+features = ["image"]

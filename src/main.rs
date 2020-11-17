@@ -19,6 +19,11 @@ use neat::TestNetwork;
 
 use std::sync::atomic::{AtomicUsize, Ordering};
 
+use sdl2;
+use sdl2::keyboard::Keycode;
+use sdl2::video::{Window, WindowContext};
+use sdl2::render::{Canvas, Texture, TextureCreator};
+
 #[allow(non_upper_case_globals)]
 static SortedIdCount: AtomicUsize = AtomicUsize::new(0);
 static SinFIdCount: AtomicUsize = AtomicUsize::new(0);
@@ -129,7 +134,52 @@ where
 
 // }
 
-fn main() {
+fn find_sdl_gl_driver() -> Option<u32> {
+    for (index, item) in sdl2::render::drivers().enumerate() {
+        if item.name == "opengl" {
+            return Some(index as u32);
+        }
+    }
+    None
+}
+
+
+fn dummy_texture<'a>(canvas: &mut Canvas<Window>, texture_creator: &'a TextureCreator<WindowContext>) -> Result<(Texture<'a>, Texture<'a>), String> {
+    enum TextureColor {
+        Yellow,
+        White,
+    };
+
+    let mut square_texture1 = texture_creator.create_texture_target(None, 10, 10).map_err(|e| e.to_string())?;
+    let mut square_texture2 = texture_creator.create_texture_target(None, 10, 10).map_err(|e| e.to_string())?;
+
+    {
+        
+    }
+
+    return Ok((square_texture1, square_texture2));
+}
+
+
+fn main() -> std::result::Result<(), String> {
+
+    let sdl_context = sdl2::init().unwrap();
+    let video_subsystem = sdl_context.video().unwrap();
+    let window = video_subsystem.window("Window", 800, 600)
+        .opengl().build().unwrap();
+
+    let mut canvas = window.into_canvas().index(find_sdl_gl_driver().unwrap()).build()
+        .unwrap();
+    
+
+    canvas.clear();
+    canvas.present();
+
+    let texture_creator: TextureCreator<_> = canvas.texture_creator();
+
+    let (square_texture1, square_texture2) = dummy_texture(&mut canvas, &texture_creator)?;
+
+
     let population_count = 200;
     let mut _iteration_count = 0;
     let max_iter_count = 10000000;
@@ -240,6 +290,7 @@ fn main() {
     println!("{:?}", top.feed_input(vec![0.0, 1.0]));
     println!("{:?}", top.feed_input(vec![1.0, 0.0]));
     println!("{:?}", top.feed_input(vec![1.0, 1.0]));
+    Ok(())
 }
 
 // todo look at this bench amrk thing https://stackoverflow.com/questions/60916194/how-to-sort-a-vector-in-descending-order-in-rust
@@ -285,6 +336,7 @@ fn t_main() {
 
     // let unwrapped_msg = msg.unwrap_or(default_msg);
     // println!("{}", unwrapped_msg);
+
 }
 
 #[cfg(test)]
@@ -397,4 +449,6 @@ mod tests {
         assert!(!spec.same_species(&network_two.edges));
         assert!(!spec.same_species(&network_three.edges));
     }
+
+
 }
