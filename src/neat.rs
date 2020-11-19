@@ -297,7 +297,7 @@ impl<'a> Species<'a> {
         return total_diff / matching as f64;
     }
 
-    pub fn generate_offspring(&self, inno_history: &InnovationHistory) -> Network {
+    pub fn generate_offspring(&self, _inno_history: &InnovationHistory) -> Network {
         let mut rng = rand::thread_rng();
 
         if rng.gen::<f64>() < 0.25 {

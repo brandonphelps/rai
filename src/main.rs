@@ -20,13 +20,16 @@ use neat::TestNetwork;
 use std::sync::atomic::{AtomicUsize, Ordering};
 
 use sdl2;
+use sdl2::pixels::Color;
+use sdl2::rect::{Point, Rect};
+
 use sdl2::keyboard::Keycode;
-use sdl2::video::{Window, WindowContext};
 use sdl2::render::{Canvas, Texture, TextureCreator};
+use sdl2::video::{Window, WindowContext};
 
 #[allow(non_upper_case_globals)]
 static SortedIdCount: AtomicUsize = AtomicUsize::new(0);
-static SinFIdCount: AtomicUsize = AtomicUsize::new(0);
+static SIN_FID_COUNT: AtomicUsize = AtomicUsize::new(0);
 
 #[derive(Debug)]
 struct SinF {
@@ -40,7 +43,7 @@ impl SinF {
     // }
 
     fn new(value: f64) -> SinF {
-        let old_count = SinFIdCount.fetch_add(1, Ordering::SeqCst);
+        let old_count = SIN_FID_COUNT.fetch_add(1, Ordering::SeqCst);
         SinF {
             value: value,
             ident: old_count,
@@ -143,42 +146,80 @@ fn find_sdl_gl_driver() -> Option<u32> {
     None
 }
 
-
-fn dummy_texture<'a>(canvas: &mut Canvas<Window>, texture_creator: &'a TextureCreator<WindowContext>) -> Result<(Texture<'a>, Texture<'a>), String> {
+fn dummy_texture<'a>(
+    canvas: &mut Canvas<Window>,
+    texture_creator: &'a TextureCreator<WindowContext>,
+) -> Result<(Texture<'a>, Texture<'a>), String> {
     enum TextureColor {
         Yellow,
         White,
     };
 
-    let mut square_texture1 = texture_creator.create_texture_target(None, 10, 10).map_err(|e| e.to_string())?;
-    let mut square_texture2 = texture_creator.create_texture_target(None, 10, 10).map_err(|e| e.to_string())?;
+    let mut square_texture1 = texture_creator
+        .create_texture_target(None, 10, 10)
+        .map_err(|e| e.to_string())?;
+    let mut square_texture2 = texture_creator
+        .create_texture_target(None, 10, 10)
+        .map_err(|e| e.to_string())?;
 
     {
-        
+        let textures = vec![
+            (&mut square_texture1, TextureColor::Yellow),
+            (&mut square_texture2, TextureColor::White),
+        ];
+
+        canvas
+            .with_multiple_texture_canvas(textures.iter(), |texture_canvas, user_context| {
+                texture_canvas.set_draw_color(Color::RGB(0, 0, 0));
+                texture_canvas.clear();
+                match *user_context {
+                    TextureColor::Yellow => {
+                        println!("Yello");
+                        for i in 0..10 {
+                            for j in 0..10 {
+                                if (i + j) % 4 == 0 {
+                                    texture_canvas.set_draw_color(Color::RGB(255, 255, 0));
+                                    texture_canvas
+                                        .draw_point(Point::new(i as i32, j as i32))
+                                        .expect("could not draw point");
+                                }
+                            }
+                        }
+                    }
+                    TextureColor::White => {}
+                };
+            })
+            .map_err(|e| e.to_string())?;
     }
 
     return Ok((square_texture1, square_texture2));
 }
 
-
 fn main() -> std::result::Result<(), String> {
-
     let sdl_context = sdl2::init().unwrap();
     let video_subsystem = sdl_context.video().unwrap();
-    let window = video_subsystem.window("Window", 800, 600)
-        .opengl().build().unwrap();
-
-    let mut canvas = window.into_canvas().index(find_sdl_gl_driver().unwrap()).build()
+    let window = video_subsystem
+        .window("Window", 800, 600)
+        .opengl()
+        .build()
         .unwrap();
-    
+
+    let mut canvas = window
+        .into_canvas()
+        .index(find_sdl_gl_driver().unwrap())
+        .build()
+        .unwrap();
 
     canvas.clear();
     canvas.present();
 
     let texture_creator: TextureCreator<_> = canvas.texture_creator();
 
-    let (square_texture1, square_texture2) = dummy_texture(&mut canvas, &texture_creator)?;
+    let (square_texture1, _square_texture2) = dummy_texture(&mut canvas, &texture_creator)?;
 
+    canvas.copy(&square_texture1, None, Rect::new(0, 0, 10, 10));
+    // canvas.line(0, 0, 30, 20, Color::RGB(0,255, 255));
+    canvas.present();
 
     let population_count = 200;
     let mut _iteration_count = 0;
@@ -236,7 +277,7 @@ fn main() -> std::result::Result<(), String> {
         for pop in specific_pop.iter() {
             average_fit += pop.fitness();
         }
-        average_fit /= (specific_pop.len() as f64);
+        average_fit /= specific_pop.len() as f64;
 
         for spec in species.iter() {
             // add in the champ of the species in.
@@ -336,7 +377,6 @@ fn t_main() {
 
     // let unwrapped_msg = msg.unwrap_or(default_msg);
     // println!("{}", unwrapped_msg);
-
 }
 
 #[cfg(test)]
@@ -393,7 +433,8 @@ mod tests {
 
         let mut spec = neat::Species::new(0.5, 0.4, 1.2);
 
-        spec.set_champion(&network.edges);
+        let test_network = TestNetwork::from_network(network.clone());
+        spec.set_champion(&test_network);
         assert!(spec.same_species(&network.edges));
         assert!(spec.same_species(&network_two.edges));
         assert!(!spec.same_species(&network_three.edges));
@@ -444,11 +485,10 @@ mod tests {
 
         let mut spec = neat::Species::new(0.5, 0.4, 1.2);
 
-        spec.set_champion(&network.edges);
+        let tmp_test = TestNetwork::from_network(network.clone());
+        spec.set_champion(&tmp_test);
         assert!(spec.same_species(&network.edges));
         assert!(!spec.same_species(&network_two.edges));
         assert!(!spec.same_species(&network_three.edges));
     }
-
-
 }
