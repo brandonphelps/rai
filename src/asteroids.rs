@@ -34,6 +34,8 @@ struct GameState {
     asteroids: Vec<Asteroid>,
     player: Player,
     bullets: Vec<Bullet>,
+    world_width: f64,
+    world_height: f64,
 }
 
 struct GameInput {
@@ -59,6 +61,8 @@ fn game_init() -> GameState {
             }
         },
         bullets: vec![],
+        world_width: 100.0,
+        world_height: 100.0,
     };
 }
 
@@ -94,6 +98,7 @@ fn game_update(game_state: &GameState, dt: f64, game_input: &GameInput) -> GameS
     }
 
     new_state.player.rust_sux.direction += game_input.rotation * dt;
+    
     if new_state.player.rust_sux.direction > std::f64::consts::PI {
         new_state.player.rust_sux.direction -= std::f64::consts::PI;
     }
@@ -112,7 +117,10 @@ fn game_update(game_state: &GameState, dt: f64, game_input: &GameInput) -> GameS
 
     for bull in new_state.bullets.iter_mut() {
         update_pos(&mut bull.rust_sux, dt);
+        bull.life_time -= 1.0 * dt;
     }
+
+    new_state.bullets.retain(|bull| bull.life_time > 0.0);
 
     return new_state;
 }
@@ -140,7 +148,7 @@ mod tests {
         game_state.player.rust_sux.direction = std::f64::consts::PI * 0.5;
 
 
-        for i in 0..10 {
+        for i in 0..50 {
             if rng.gen::<f64>() < 0.2 {
                 // shoot_bullet(&mut game_state);
                 game_input.shoot = true;
@@ -166,7 +174,6 @@ mod tests {
         update_pos(&mut pos_thing, 1.0);
         assert_eq!(pos_thing.pos_x, 0.0);
         assert_eq!(pos_thing.pos_y, 0.0);
-
     }
 
     #[test]
