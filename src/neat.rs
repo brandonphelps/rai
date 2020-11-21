@@ -225,8 +225,8 @@ impl<'a> Species<'a> {
     pub fn new(excess_coeff: f64, weight_diff_coeff: f64, compat_threashold: f64) -> Species<'a> {
         return Species {
             excess_coeff,
-            weight_diff_coeff: weight_diff_coeff,
-            compat_threashold: compat_threashold,
+            weight_diff_coeff,
+            compat_threashold,
             champion: None,
             individuals: vec![],
         };
@@ -368,10 +368,10 @@ impl ConnHistory {
         inno_numbers: Vec<u64>,
     ) -> ConnHistory {
         return ConnHistory {
-            from_node: from_node,
-            to_node: to_node,
-            inno_number: inno_number,
-            inno_numbers: inno_numbers,
+            from_node,
+            to_node,
+            inno_number,
+            inno_numbers,
         };
     }
 

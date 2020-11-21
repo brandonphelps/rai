@@ -6,6 +6,7 @@ struct Point {
     y: f64,
 }
 
+#[derive(Clone, Debug)]
 struct Circle {
     pos_x: f64,
     pos_y: f64,
@@ -14,20 +15,16 @@ struct Circle {
 
 struct Rectangle {
     // upper left
-    pos_x_ul: f64,
-    pos_y_ul: f64,
+    p_ul: Point,
 
     // upper right
-    pos_x_ur: f64,
-    pos_y_ur: f64,
+    p_ur: Point,
 
     // lower left 
-    pos_x_ll: f64,
-    pos_y_ll: f64,
+    p_ll: Point,
 
     // lower right
-    pos_x_lr: f64,
-    pos_y_lr: f64,
+    p_lr: Point,
 }
 
 // given three colinear points checks if point q lines on line segment pr
@@ -96,6 +93,14 @@ fn line_intersect(pA1: &Point, pA2: &Point, pB1: &Point, pB2: &Point) -> bool {
         return true
     }
 
+    if o3 == 0 && point_on_segement(pB1, pA2, pB2) {
+        return true
+    }
+
+    if o4 == 0 && point_on_segement(pB1, pA2, pB2) {
+        return true
+    }
+    
     return false
 }
     
@@ -109,10 +114,11 @@ fn collides(circle_one: &Circle,
     return dist <= circle_one.radius + circle_two.radius;
 }
 
-// fn collides(rect_one: &Rectangle,
-//             rect_two: &Rectangle) -> bool {
-//     return false;
-// }
+fn collides_rectangles(rect_one: &Rectangle,
+                       rect_two: &Rectangle) -> bool {
+
+    return false;
+}
 
 #[derive(Debug, Clone)]
 struct MoveAblePos {
@@ -126,11 +132,32 @@ struct MoveAblePos {
 #[derive(Clone, Debug)]
 struct Asteroid {
     rust_sux: MoveAblePos,
+    radius: f64,
+}
+
+impl Asteroid {
+    pub fn bounding_box(&self) -> Circle {
+        return Circle {
+            pos_x: self.rust_sux.pos_x,
+            pos_y: self.rust_sux.pos_y,
+            radius: self.radius,
+        };
+    }
 }
 
 #[derive(Clone, Debug)]
 struct Player {
     rust_sux: MoveAblePos,
+}
+impl Player {
+        
+    pub fn bounding_box(&self) -> Circle {
+        return Circle {
+            pos_x: self.rust_sux.pos_x,
+            pos_y: self.rust_sux.pos_y,
+            radius: 2.0,
+        };
+    }
 }
 
 
@@ -139,6 +166,15 @@ struct Bullet {
     rust_sux: MoveAblePos,
     /// amount of update time the bullet will exists for. 
     life_time: f64,
+}
+impl Bullet { 
+    fn bounding_box(&self) -> Circle {
+        return Circle {
+            pos_x: self.rust_sux.pos_x,
+            pos_y: self.rust_sux.pos_y,
+            radius: 1.0,
+        };
+    }
 }
 
 #[derive(Clone, Debug)]
@@ -170,7 +206,8 @@ fn game_init() -> GameState {
                 pos_y: 0.0,
                 velocity: 0.0,
                 direction: 0.0,
-            }
+                
+            },
         },
         bullets: vec![],
         world_width: 100.0,
@@ -180,7 +217,7 @@ fn game_init() -> GameState {
 
 
 // update to have wrap around the world.
-fn update_pos(r: &mut MoveAblePos, dt: f64) -> () {
+fn update_pos(r: &mut MoveAblePos, dt: f64) {
     r.pos_x += dt * r.velocity * (r.direction).cos();
     r.pos_y += dt * r.velocity * (r.direction).sin();
 }
@@ -194,7 +231,8 @@ fn shoot_bullet(game_state: &mut GameState ) -> () {
             pos_x: p.rust_sux.pos_x,
             pos_y: p.rust_sux.pos_y,
             velocity: p.rust_sux.velocity + 2.0,
-            direction: p.rust_sux.direction
+            direction: p.rust_sux.direction,
+            
         },
         life_time: 30.0,
     };
@@ -234,8 +272,53 @@ fn game_update(game_state: &GameState, dt: f64, game_input: &GameInput) -> GameS
 
     new_state.bullets.retain(|bull| bull.life_time > 0.0);
 
+
+    // check for collision
+    let mut new_asteroids = Vec::new();
+
+    for ast in new_state.asteroids.iter() {
+        let mut deleted_aster = false;
+        for bull in new_state.bullets.iter_mut() {
+            if collides(&ast.bounding_box(), &bull.bounding_box()) {
+                println!("Asteroid and bullet are colliding");
+                // break the asteroid into two, and give some random direction and velocity.
+                // remove the bullet.
+
+                // only make new asteroids from those that are large enough.
+                // large asteroid
+                if ast.radius == 4.0 {
+                    new_asteroids.push(Asteroid {
+                        rust_sux: MoveAblePos {
+                            pos_x: ast.rust_sux.pos_x,
+                            pos_y: ast.rust_sux.pos_y,
+                            // todo: change this at some point.
+                            velocity: ast.rust_sux.velocity,
+                            direction: ast.rust_sux.direction,
+                        },
+                        radius: 3.0,
+                    });
+                }
+                deleted_aster = true;
+                bull.life_time = 0.0;
+                break;
+            }
+        }
+        // is this good here? wouldn't want a bullet to
+        // be able to kill two asteroids right? 
+        new_state.bullets.retain(|bull| bull.life_time > 0.0);        
+        
+        if ! deleted_aster {
+            new_asteroids.push(ast.clone());
+        }
+    }        
+
+
+
+
+    new_state.asteroids = new_asteroids;
     return new_state;
 }
+
 
 #[cfg(test)]
 mod tests {
@@ -256,9 +339,18 @@ mod tests {
         let mut rng = rand::thread_rng();
 
 
-        game_state.player.rust_sux.velocity = 0.1;
-        game_state.player.rust_sux.direction = std::f64::consts::PI * 0.5;
+        game_state.player.rust_sux.velocity = 0.0;
+        game_state.player.rust_sux.direction = 0.0;
 
+        game_state.asteroids.push(Asteroid {
+            rust_sux: MoveAblePos {
+                pos_x: 10.0,
+                pos_y: 0.0,
+                velocity: 0.0,
+                direction: 0.0,
+            },
+            radius: 4.0
+        });
 
         for i in 0..50 {
             if rng.gen::<f64>() < 0.2 {
@@ -266,9 +358,10 @@ mod tests {
                 game_input.shoot = true;
             }
             
-            game_input.rotation = 0.4;
+            // game_input.rotation = 0.4;
 
             game_state = game_update(&game_state, 1.0, &game_input);
+            println!("Turn: {}", i);
             println!("{:#?}", game_state);
             game_input.shoot = false;
         }
@@ -350,6 +443,45 @@ mod tests {
         assert_eq!(collides(&circle_one, &circle_four), false);
         assert_eq!(collides(&circle_three, &circle_four), false);
     }
+
+    #[test]
+    fn test_colliding_rectangles() {
+        let r1 = Rectangle {
+            p_ul: Point { x:0.0,
+                          y:0.0},
+
+            // upper right
+            p_ur: Point { x: 5.0,
+                          y:0.0},
+            
+            // lower left 
+            p_ll: Point { x: 0.0,
+                          y: 5.0},
+            
+            // lower right
+            p_lr: Point{ x:5.0,
+                         y:5.0}
+        };
+
+        let r2 = Rectangle {
+            p_ul: Point { x:0.0,
+                          y:0.0},
+
+            // upper right
+            p_ur: Point { x: 5.0,
+                          y:0.0},
+            
+            // lower left 
+            p_ll: Point { x: 0.0,
+                          y: 5.0},
+            
+            // lower right
+            p_lr: Point{ x:5.0,
+                         y:5.0}
+        };
+        assert_eq!(collides_rectangles(&r1, &r2), true);
+    }
+
 
     #[test]
     fn test_colliding_lines() {

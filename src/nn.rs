@@ -64,8 +64,8 @@ impl Network {
         let mut network = Network {
             nodes: Vec::new(),
             edges: Vec::new(),
-            input_node_count: input_node_count,
-            output_node_count: output_node_count,
+            input_node_count,
+            output_node_count,
             layer_count: 2,
             bias_node_id: 0,
         };
