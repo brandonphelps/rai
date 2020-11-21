@@ -1,3 +1,4 @@
+#![allow(clippy::unused_unit)]
 use crate::evo_algo::{Crossover, Individual};
 use crate::nn::{Edge, Network};
 use rand::distributions::{Distribution, Normal};
@@ -29,10 +30,8 @@ impl Crossover for Network {
             let mut child_edge_enabled = true;
             // if parent 2 also contains the same edge then determine which to use.
             if let Some(parent2_edge) = parent2_edge_maybe {
-                if !edge.enabled || !parent2_edge.enabled {
-                    if rng.gen::<f64>() < 0.75 {
-                        child_edge_enabled = false;
-                    }
+                if !edge.enabled || !parent2_edge.enabled && rng.gen::<f64>() < 0.75 {
+                    child_edge_enabled = false;
                 }
                 // determine if edge froms from parent1 or parent2
                 let mut new_edge;
@@ -68,14 +67,14 @@ impl TestNetwork {
         let network = Network::new(input_count, output_count, true);
 
         return TestNetwork {
-            network: network,
+            network,
             fitness: 0.0,
         };
     }
 
     pub fn from_network(network: Network) -> TestNetwork {
         return TestNetwork {
-            network: network,
+            network,
             fitness: 0.0,
         };
     }
@@ -225,7 +224,7 @@ pub struct Species<'a> {
 impl<'a> Species<'a> {
     pub fn new(excess_coeff: f64, weight_diff_coeff: f64, compat_threashold: f64) -> Species<'a> {
         return Species {
-            excess_coeff: excess_coeff,
+            excess_coeff,
             weight_diff_coeff: weight_diff_coeff,
             compat_threashold: compat_threashold,
             champion: None,

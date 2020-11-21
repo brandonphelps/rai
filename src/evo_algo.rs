@@ -1,3 +1,4 @@
+#![allow(clippy::unused_unit)]
 pub trait Individual {
     // can this return just a numeric traited instance?
     // post calculated fitness.

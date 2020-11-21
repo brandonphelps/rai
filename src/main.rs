@@ -9,6 +9,7 @@ use std::cmp::Reverse;
 use std::{thread, time};
 
 // are these important?
+mod asteroids;
 mod evo_algo;
 mod hrm;
 mod neat;
