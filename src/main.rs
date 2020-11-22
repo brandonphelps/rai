@@ -197,6 +197,10 @@ fn dummy_texture<'a>(
 }
 
 fn main() -> std::result::Result<(), String> {
+
+    let mut asteroids_game = asteroids::game_init();
+
+
     let sdl_context = sdl2::init().unwrap();
     let video_subsystem = sdl_context.video().unwrap();
     let window = video_subsystem
@@ -220,6 +224,16 @@ fn main() -> std::result::Result<(), String> {
 
     canvas.copy(&square_texture1, None, Rect::new(0, 0, 10, 10));
     // canvas.line(0, 0, 30, 20, Color::RGB(0,255, 255));
+    canvas.present();
+
+
+    let mut game_input = asteroids::GameInput{
+        shoot: false,
+        thrusters: false,
+        rotation: 0.0,
+    };
+    
+    asteroids_game = asteroids::game_update(&asteroids_game, 0.1, &game_input, &mut canvas);
     canvas.present();
 
     let population_count = 200;

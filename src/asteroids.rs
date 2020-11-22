@@ -1,6 +1,12 @@
 #![allow(unused_variables)]
 #![allow(unused_mut)]
 
+use sdl2;
+use sdl2::pixels::Color;
+use sdl2::rect::{Rect};
+use sdl2::render::{Canvas, Texture, TextureCreator};
+use sdl2::video::{Window, WindowContext};
+
 struct Point {
     x: f64,
     y: f64,
@@ -178,28 +184,34 @@ impl Bullet {
 }
 
 #[derive(Clone, Debug)]
-struct GameState {
+pub struct GameState {
     asteroids: Vec<Asteroid>,
     player: Player,
     bullets: Vec<Bullet>,
     world_width: f64,
     world_height: f64,
+    // if true then the game is finished. 
+    game_over: bool,
 }
 
-struct GameInput {
+
+
+pub struct GameInput {
     // radians value for what to update the ship with. 
-    rotation: f64,
+    pub rotation: f64,
 
     // if true then the player is wanting to shoot a bullet
-    shoot: bool,
+    pub shoot: bool,
 
     // if true then player is wanting to move forward. 
-    thrusters: bool,
+    pub thrusters: bool,
 }
 
-fn game_init() -> GameState {
-    return GameState {
+pub fn game_init() -> GameState {
+
+    let mut game_state =  GameState {
         asteroids: vec![],
+        game_over: false,
         player: Player {
             rust_sux:  MoveAblePos {
                 pos_x: 0.0,
@@ -213,13 +225,29 @@ fn game_init() -> GameState {
         world_width: 100.0,
         world_height: 100.0,
     };
+    game_state.asteroids.push(Asteroid {
+        rust_sux: MoveAblePos {
+            pos_x: 10.0,
+            pos_y: 0.0,
+            velocity: 0.0,
+            direction: 0.0,
+        },
+        radius: 4.0
+    });
+    return game_state;
 }
 
 
-// update to have wrap around the world.
-fn update_pos(r: &mut MoveAblePos, dt: f64) {
+fn update_pos(r: &mut MoveAblePos, dt: f64, world_width: f64, world_height: f64) {
     r.pos_x += dt * r.velocity * (r.direction).cos();
     r.pos_y += dt * r.velocity * (r.direction).sin();
+
+    if r.pos_x > world_width  {
+        r.pos_x = 0.0;
+    }
+    if r.pos_y > world_height {
+        r.pos_y = 0.0;
+    }
 }
     
 // called when the player wishes to shoot a bullet
@@ -240,13 +268,17 @@ fn shoot_bullet(game_state: &mut GameState ) -> () {
     game_state.bullets.push(bullet);
 }
 
-fn game_update(game_state: &GameState, dt: f64, game_input: &GameInput) -> GameState {
+
+
+pub fn game_update(game_state: &GameState, dt: f64,
+		   game_input: &GameInput, canvas: &mut Canvas<Window>) -> GameState {
     let mut new_state = game_state.clone();
 
     if game_input.shoot {
         shoot_bullet(&mut new_state);
     }
 
+    // todo: add in wrap around for bullets and asteroids and player etc. 
     new_state.player.rust_sux.direction += game_input.rotation * dt;
     
     if new_state.player.rust_sux.direction > std::f64::consts::PI {
@@ -259,14 +291,14 @@ fn game_update(game_state: &GameState, dt: f64, game_input: &GameInput) -> GameS
 
     let mut player = &mut new_state.player;
 
-    update_pos(&mut player.rust_sux, dt);
+    update_pos(&mut player.rust_sux, dt, game_state.world_width, game_state.world_height);
 
     for ast in new_state.asteroids.iter_mut() {
-        update_pos(&mut ast.rust_sux, dt);
+        update_pos(&mut ast.rust_sux, dt, game_state.world_width, game_state.world_height);
     }
 
     for bull in new_state.bullets.iter_mut() {
-        update_pos(&mut bull.rust_sux, dt);
+        update_pos(&mut bull.rust_sux, dt, game_state.world_width, game_state.world_height);
         bull.life_time -= 1.0 * dt;
     }
 
@@ -276,8 +308,10 @@ fn game_update(game_state: &GameState, dt: f64, game_input: &GameInput) -> GameS
     // check for collision
     let mut new_asteroids = Vec::new();
 
+    // update for asteroids and bullets. 
     for ast in new_state.asteroids.iter() {
         let mut deleted_aster = false;
+        // todo: switch to filter on lifetime and can move retain to after this double loop?
         for bull in new_state.bullets.iter_mut() {
             if collides(&ast.bounding_box(), &bull.bounding_box()) {
                 println!("Asteroid and bullet are colliding");
@@ -287,13 +321,26 @@ fn game_update(game_state: &GameState, dt: f64, game_input: &GameInput) -> GameS
                 // only make new asteroids from those that are large enough.
                 // large asteroid
                 if ast.radius == 4.0 {
+                    // add two asteroids. 
                     new_asteroids.push(Asteroid {
                         rust_sux: MoveAblePos {
                             pos_x: ast.rust_sux.pos_x,
                             pos_y: ast.rust_sux.pos_y,
                             // todo: change this at some point.
-                            velocity: ast.rust_sux.velocity,
+                            velocity: ast.rust_sux.velocity - 0.1,
                             direction: ast.rust_sux.direction,
+                        },
+                        radius: 3.0,
+                    });
+
+                    new_asteroids.push(Asteroid {
+                        rust_sux: MoveAblePos {
+                            pos_x: ast.rust_sux.pos_x,
+                            pos_y: ast.rust_sux.pos_y,
+                            // todo: change this at some point.
+                            velocity: ast.rust_sux.velocity + 0.1,
+                            // send this one in the opposite direction.
+                            direction: (ast.rust_sux.direction + std::f64::consts::PI * 0.5),
                         },
                         radius: 3.0,
                     });
@@ -312,10 +359,29 @@ fn game_update(game_state: &GameState, dt: f64, game_input: &GameInput) -> GameS
         }
     }        
 
-
-
+    // update for player asteroid collision.
+    for ast in new_state.asteroids.iter() {
+        if collides(&ast.bounding_box(), &new_state.player.bounding_box()) {
+            new_state.game_over = true;
+            break;
+        }
+    }
 
     new_state.asteroids = new_asteroids;
+
+
+
+    // put this into a asteroids specific draw function.
+
+    canvas.clear();
+
+    for ast in new_state.asteroids.iter() {
+	canvas.set_draw_color(Color::RGB(255, 0, 0));
+	canvas.fill_rect(Rect::new(ast.rust_sux.pos_x as i32, ast.rust_sux.pos_y as i32,
+				   ast.radius as u32, ast.radius as u32));
+    }
+
+
     return new_state;
 }
 
@@ -361,9 +427,16 @@ mod tests {
             // game_input.rotation = 0.4;
 
             game_state = game_update(&game_state, 1.0, &game_input);
+
+            if game_state.game_over {
+                println!("Game Over, you loose");
+                break;
+            }
+
             println!("Turn: {}", i);
             println!("{:#?}", game_state);
             game_input.shoot = false;
+
         }
     }
 
@@ -376,7 +449,7 @@ mod tests {
             direction: 0.0,
         };
 
-        update_pos(&mut pos_thing, 1.0);
+        update_pos(&mut pos_thing, 1.0, 100.0, 100.0);
         assert_eq!(pos_thing.pos_x, 0.0);
         assert_eq!(pos_thing.pos_y, 0.0);
     }
@@ -390,7 +463,7 @@ mod tests {
             direction: 0.0,
         };
 
-        update_pos(&mut pos_thing, 1.0);
+        update_pos(&mut pos_thing, 1.0, 100.0, 100.0);
         assert_eq!(pos_thing.pos_x, 1.0);
         assert_eq!(pos_thing.pos_y, 0.0);
 
@@ -405,7 +478,7 @@ mod tests {
             direction: std::f64::consts::PI * 0.5,
         };
 
-        update_pos(&mut pos_thing, 1.0);
+        update_pos(&mut pos_thing, 1.0, 100.0, 100.0);
         assert!(pos_thing.pos_x < 0.00001);
         assert!(pos_thing.pos_x > -0.0001);
         assert!(pos_thing.pos_y == 1.0);
@@ -479,7 +552,7 @@ mod tests {
             p_lr: Point{ x:5.0,
                          y:5.0}
         };
-        assert_eq!(collides_rectangles(&r1, &r2), true);
+        //assert_eq!(collides_rectangles(&r1, &r2), true);
     }
 
 
