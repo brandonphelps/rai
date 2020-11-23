@@ -8,6 +8,9 @@ use sdl2::rect::Point as sdl2Point;
 use sdl2::render::{Canvas, Texture, TextureCreator};
 use sdl2::video::{Window, WindowContext};
 
+
+use rand::Rng;
+
 struct Point {
     x: f64,
     y: f64,
@@ -232,15 +235,22 @@ pub fn game_init() -> GameState {
         world_height: 100.0,
     };
 
-    game_state.asteroids.push(Asteroid {
-        rust_sux: MoveAblePos {
-            pos_x: 10.0,
-            pos_y: 0.0,
-            velocity: 2.0,
-            direction: 10.0,
-        },
-        radius: 4.0
-    });
+    let mut rng = rand::thread_rng();
+
+
+    for _i in 0..rng.gen_range(5, 10) {
+	game_state.asteroids.push(Asteroid {
+            rust_sux: MoveAblePos {
+		pos_x: rng.gen_range(10.0, 50.0),
+		pos_y:  rng.gen_range(10.0, 50.0),
+		velocity: rng.gen_range(1.0, 2.0),
+		direction: rng.gen_range(0.0, std::f64::consts::PI),
+            },
+            radius: 4.0
+	});
+	
+    }
+
 
     game_state.asteroids.push(Asteroid {
         rust_sux: MoveAblePos {
