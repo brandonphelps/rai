@@ -288,7 +288,6 @@ fn update_pos(r: &mut MoveAblePos, dt: f64, world_width: f64, world_height: f64)
     
 // called when the player wishes to shoot a bullet
 fn shoot_bullet(game_state: &mut GameState ) -> () {
-    println!("Shooting bullet");
     let p = &game_state.player;
     let bullet = Bullet {
         // maybe could clone the players MoveAblePos
@@ -495,12 +494,9 @@ mod tests {
             game_state = game_update(&game_state, 1.0, &game_input);
 
             if game_state.game_over {
-                println!("Game Over, you loose");
                 break;
             }
 
-            println!("Turn: {}", i);
-            println!("{:#?}", game_state);
             game_input.shoot = false;
 
         }

@@ -148,28 +148,6 @@ impl Individual for TestNetwork {
         // self.network.pretty_print();
         let mut output = self.network.feed_input(vec![0.0, 0.0]);
         assert_eq!(output.len(), 3);
-        fitness += (output[0] - 0.0).powf(2.0);
-        output = self.network.feed_input(vec![0.0, 1.0]);
-        fitness += (output[0] - 1.0).powf(2.0);
-        output = self.network.feed_input(vec![1.0, 0.0]);
-        fitness += (output[0] - 1.0).powf(2.0);
-        output = self.network.feed_input(vec![1.0, 1.0]);
-        fitness += (output[0] - 0.0).powf(2.0);
-        fitness /= 4.0;
-
-        if fitness == 0.0 {
-            self.fitness = 10000000.0;
-        } else {
-            // fitness -= (self.network.nodes.len() as f64 * 0.1);
-            // if fitness < 0.0 {
-            //     self.fitness = 0.0000001;
-            // }
-            // else {
-            self.fitness = 1.0 / fitness;
-            //}
-        }
-        // println!("Fitness: {:?}", self.fitness);
-        // thread::sleep(time::Duration::from_millis(1000));
 
 	let mut game_input = asteroids::GameInput{
             shoot: false,
@@ -178,6 +156,15 @@ impl Individual for TestNetwork {
 	};
 
 	let mut asteroids_game = asteroids::game_init();
+
+	// vision
+
+	// each item of vision is both a direction and distance to an asteroid. 
+	// the distance is from the ship, the network will have to figure out that
+	// the order of the input is clockwise from north. 
+	
+	
+
 
 	let mut rng = rand::thread_rng();
 	let mut duration = 0;
@@ -195,18 +182,14 @@ impl Individual for TestNetwork {
 	    canvas.present();
 
 	    if asteroids_game.game_over {
-		println!("Game Over");
 		if asteroids_game.game_over_is_win {
-		    println!("Game over and you win");
 		    self.fitness = 1000000.0;
 		}
 		else {
-		    println!("GAme over and you lose");
-		    self.fitness = (_i / max_turns) as f64 ;
+		    self.fitness = (_i / max_turns) as f64;
 		}
 		break;
 	    }
-
 
 	    thread::sleep(Duration::from_millis(10));
 	    duration = start.elapsed().as_millis();

@@ -356,28 +356,6 @@ fn modify_sometimes(value: &mut Option<&mut String>) {
     }
 }
 
-fn t_main() {
-    let p = &mut String::from("hello world");
-    let _default_msg = &mut String::from("default message");
-    let mut msg = &mut Some(p);
-
-    {
-        if let Some(ref m) = msg {
-            println!("{}", m);
-        }
-
-        print_sometimes(&msg);
-        modify_sometimes(&mut msg);
-        print_sometimes(&msg);
-    }
-
-    if let Some(ref m) = msg {
-        println!("{}", m);
-    }
-
-    // let unwrapped_msg = msg.unwrap_or(default_msg);
-    // println!("{}", unwrapped_msg);
-}
 
 #[cfg(test)]
 mod tests {
