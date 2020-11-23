@@ -17,6 +17,7 @@ mod nn;
 
 use evo_algo::{Crossover, Individual};
 use neat::TestNetwork;
+use std::time::{Duration, Instant};
 
 use std::sync::atomic::{AtomicUsize, Ordering};
 
@@ -60,7 +61,7 @@ impl Crossover for SinF {
 }
 
 impl Individual for SinF {
-    fn update_fitness(&mut self) -> () {}
+    fn update_fitness(&mut self, canvas: &mut Canvas<Window>) -> () {}
 
     fn fitness(&self) -> f64 {
         let _p = self.value * self.value.sin().powf(2.0);
@@ -227,14 +228,6 @@ fn main() -> std::result::Result<(), String> {
     canvas.present();
 
 
-    let mut game_input = asteroids::GameInput{
-        shoot: false,
-        thrusters: false,
-        rotation: 0.0,
-    };
-    
-    asteroids_game = asteroids::game_update(&asteroids_game, 0.1, &game_input, &mut canvas);
-    canvas.present();
 
     let population_count = 200;
     let mut _iteration_count = 0;
@@ -242,17 +235,9 @@ fn main() -> std::result::Result<(), String> {
     // let mut specific_pop: Vec<SinF> = Vec::new();
     let mut specific_pop: Vec<TestNetwork> = Vec::new();
 
-    // generate random populateion
-    // for n in 1..population_count+1 {
-    //     // pop.push(Box::new(SinF::new((n as f64/100.0))));
-    //     let mut sinfff = SinF::new(n as f64/100.0);
-    //     sinfff.update_fitness();
-    //     specific_pop.push(sinfff);
-    // }
-
     for _n in 1..population_count + 1 {
-        let mut random_network = TestNetwork::new(2, 1);
-        random_network.update_fitness();
+        let mut random_network = TestNetwork::new(2, 3);
+        random_network.update_fitness(&mut canvas);
         specific_pop.push(random_network);
     }
 
@@ -315,7 +300,7 @@ fn main() -> std::result::Result<(), String> {
         species.clear();
 
         for offpin in offspring.iter_mut() {
-            offpin.update_fitness();
+            offpin.update_fitness(&mut canvas);
         }
 
         // add in the offspring

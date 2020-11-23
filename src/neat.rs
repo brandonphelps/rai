@@ -1,9 +1,15 @@
 #![allow(clippy::unused_unit)]
 use crate::evo_algo::{Crossover, Individual};
 use crate::nn::{Edge, Network};
+use crate::asteroids;
+use sdl2::render::{Canvas, Texture, TextureCreator};
+use sdl2::video::{Window, WindowContext};
 use rand::distributions::{Distribution, Normal};
+use std::time::{Duration, Instant};
+use std::{thread, time};
 use rand::prelude::*;
 use rand::seq::SliceRandom;
+
 
 fn matching_edge(parent2: &Network, inno_id: u64) -> Option<&Edge> {
     for edge in parent2.edges.iter() {
@@ -137,11 +143,11 @@ impl Individual for TestNetwork {
         return self.fitness;
     }
 
-    fn update_fitness(&mut self) -> () {
+    fn update_fitness(&mut self, canvas: &mut Canvas<Window>) -> () {
         let mut fitness = 0.0;
         // self.network.pretty_print();
         let mut output = self.network.feed_input(vec![0.0, 0.0]);
-        assert_eq!(output.len(), 1);
+        assert_eq!(output.len(), 3);
         fitness += (output[0] - 0.0).powf(2.0);
         output = self.network.feed_input(vec![0.0, 1.0]);
         fitness += (output[0] - 1.0).powf(2.0);
@@ -164,6 +170,47 @@ impl Individual for TestNetwork {
         }
         // println!("Fitness: {:?}", self.fitness);
         // thread::sleep(time::Duration::from_millis(1000));
+
+	let mut game_input = asteroids::GameInput{
+            shoot: false,
+            thrusters: false,
+            rotation: 0.0,
+	};
+
+	let mut asteroids_game = asteroids::game_init();
+
+	let mut rng = rand::thread_rng();
+	let mut duration = 0;
+	for _i in  0..30000 {
+	    if rng.gen::<f64>() < 0.2 {
+		game_input.shoot = true;
+	    }
+
+	    game_input.rotation = output[0];
+
+	    asteroids_game = asteroids::game_update(&asteroids_game, (duration as f64) * 0.01, &game_input, canvas);
+	    let start = Instant::now();
+	    canvas.present();
+
+	    if asteroids_game.game_over {
+		println!("Game Over");
+		if asteroids_game.game_over_is_win {
+		    println!("Game over and you win");
+		    self.fitness = 1000000.0;
+		}
+		else {
+		    println!("GAme over and you lose");
+		    self.fitness = _i as f64;
+		}
+		break;
+	    }
+
+
+	    thread::sleep(Duration::from_millis(10));
+	    duration = start.elapsed().as_millis();
+	    game_input.shoot = false;
+	}
+
     }
 
     fn mutate(&mut self) -> () {

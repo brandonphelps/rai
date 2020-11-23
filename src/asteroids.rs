@@ -4,6 +4,7 @@
 use sdl2;
 use sdl2::pixels::Color;
 use sdl2::rect::{Rect};
+use sdl2::rect::Point as sdl2Point;
 use sdl2::render::{Canvas, Texture, TextureCreator};
 use sdl2::video::{Window, WindowContext};
 
@@ -154,6 +155,7 @@ impl Asteroid {
 #[derive(Clone, Debug)]
 struct Player {
     rust_sux: MoveAblePos,
+    radius: f64,
 }
 impl Player {
         
@@ -172,13 +174,15 @@ struct Bullet {
     rust_sux: MoveAblePos,
     /// amount of update time the bullet will exists for. 
     life_time: f64,
+    radius: f64,
 }
+
 impl Bullet { 
     fn bounding_box(&self) -> Circle {
         return Circle {
             pos_x: self.rust_sux.pos_x,
             pos_y: self.rust_sux.pos_y,
-            radius: 1.0,
+            radius: self.radius,
         };
     }
 }
@@ -191,7 +195,8 @@ pub struct GameState {
     world_width: f64,
     world_height: f64,
     // if true then the game is finished. 
-    game_over: bool,
+    pub game_over: bool,
+    pub game_over_is_win: bool,
 }
 
 
@@ -212,28 +217,43 @@ pub fn game_init() -> GameState {
     let mut game_state =  GameState {
         asteroids: vec![],
         game_over: false,
+	game_over_is_win: false,
         player: Player {
             rust_sux:  MoveAblePos {
-                pos_x: 0.0,
-                pos_y: 0.0,
+                pos_x: 50.0,
+                pos_y: 50.0,
                 velocity: 0.0,
                 direction: 0.0,
-                
             },
+	    radius: 2.0
         },
         bullets: vec![],
         world_width: 100.0,
         world_height: 100.0,
     };
+
     game_state.asteroids.push(Asteroid {
         rust_sux: MoveAblePos {
             pos_x: 10.0,
             pos_y: 0.0,
-            velocity: 0.0,
-            direction: 0.0,
+            velocity: 2.0,
+            direction: 10.0,
         },
         radius: 4.0
     });
+
+    game_state.asteroids.push(Asteroid {
+        rust_sux: MoveAblePos {
+            pos_x: 10.0,
+            pos_y: 10.0,
+            velocity: 1.0,
+            direction: 90.0,
+        },
+        radius: 4.0
+    });
+
+
+
     return game_state;
 }
 
@@ -248,10 +268,17 @@ fn update_pos(r: &mut MoveAblePos, dt: f64, world_width: f64, world_height: f64)
     if r.pos_y > world_height {
         r.pos_y = 0.0;
     }
+    if r.pos_x < 0.0 {
+	r.pos_x = world_width;
+    }
+    if r.pos_y < 0.0 {
+	r.pos_y = world_height;
+    }
 }
     
 // called when the player wishes to shoot a bullet
 fn shoot_bullet(game_state: &mut GameState ) -> () {
+    println!("Shooting bullet");
     let p = &game_state.player;
     let bullet = Bullet {
         // maybe could clone the players MoveAblePos
@@ -263,6 +290,7 @@ fn shoot_bullet(game_state: &mut GameState ) -> () {
             
         },
         life_time: 30.0,
+	radius: 2.0,
     };
 
     game_state.bullets.push(bullet);
@@ -272,7 +300,13 @@ fn shoot_bullet(game_state: &mut GameState ) -> () {
 
 pub fn game_update(game_state: &GameState, dt: f64,
 		   game_input: &GameInput, canvas: &mut Canvas<Window>) -> GameState {
+    canvas.set_draw_color(Color::RGB(0, 0, 0));
+    canvas.clear();
+
+
     let mut new_state = game_state.clone();
+
+    let pixels_to_meters = 10; 
 
     if game_input.shoot {
         shoot_bullet(&mut new_state);
@@ -293,6 +327,7 @@ pub fn game_update(game_state: &GameState, dt: f64,
 
     update_pos(&mut player.rust_sux, dt, game_state.world_width, game_state.world_height);
 
+    canvas.set_draw_color(Color::RGB(0, 255, 0));
     for ast in new_state.asteroids.iter_mut() {
         update_pos(&mut ast.rust_sux, dt, game_state.world_width, game_state.world_height);
     }
@@ -320,7 +355,7 @@ pub fn game_update(game_state: &GameState, dt: f64,
 
                 // only make new asteroids from those that are large enough.
                 // large asteroid
-                if ast.radius == 4.0 {
+                if ast.radius > 3.0 {
                     // add two asteroids. 
                     new_asteroids.push(Asteroid {
                         rust_sux: MoveAblePos {
@@ -330,7 +365,7 @@ pub fn game_update(game_state: &GameState, dt: f64,
                             velocity: ast.rust_sux.velocity - 0.1,
                             direction: ast.rust_sux.direction,
                         },
-                        radius: 3.0,
+                        radius: ast.radius / 2.0,
                     });
 
                     new_asteroids.push(Asteroid {
@@ -367,19 +402,40 @@ pub fn game_update(game_state: &GameState, dt: f64,
         }
     }
 
+
+
     new_state.asteroids = new_asteroids;
 
+    if new_state.asteroids.len() == 0 {
+	new_state.game_over = true;
+	new_state.game_over_is_win = true;
+    }
 
 
     // put this into a asteroids specific draw function.
 
-    canvas.clear();
 
     for ast in new_state.asteroids.iter() {
 	canvas.set_draw_color(Color::RGB(255, 0, 0));
-	canvas.fill_rect(Rect::new(ast.rust_sux.pos_x as i32, ast.rust_sux.pos_y as i32,
-				   ast.radius as u32, ast.radius as u32));
+	canvas.fill_rect(Rect::new(ast.rust_sux.pos_x as i32,
+				   ast.rust_sux.pos_y as i32,
+				   ast.radius as u32,
+				   ast.radius as u32));
     }
+
+    for bull in new_state.bullets.iter() {
+	canvas.set_draw_color(Color::RGB(125, 125, 0));
+	canvas.fill_rect(Rect::new(bull.rust_sux.pos_x as i32,
+				   bull.rust_sux.pos_y as i32,
+				   bull.radius as u32,
+				   bull.radius as u32));
+    }
+
+    canvas.set_draw_color(Color::RGB(0, 255, 0));
+    canvas.fill_rect(Rect::new(new_state.player.rust_sux.pos_x as i32,
+			       new_state.player.rust_sux.pos_y as i32,
+			       new_state.player.radius as u32,
+			       new_state.player.radius as u32));
 
 
     return new_state;
