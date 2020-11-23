@@ -181,8 +181,10 @@ impl Individual for TestNetwork {
 
 	let mut rng = rand::thread_rng();
 	let mut duration = 0;
-	for _i in  0..30000 {
-	    if rng.gen::<f64>() < 0.2 {
+	let max_turns = 3000;
+	for _i in  0..max_turns {
+	    
+	    if output[1] < 0.5 {
 		game_input.shoot = true;
 	    }
 
@@ -200,7 +202,7 @@ impl Individual for TestNetwork {
 		}
 		else {
 		    println!("GAme over and you lose");
-		    self.fitness = _i as f64;
+		    self.fitness = (_i / max_turns) as f64 ;
 		}
 		break;
 	    }
