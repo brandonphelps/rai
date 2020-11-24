@@ -156,7 +156,7 @@ impl Network {
 
     pub fn feed_input(&mut self, inputs: Vec<f64>) -> Vec<f64> {
         let mut output = Vec::new();
-        for i in 0..self.input_node_count {
+        for i in 0..inputs.len() {
             self.nodes[i as usize].output_sum = inputs[i as usize];
         }
 

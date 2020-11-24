@@ -170,6 +170,10 @@ impl Individual for TestNetwork {
 	let mut duration = 0;
 	let max_turns = 3000;
 	for _i in  0..max_turns {
+
+	    if output[2] > 0.5 {
+		game_input.thrusters = true;
+	    }
 	    
 	    if output[1] < 0.5 {
 		game_input.shoot = true;
@@ -186,7 +190,7 @@ impl Individual for TestNetwork {
 		    self.fitness = 1000000.0;
 		}
 		else {
-		    self.fitness = (_i / max_turns) as f64;
+		    self.fitness = (_i as f64 / max_turns as f64) as f64;
 		}
 		break;
 	    }
@@ -194,6 +198,7 @@ impl Individual for TestNetwork {
 	    thread::sleep(Duration::from_millis(10));
 	    duration = start.elapsed().as_millis();
 	    game_input.shoot = false;
+	    game_input.thrusters = false;
 	}
 
     }

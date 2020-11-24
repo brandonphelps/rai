@@ -229,14 +229,17 @@ fn main() -> std::result::Result<(), String> {
 
 
 
-    let population_count = 200;
+    let population_count = 20;
     let mut _iteration_count = 0;
-    let max_iter_count = 10000000;
+    let max_iter_count = 100000;
     // let mut specific_pop: Vec<SinF> = Vec::new();
     let mut specific_pop: Vec<TestNetwork> = Vec::new();
 
+    let input_node_count = 16;
+    let output_node_count = 3;
+
     for _n in 1..population_count + 1 {
-        let mut random_network = TestNetwork::new(2, 3);
+        let mut random_network = TestNetwork::new(input_node_count, output_node_count);
         random_network.update_fitness(&mut canvas);
         specific_pop.push(random_network);
     }
@@ -244,7 +247,7 @@ fn main() -> std::result::Result<(), String> {
     // fitness evaluation
     let mut innovation_history = neat::InnovationHistory {
         // todo mark 3 and 1 as input + (1)bias * output
-        global_inno_id: (3 * 1),
+        global_inno_id: (input_node_count * output_node_count) as usize, 
         conn_history: vec![],
     };
 
@@ -278,16 +281,25 @@ fn main() -> std::result::Result<(), String> {
             average_fit += pop.fitness();
         }
         average_fit /= specific_pop.len() as f64;
+	println!("Average fitness: {}", average_fit);
 
         for spec in species.iter() {
             // add in the champ of the species in.
             offspring.push(TestNetwork::from_network(
                 spec.champion.unwrap().network.clone(),
             ));
-            let spec_av_fit = spec.average_fitness();
+            let mut spec_av_fit = spec.average_fitness();
+	    println!("Spec av fit: {}", spec_av_fit);
+	    if spec_av_fit <= 0.0 {
+		spec_av_fit = 1.0;
+	    }
+	    if average_fit <= 0.0 {
+		average_fit = 1.0;
+	    }
             // -1 for champion
-            let num_children =
-                ((spec_av_fit / average_fit) * population_count as f64).floor() as u64 - 1;
+	    println!("spec_av_fit / average_fit: {}", (spec_av_fit / average_fit));
+	    println!("spec_av_fit / average_fit: {}", ((spec_av_fit / average_fit) * population_count as f64).floor());
+            let num_children = ((spec_av_fit / average_fit) * population_count as f64).floor() as u64 - 1;
             for _child_num in 0..num_children {
                 let mut new_child =
                     TestNetwork::from_network(spec.generate_offspring(&innovation_history));
@@ -302,7 +314,7 @@ fn main() -> std::result::Result<(), String> {
         for offpin in offspring.iter_mut() {
             offpin.update_fitness(&mut canvas);
         }
-
+	println!("offsprint count: {}", offspring.len());
         // add in the offspring
         specific_pop.append(&mut offspring);
 

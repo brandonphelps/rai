@@ -321,6 +321,15 @@ pub fn game_update(game_state: &GameState, dt: f64,
         shoot_bullet(&mut new_state);
     }
 
+    if game_input.thrusters {
+	new_state.player.rust_sux.velocity = 2.0;
+    }
+    else {
+	// need some sort of decay
+	new_state.player.rust_sux.velocity = 0.0;
+    }
+	
+
     // todo: add in wrap around for bullets and asteroids and player etc. 
     new_state.player.rust_sux.direction += game_input.rotation * dt;
     
