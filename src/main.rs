@@ -9,6 +9,7 @@ use std::cmp::Reverse;
 use std::{thread, time};
 
 // are these important?
+mod asteroids;
 mod evo_algo;
 mod hrm;
 mod neat;
@@ -16,6 +17,7 @@ mod nn;
 
 use evo_algo::{Crossover, Individual};
 use neat::TestNetwork;
+use std::time::{Duration, Instant};
 
 use std::sync::atomic::{AtomicUsize, Ordering};
 
@@ -59,7 +61,7 @@ impl Crossover for SinF {
 }
 
 impl Individual for SinF {
-    fn update_fitness(&mut self) -> () {}
+    fn update_fitness(&mut self, canvas: &mut Canvas<Window>) -> () {}
 
     fn fitness(&self) -> f64 {
         let _p = self.value * self.value.sin().powf(2.0);
@@ -196,6 +198,10 @@ fn dummy_texture<'a>(
 }
 
 fn main() -> std::result::Result<(), String> {
+
+    let mut asteroids_game = asteroids::game_init();
+
+
     let sdl_context = sdl2::init().unwrap();
     let video_subsystem = sdl_context.video().unwrap();
     let window = video_subsystem
@@ -221,30 +227,27 @@ fn main() -> std::result::Result<(), String> {
     // canvas.line(0, 0, 30, 20, Color::RGB(0,255, 255));
     canvas.present();
 
-    let population_count = 200;
+
+
+    let population_count = 20;
     let mut _iteration_count = 0;
-    let max_iter_count = 10000000;
+    let max_iter_count = 100000;
     // let mut specific_pop: Vec<SinF> = Vec::new();
     let mut specific_pop: Vec<TestNetwork> = Vec::new();
 
-    // generate random populateion
-    // for n in 1..population_count+1 {
-    //     // pop.push(Box::new(SinF::new((n as f64/100.0))));
-    //     let mut sinfff = SinF::new(n as f64/100.0);
-    //     sinfff.update_fitness();
-    //     specific_pop.push(sinfff);
-    // }
+    let input_node_count = 16;
+    let output_node_count = 3;
 
     for _n in 1..population_count + 1 {
-        let mut random_network = TestNetwork::new(2, 1);
-        random_network.update_fitness();
+        let mut random_network = TestNetwork::new(input_node_count, output_node_count);
+        random_network.update_fitness(&mut canvas);
         specific_pop.push(random_network);
     }
 
     // fitness evaluation
     let mut innovation_history = neat::InnovationHistory {
         // todo mark 3 and 1 as input + (1)bias * output
-        global_inno_id: (3 * 1),
+        global_inno_id: (input_node_count * output_node_count) as usize, 
         conn_history: vec![],
     };
 
@@ -278,16 +281,25 @@ fn main() -> std::result::Result<(), String> {
             average_fit += pop.fitness();
         }
         average_fit /= specific_pop.len() as f64;
+	println!("Average fitness: {}", average_fit);
 
         for spec in species.iter() {
             // add in the champ of the species in.
             offspring.push(TestNetwork::from_network(
                 spec.champion.unwrap().network.clone(),
             ));
-            let spec_av_fit = spec.average_fitness();
+            let mut spec_av_fit = spec.average_fitness();
+	    println!("Spec av fit: {}", spec_av_fit);
+	    if spec_av_fit <= 0.0 {
+		spec_av_fit = 1.0;
+	    }
+	    if average_fit <= 0.0 {
+		average_fit = 1.0;
+	    }
             // -1 for champion
-            let num_children =
-                ((spec_av_fit / average_fit) * population_count as f64).floor() as u64 - 1;
+	    println!("spec_av_fit / average_fit: {}", (spec_av_fit / average_fit));
+	    println!("spec_av_fit / average_fit: {}", ((spec_av_fit / average_fit) * population_count as f64).floor());
+            let num_children = ((spec_av_fit / average_fit) * population_count as f64).floor() as u64 - 1;
             for _child_num in 0..num_children {
                 let mut new_child =
                     TestNetwork::from_network(spec.generate_offspring(&innovation_history));
@@ -300,9 +312,9 @@ fn main() -> std::result::Result<(), String> {
         species.clear();
 
         for offpin in offspring.iter_mut() {
-            offpin.update_fitness();
+            offpin.update_fitness(&mut canvas);
         }
-
+	println!("offsprint count: {}", offspring.len());
         // add in the offspring
         specific_pop.append(&mut offspring);
 
@@ -356,28 +368,6 @@ fn modify_sometimes(value: &mut Option<&mut String>) {
     }
 }
 
-fn t_main() {
-    let p = &mut String::from("hello world");
-    let _default_msg = &mut String::from("default message");
-    let mut msg = &mut Some(p);
-
-    {
-        if let Some(ref m) = msg {
-            println!("{}", m);
-        }
-
-        print_sometimes(&msg);
-        modify_sometimes(&mut msg);
-        print_sometimes(&msg);
-    }
-
-    if let Some(ref m) = msg {
-        println!("{}", m);
-    }
-
-    // let unwrapped_msg = msg.unwrap_or(default_msg);
-    // println!("{}", unwrapped_msg);
-}
 
 #[cfg(test)]
 mod tests {

@@ -1,8 +1,15 @@
+#![allow(clippy::unused_unit)]
 use crate::evo_algo::{Crossover, Individual};
 use crate::nn::{Edge, Network};
+use crate::asteroids;
+use sdl2::render::{Canvas, Texture, TextureCreator};
+use sdl2::video::{Window, WindowContext};
 use rand::distributions::{Distribution, Normal};
+use std::time::{Duration, Instant};
+use std::{thread, time};
 use rand::prelude::*;
 use rand::seq::SliceRandom;
+
 
 fn matching_edge(parent2: &Network, inno_id: u64) -> Option<&Edge> {
     for edge in parent2.edges.iter() {
@@ -29,10 +36,8 @@ impl Crossover for Network {
             let mut child_edge_enabled = true;
             // if parent 2 also contains the same edge then determine which to use.
             if let Some(parent2_edge) = parent2_edge_maybe {
-                if !edge.enabled || !parent2_edge.enabled {
-                    if rng.gen::<f64>() < 0.75 {
-                        child_edge_enabled = false;
-                    }
+                if !edge.enabled || !parent2_edge.enabled && rng.gen::<f64>() < 0.75 {
+                    child_edge_enabled = false;
                 }
                 // determine if edge froms from parent1 or parent2
                 let mut new_edge;
@@ -68,14 +73,14 @@ impl TestNetwork {
         let network = Network::new(input_count, output_count, true);
 
         return TestNetwork {
-            network: network,
+            network,
             fitness: 0.0,
         };
     }
 
     pub fn from_network(network: Network) -> TestNetwork {
         return TestNetwork {
-            network: network,
+            network,
             fitness: 0.0,
         };
     }
@@ -138,33 +143,64 @@ impl Individual for TestNetwork {
         return self.fitness;
     }
 
-    fn update_fitness(&mut self) -> () {
+    fn update_fitness(&mut self, canvas: &mut Canvas<Window>) -> () {
         let mut fitness = 0.0;
         // self.network.pretty_print();
         let mut output = self.network.feed_input(vec![0.0, 0.0]);
-        assert_eq!(output.len(), 1);
-        fitness += (output[0] - 0.0).powf(2.0);
-        output = self.network.feed_input(vec![0.0, 1.0]);
-        fitness += (output[0] - 1.0).powf(2.0);
-        output = self.network.feed_input(vec![1.0, 0.0]);
-        fitness += (output[0] - 1.0).powf(2.0);
-        output = self.network.feed_input(vec![1.0, 1.0]);
-        fitness += (output[0] - 0.0).powf(2.0);
-        fitness /= 4.0;
+        assert_eq!(output.len(), 3);
 
-        if fitness == 0.0 {
-            self.fitness = 10000000.0;
-        } else {
-            // fitness -= (self.network.nodes.len() as f64 * 0.1);
-            // if fitness < 0.0 {
-            //     self.fitness = 0.0000001;
-            // }
-            // else {
-            self.fitness = 1.0 / fitness;
-            //}
-        }
-        // println!("Fitness: {:?}", self.fitness);
-        // thread::sleep(time::Duration::from_millis(1000));
+	let mut game_input = asteroids::GameInput{
+            shoot: false,
+            thrusters: false,
+            rotation: 0.0,
+	};
+
+	let mut asteroids_game = asteroids::game_init();
+
+	// vision
+
+	// each item of vision is both a direction and distance to an asteroid. 
+	// the distance is from the ship, the network will have to figure out that
+	// the order of the input is clockwise from north. 
+	
+	
+
+
+	let mut rng = rand::thread_rng();
+	let mut duration = 0;
+	let max_turns = 3000;
+	for _i in  0..max_turns {
+
+	    if output[2] > 0.5 {
+		game_input.thrusters = true;
+	    }
+	    
+	    if output[1] < 0.5 {
+		game_input.shoot = true;
+	    }
+
+	    game_input.rotation = output[0];
+
+	    asteroids_game = asteroids::game_update(&asteroids_game, (duration as f64) * 0.01, &game_input, canvas);
+	    let start = Instant::now();
+	    canvas.present();
+
+	    if asteroids_game.game_over {
+		if asteroids_game.game_over_is_win {
+		    self.fitness = 1000000.0;
+		}
+		else {
+		    self.fitness = (_i as f64 / max_turns as f64) as f64;
+		}
+		break;
+	    }
+
+	    thread::sleep(Duration::from_millis(10));
+	    duration = start.elapsed().as_millis();
+	    game_input.shoot = false;
+	    game_input.thrusters = false;
+	}
+
     }
 
     fn mutate(&mut self) -> () {
@@ -225,9 +261,9 @@ pub struct Species<'a> {
 impl<'a> Species<'a> {
     pub fn new(excess_coeff: f64, weight_diff_coeff: f64, compat_threashold: f64) -> Species<'a> {
         return Species {
-            excess_coeff: excess_coeff,
-            weight_diff_coeff: weight_diff_coeff,
-            compat_threashold: compat_threashold,
+            excess_coeff,
+            weight_diff_coeff,
+            compat_threashold,
             champion: None,
             individuals: vec![],
         };
@@ -369,10 +405,10 @@ impl ConnHistory {
         inno_numbers: Vec<u64>,
     ) -> ConnHistory {
         return ConnHistory {
-            from_node: from_node,
-            to_node: to_node,
-            inno_number: inno_number,
-            inno_numbers: inno_numbers,
+            from_node,
+            to_node,
+            inno_number,
+            inno_numbers,
         };
     }
 
