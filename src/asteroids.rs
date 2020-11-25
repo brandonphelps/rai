@@ -5,6 +5,7 @@ use sdl2;
 use sdl2::pixels::Color;
 use sdl2::rect::{Rect};
 use sdl2::rect::Point as sdl2Point;
+use sdl2::pixels::PixelFormatEnum;
 use sdl2::render::{Canvas, Texture, TextureCreator};
 use sdl2::video::{Window, WindowContext};
 
@@ -312,9 +313,11 @@ pub fn game_update(game_state: &GameState, dt: f64,
     canvas.set_draw_color(Color::RGB(0, 0, 0));
     canvas.clear();
 
+    let texture_creator = canvas.texture_creator();
+    let mut texture = texture_creator.create_texture_streaming(PixelFormatEnum::RGB24, game_state.world_width.ceil() as u32, game_state.world_height.ceil() as u32);
 
+    
     let mut new_state = game_state.clone();
-
     let pixels_to_meters = 10; 
 
     if game_input.shoot {
@@ -345,7 +348,7 @@ pub fn game_update(game_state: &GameState, dt: f64,
 
     update_pos(&mut player.rust_sux, dt, game_state.world_width, game_state.world_height);
 
-    canvas.set_draw_color(Color::RGB(0, 255, 0));
+
     for ast in new_state.asteroids.iter_mut() {
         update_pos(&mut ast.rust_sux, dt, game_state.world_width, game_state.world_height);
     }
