@@ -11,6 +11,7 @@ use std::{thread, time};
 // are these important?
 mod asteroids;
 mod evo_algo;
+mod collision;
 mod hrm;
 mod neat;
 mod nn;

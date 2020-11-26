@@ -8,127 +8,8 @@ use sdl2::rect::Point as sdl2Point;
 use sdl2::render::{Canvas, Texture, TextureCreator};
 use sdl2::video::{Window, WindowContext};
 
-
 use rand::Rng;
-
-struct Point {
-    x: f64,
-    y: f64,
-}
-
-#[derive(Clone, Debug)]
-struct Circle {
-    pos_x: f64,
-    pos_y: f64,
-    radius: f64
-}
-
-struct Rectangle {
-    // upper left
-    p_ul: Point,
-
-    // upper right
-    p_ur: Point,
-
-    // lower left 
-    p_ll: Point,
-
-    // lower right
-    p_lr: Point,
-}
-
-// given three colinear points checks if point q lines on line segment pr
-fn point_on_segement(p: &Point, q: &Point, r: &Point) -> bool {
-    let mut max_x;
-    let mut min_x;
-    let mut max_y;
-    let mut min_y;
-
-    if p.x < r.x {
-        max_x = r.x;
-        min_x = p.x;
-    }
-    else {
-        max_x = p.x;
-        min_x = r.x;
-    }
-
-    if p.y < r.y {
-        max_y = r.y;
-        min_y = p.y;
-    }
-    else {
-        max_y = p.y;
-        min_y = r.y;
-    }
-
-    if q.x <= max_x && q.x >= min_x &&
-        q.y <= max_y && q.y >= min_y {
-        return true;
-    }
-    return false;
-}
-
-// todo update to be enum return
-fn point_orientation(p: &Point, q: &Point, r: &Point) -> u8 {
-    let val = ((q.y - p.y) * (r.x - q.x)) - ((q.x - p.x) * (r.y - q.y));
-    if val > 0.0 {
-        // clock wise orientation
-        return 1;
-    }
-    else if val < 0.0 {
-        // counter clock wise orientation
-        return 2;
-    }
-    else {
-        return 0;
-    }
-}
-
-fn line_intersect(pA1: &Point, pA2: &Point, pB1: &Point, pB2: &Point) -> bool {
-    let o1 = point_orientation(pA1, pA2, pB1);
-    let o2 = point_orientation(pA1, pA2, pB2);
-    let o3 = point_orientation(pB1, pB2, pA1);
-    let o4 = point_orientation(pB1, pB2, pA2);
-
-    if o1 != o2 && o3 != o4 {
-        return true;
-    }
-
-    if o1 == 0 && point_on_segement(pA1, pB1, pA2) {
-        return true
-    }
-
-    if o2 == 0 && point_on_segement(pA1, pB2, pA2) {
-        return true
-    }
-
-    if o3 == 0 && point_on_segement(pB1, pA2, pB2) {
-        return true
-    }
-
-    if o4 == 0 && point_on_segement(pB1, pA2, pB2) {
-        return true
-    }
-    
-    return false
-}
-    
-
-fn collides(circle_one: &Circle,
-            circle_two: &Circle) -> bool {
-    
-    let dist_x = circle_one.pos_x - circle_two.pos_x;
-    let dist_y = circle_one.pos_y - circle_two.pos_y;
-    let dist = ((dist_x * dist_x) + (dist_y * dist_y)).sqrt();
-    return dist <= circle_one.radius + circle_two.radius;
-}
-
-fn collides_rectangles(rect_one: &Rectangle,
-                       rect_two: &Rectangle) -> bool {
-
-    return false;
-}
+use crate::collision;
 
 #[derive(Debug, Clone)]
 struct MoveAblePos {
@@ -146,8 +27,8 @@ struct Asteroid {
 }
 
 impl Asteroid {
-    pub fn bounding_box(&self) -> Circle {
-        return Circle {
+    pub fn bounding_box(&self) -> collision::Circle {
+        return collision::Circle {
             pos_x: self.rust_sux.pos_x,
             pos_y: self.rust_sux.pos_y,
             radius: self.radius,
@@ -162,8 +43,8 @@ struct Player {
 }
 impl Player {
         
-    pub fn bounding_box(&self) -> Circle {
-        return Circle {
+    pub fn bounding_box(&self) -> collision::Circle {
+        return collision::Circle {
             pos_x: self.rust_sux.pos_x,
             pos_y: self.rust_sux.pos_y,
             radius: 2.0,
@@ -181,8 +62,8 @@ struct Bullet {
 }
 
 impl Bullet { 
-    fn bounding_box(&self) -> Circle {
-        return Circle {
+    fn bounding_box(&self) -> collision::Circle {
+        return collision::Circle {
             pos_x: self.rust_sux.pos_x,
             pos_y: self.rust_sux.pos_y,
             radius: self.radius,
@@ -366,7 +247,7 @@ pub fn game_update(game_state: &GameState, dt: f64,
         let mut deleted_aster = false;
         // todo: switch to filter on lifetime and can move retain to after this double loop?
         for bull in new_state.bullets.iter_mut() {
-            if collides(&ast.bounding_box(), &bull.bounding_box()) {
+            if collision::collides(&ast.bounding_box(), &bull.bounding_box()) {
                 println!("Asteroid and bullet are colliding");
                 // break the asteroid into two, and give some random direction and velocity.
                 // remove the bullet.
@@ -414,7 +295,7 @@ pub fn game_update(game_state: &GameState, dt: f64,
 
     // update for player asteroid collision.
     for ast in new_state.asteroids.iter() {
-        if collides(&ast.bounding_box(), &new_state.player.bounding_box()) {
+        if collision::collides(&ast.bounding_box(), &new_state.player.bounding_box()) {
             new_state.game_over = true;
             break;
         }
@@ -558,25 +439,25 @@ mod tests {
 
     #[test]
     fn test_colliding_circles() {
-        let circle_one = Circle {
+        let circle_one = collision::Circle {
             pos_x: 0.0,
             pos_y: 0.0,
             radius: 1.0 };
         
-        let circle_two = Circle {
+        let circle_two = collision::Circle {
             pos_x: 0.0,
             pos_y: 0.0,
             radius: 1.0 };
 
 
-        let circle_three = Circle {
+        let circle_three = collision::Circle {
             pos_x: 0.5,
             pos_y: 0.0,
             radius: 1.0 
         };
 
 
-        let circle_four = Circle {
+        let circle_four = collision::Circle {
             pos_x: 10.0,
             pos_y: 10.0,
             radius: 2.0,
