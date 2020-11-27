@@ -3,13 +3,13 @@
 
 use sdl2;
 use sdl2::pixels::Color;
-use sdl2::rect::{Rect};
 use sdl2::rect::Point as sdl2Point;
+use sdl2::rect::Rect;
 use sdl2::render::{Canvas, Texture, TextureCreator};
 use sdl2::video::{Window, WindowContext};
 
-use rand::Rng;
 use crate::collision;
+use rand::Rng;
 
 #[derive(Debug, Clone)]
 struct MoveAblePos {
@@ -42,7 +42,6 @@ struct Player {
     radius: f64,
 }
 impl Player {
-        
     pub fn bounding_box(&self) -> collision::Circle {
         return collision::Circle {
             pos_x: self.rust_sux.pos_x,
@@ -52,16 +51,15 @@ impl Player {
     }
 }
 
-
 #[derive(Clone, Debug)]
 struct Bullet {
     rust_sux: MoveAblePos,
-    /// amount of update time the bullet will exists for. 
+    /// amount of update time the bullet will exists for.
     life_time: f64,
     radius: f64,
 }
 
-impl Bullet { 
+impl Bullet {
     fn bounding_box(&self) -> collision::Circle {
         return collision::Circle {
             pos_x: self.rust_sux.pos_x,
@@ -78,38 +76,35 @@ pub struct GameState {
     bullets: Vec<Bullet>,
     world_width: f64,
     world_height: f64,
-    // if true then the game is finished. 
+    // if true then the game is finished.
     pub game_over: bool,
     pub game_over_is_win: bool,
 }
 
-
-
 pub struct GameInput {
-    // radians value for what to update the ship with. 
+    // radians value for what to update the ship with.
     pub rotation: f64,
 
     // if true then the player is wanting to shoot a bullet
     pub shoot: bool,
 
-    // if true then player is wanting to move forward. 
+    // if true then player is wanting to move forward.
     pub thrusters: bool,
 }
 
 pub fn game_init() -> GameState {
-
-    let mut game_state =  GameState {
+    let mut game_state = GameState {
         asteroids: vec![],
         game_over: false,
-	game_over_is_win: false,
+        game_over_is_win: false,
         player: Player {
-            rust_sux:  MoveAblePos {
+            rust_sux: MoveAblePos {
                 pos_x: 50.0,
                 pos_y: 50.0,
                 velocity: 0.0,
                 direction: 0.0,
             },
-	    radius: 2.0
+            radius: 2.0,
         },
         bullets: vec![],
         world_width: 100.0,
@@ -118,20 +113,17 @@ pub fn game_init() -> GameState {
 
     let mut rng = rand::thread_rng();
 
-
     for _i in 0..rng.gen_range(5, 10) {
-	game_state.asteroids.push(Asteroid {
+        game_state.asteroids.push(Asteroid {
             rust_sux: MoveAblePos {
-		pos_x: rng.gen_range(10.0, 50.0),
-		pos_y:  rng.gen_range(10.0, 50.0),
-		velocity: rng.gen_range(1.0, 2.0),
-		direction: rng.gen_range(0.0, std::f64::consts::PI),
+                pos_x: rng.gen_range(10.0, 50.0),
+                pos_y: rng.gen_range(10.0, 50.0),
+                velocity: rng.gen_range(1.0, 2.0),
+                direction: rng.gen_range(0.0, std::f64::consts::PI),
             },
-            radius: 4.0
-	});
-	
+            radius: 4.0,
+        });
     }
-
 
     game_state.asteroids.push(Asteroid {
         rust_sux: MoveAblePos {
@@ -140,80 +132,75 @@ pub fn game_init() -> GameState {
             velocity: 1.0,
             direction: 90.0,
         },
-        radius: 4.0
+        radius: 4.0,
     });
-
-
 
     return game_state;
 }
-
 
 fn update_pos(r: &mut MoveAblePos, dt: f64, world_width: f64, world_height: f64) {
     r.pos_x += dt * r.velocity * (r.direction).cos();
     r.pos_y += dt * r.velocity * (r.direction).sin();
 
-    if r.pos_x > world_width  {
+    if r.pos_x > world_width {
         r.pos_x = 0.0;
     }
     if r.pos_y > world_height {
         r.pos_y = 0.0;
     }
     if r.pos_x < 0.0 {
-	r.pos_x = world_width;
+        r.pos_x = world_width;
     }
     if r.pos_y < 0.0 {
-	r.pos_y = world_height;
+        r.pos_y = world_height;
     }
 }
-    
+
 // called when the player wishes to shoot a bullet
-fn shoot_bullet(game_state: &mut GameState ) -> () {
+fn shoot_bullet(game_state: &mut GameState) -> () {
     let p = &game_state.player;
     let bullet = Bullet {
         // maybe could clone the players MoveAblePos
-        rust_sux : MoveAblePos {
+        rust_sux: MoveAblePos {
             pos_x: p.rust_sux.pos_x,
             pos_y: p.rust_sux.pos_y,
             velocity: p.rust_sux.velocity + 2.0,
             direction: p.rust_sux.direction,
-            
         },
         life_time: 30.0,
-	radius: 2.0,
+        radius: 2.0,
     };
 
     game_state.bullets.push(bullet);
 }
 
-
-
-pub fn game_update(game_state: &GameState, dt: f64,
-		   game_input: &GameInput, canvas: &mut Canvas<Window>) -> GameState {
+pub fn game_update(
+    game_state: &GameState,
+    dt: f64,
+    game_input: &GameInput,
+    canvas: &mut Canvas<Window>,
+) -> GameState {
     canvas.set_draw_color(Color::RGB(0, 0, 0));
     canvas.clear();
 
-
     let mut new_state = game_state.clone();
 
-    let pixels_to_meters = 10; 
+    let pixels_to_meters = 10;
 
     if game_input.shoot {
         shoot_bullet(&mut new_state);
     }
 
     if game_input.thrusters {
-	new_state.player.rust_sux.velocity = 2.0;
+        new_state.player.rust_sux.velocity = 2.0;
+    } else {
+        // need some sort of decay
+        new_state.player.rust_sux.velocity = 0.0;
     }
-    else {
-	// need some sort of decay
-	new_state.player.rust_sux.velocity = 0.0;
-    }
-	
 
-    // todo: add in wrap around for bullets and asteroids and player etc. 
+    // todo: add in wrap around for bullets and asteroids and player etc.
     new_state.player.rust_sux.direction += game_input.rotation * dt;
-    
+
     if new_state.player.rust_sux.direction > std::f64::consts::PI {
         new_state.player.rust_sux.direction -= std::f64::consts::PI;
     }
@@ -224,25 +211,39 @@ pub fn game_update(game_state: &GameState, dt: f64,
 
     let mut player = &mut new_state.player;
 
-    update_pos(&mut player.rust_sux, dt, game_state.world_width, game_state.world_height);
+    update_pos(
+        &mut player.rust_sux,
+        dt,
+        game_state.world_width,
+        game_state.world_height,
+    );
 
     canvas.set_draw_color(Color::RGB(0, 255, 0));
     for ast in new_state.asteroids.iter_mut() {
-        update_pos(&mut ast.rust_sux, dt, game_state.world_width, game_state.world_height);
+        update_pos(
+            &mut ast.rust_sux,
+            dt,
+            game_state.world_width,
+            game_state.world_height,
+        );
     }
 
     for bull in new_state.bullets.iter_mut() {
-        update_pos(&mut bull.rust_sux, dt, game_state.world_width, game_state.world_height);
+        update_pos(
+            &mut bull.rust_sux,
+            dt,
+            game_state.world_width,
+            game_state.world_height,
+        );
         bull.life_time -= 1.0 * dt;
     }
 
     new_state.bullets.retain(|bull| bull.life_time > 0.0);
 
-
     // check for collision
     let mut new_asteroids = Vec::new();
 
-    // update for asteroids and bullets. 
+    // update for asteroids and bullets.
     for ast in new_state.asteroids.iter() {
         let mut deleted_aster = false;
         // todo: switch to filter on lifetime and can move retain to after this double loop?
@@ -255,7 +256,7 @@ pub fn game_update(game_state: &GameState, dt: f64,
                 // only make new asteroids from those that are large enough.
                 // large asteroid
                 if ast.radius > 3.0 {
-                    // add two asteroids. 
+                    // add two asteroids.
                     new_asteroids.push(Asteroid {
                         rust_sux: MoveAblePos {
                             pos_x: ast.rust_sux.pos_x,
@@ -285,13 +286,13 @@ pub fn game_update(game_state: &GameState, dt: f64,
             }
         }
         // is this good here? wouldn't want a bullet to
-        // be able to kill two asteroids right? 
-        new_state.bullets.retain(|bull| bull.life_time > 0.0);        
-        
-        if ! deleted_aster {
+        // be able to kill two asteroids right?
+        new_state.bullets.retain(|bull| bull.life_time > 0.0);
+
+        if !deleted_aster {
             new_asteroids.push(ast.clone());
         }
-    }        
+    }
 
     // update for player asteroid collision.
     for ast in new_state.asteroids.iter() {
@@ -301,45 +302,57 @@ pub fn game_update(game_state: &GameState, dt: f64,
         }
     }
 
-
-
     new_state.asteroids = new_asteroids;
 
     if new_state.asteroids.len() == 0 {
-	new_state.game_over = true;
-	new_state.game_over_is_win = true;
+        new_state.game_over = true;
+        new_state.game_over_is_win = true;
     }
-
 
     // put this into a asteroids specific draw function.
 
-
     for ast in new_state.asteroids.iter() {
-	canvas.set_draw_color(Color::RGB(255, 0, 0));
-	canvas.fill_rect(Rect::new(ast.rust_sux.pos_x as i32,
-				   ast.rust_sux.pos_y as i32,
-				   ast.radius as u32,
-				   ast.radius as u32));
+        canvas.set_draw_color(Color::RGB(255, 0, 0));
+        let p = canvas.fill_rect(Rect::new(
+            ast.rust_sux.pos_x as i32,
+            ast.rust_sux.pos_y as i32,
+            ast.radius as u32,
+            ast.radius as u32,
+        ));
+        match p {
+            Ok(_) => {}
+            Err(_) => {}
+        }
     }
 
     for bull in new_state.bullets.iter() {
-	canvas.set_draw_color(Color::RGB(125, 125, 0));
-	canvas.fill_rect(Rect::new(bull.rust_sux.pos_x as i32,
-				   bull.rust_sux.pos_y as i32,
-				   bull.radius as u32,
-				   bull.radius as u32));
+        canvas.set_draw_color(Color::RGB(125, 125, 0));
+        let p = canvas.fill_rect(Rect::new(
+            bull.rust_sux.pos_x as i32,
+            bull.rust_sux.pos_y as i32,
+            bull.radius as u32,
+            bull.radius as u32,
+        ));
+        match p {
+            Ok(_) => {}
+            Err(_) => {}
+        }
     }
 
     canvas.set_draw_color(Color::RGB(0, 255, 0));
-    canvas.fill_rect(Rect::new(new_state.player.rust_sux.pos_x as i32,
-			       new_state.player.rust_sux.pos_y as i32,
-			       new_state.player.radius as u32,
-			       new_state.player.radius as u32));
+    let p = canvas.fill_rect(Rect::new(
+        new_state.player.rust_sux.pos_x as i32,
+        new_state.player.rust_sux.pos_y as i32,
+        new_state.player.radius as u32,
+        new_state.player.radius as u32,
+    ));
 
-
+    match p {
+        Ok(_) => {}
+        Err(_) => {}
+    }
     return new_state;
 }
-
 
 #[cfg(test)]
 mod tests {
@@ -351,14 +364,13 @@ mod tests {
     #[test]
     fn test_initialization() {
         let mut game_state = game_init();
-        let mut game_input = GameInput{
+        let mut game_input = GameInput {
             shoot: false,
             thrusters: false,
             rotation: 0.0,
         };
 
         let mut rng = rand::thread_rng();
-
 
         game_state.player.rust_sux.velocity = 0.0;
         game_state.player.rust_sux.direction = 0.0;
@@ -370,7 +382,7 @@ mod tests {
                 velocity: 0.0,
                 direction: 0.0,
             },
-            radius: 4.0
+            radius: 4.0,
         });
 
         for i in 0..50 {
@@ -378,7 +390,7 @@ mod tests {
                 // shoot_bullet(&mut game_state);
                 game_input.shoot = true;
             }
-            
+
             // game_input.rotation = 0.4;
 
             game_state = game_update(&game_state, 1.0, &game_input);
@@ -388,7 +400,6 @@ mod tests {
             }
 
             game_input.shoot = false;
-
         }
     }
 
@@ -418,7 +429,6 @@ mod tests {
         update_pos(&mut pos_thing, 1.0, 100.0, 100.0);
         assert_eq!(pos_thing.pos_x, 1.0);
         assert_eq!(pos_thing.pos_y, 0.0);
-
     }
 
     #[test]
@@ -436,26 +446,25 @@ mod tests {
         assert!(pos_thing.pos_y == 1.0);
     }
 
-
     #[test]
     fn test_colliding_circles() {
         let circle_one = collision::Circle {
             pos_x: 0.0,
             pos_y: 0.0,
-            radius: 1.0 };
-        
+            radius: 1.0,
+        };
+
         let circle_two = collision::Circle {
             pos_x: 0.0,
             pos_y: 0.0,
-            radius: 1.0 };
-
+            radius: 1.0,
+        };
 
         let circle_three = collision::Circle {
             pos_x: 0.5,
             pos_y: 0.0,
-            radius: 1.0 
+            radius: 1.0,
         };
-
 
         let circle_four = collision::Circle {
             pos_x: 10.0,
@@ -472,57 +481,47 @@ mod tests {
     #[test]
     fn test_colliding_rectangles() {
         let r1 = Rectangle {
-            p_ul: Point { x:0.0,
-                          y:0.0},
+            p_ul: Point { x: 0.0, y: 0.0 },
 
             // upper right
-            p_ur: Point { x: 5.0,
-                          y:0.0},
-            
-            // lower left 
-            p_ll: Point { x: 0.0,
-                          y: 5.0},
-            
+            p_ur: Point { x: 5.0, y: 0.0 },
+
+            // lower left
+            p_ll: Point { x: 0.0, y: 5.0 },
+
             // lower right
-            p_lr: Point{ x:5.0,
-                         y:5.0}
+            p_lr: Point { x: 5.0, y: 5.0 },
         };
 
         let r2 = Rectangle {
-            p_ul: Point { x:0.0,
-                          y:0.0},
+            p_ul: Point { x: 0.0, y: 0.0 },
 
             // upper right
-            p_ur: Point { x: 5.0,
-                          y:0.0},
-            
-            // lower left 
-            p_ll: Point { x: 0.0,
-                          y: 5.0},
-            
+            p_ur: Point { x: 5.0, y: 0.0 },
+
+            // lower left
+            p_ll: Point { x: 0.0, y: 5.0 },
+
             // lower right
-            p_lr: Point{ x:5.0,
-                         y:5.0}
+            p_lr: Point { x: 5.0, y: 5.0 },
         };
         //assert_eq!(collides_rectangles(&r1, &r2), true);
     }
 
-
     #[test]
     fn test_colliding_lines() {
-        let mut p1 = Point{ x:1.0, y:1.0 };
-        let mut q1 = Point{ x:10.0, y:1.0 };
-        let mut p2 = Point{ x:1.0, y:2.0 };
-        let mut q2 = Point{ x:10.0, y:2.0 };
+        let mut p1 = Point { x: 1.0, y: 1.0 };
+        let mut q1 = Point { x: 10.0, y: 1.0 };
+        let mut p2 = Point { x: 1.0, y: 2.0 };
+        let mut q2 = Point { x: 10.0, y: 2.0 };
 
         assert_eq!(line_intersect(&p1, &q1, &p2, &q2), false);
 
-        p1 = Point{ x:10.0, y:0.0 }; 
-        q1 = Point{ x:0.0, y:10.0 };
-        p2 = Point{ x:0.0, y:0.0 }; 
-        q2 = Point{ x:10.0, y:10.0 };
+        p1 = Point { x: 10.0, y: 0.0 };
+        q1 = Point { x: 0.0, y: 10.0 };
+        p2 = Point { x: 0.0, y: 0.0 };
+        q2 = Point { x: 10.0, y: 10.0 };
 
         assert_eq!(line_intersect(&p1, &q1, &p2, &q2), true);
     }
 }
-

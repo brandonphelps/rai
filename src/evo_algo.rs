@@ -3,7 +3,6 @@
 use sdl2::render::{Canvas, Texture, TextureCreator};
 use sdl2::video::{Window, WindowContext};
 
-
 pub trait Individual {
     // can this return just a numeric traited instance?
     // post calculated fitness.

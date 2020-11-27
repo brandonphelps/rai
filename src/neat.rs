@@ -1,15 +1,14 @@
 #![allow(clippy::unused_unit)]
+use crate::asteroids;
 use crate::evo_algo::{Crossover, Individual};
 use crate::nn::{Edge, Network};
-use crate::asteroids;
-use sdl2::render::{Canvas, Texture, TextureCreator};
-use sdl2::video::{Window, WindowContext};
 use rand::distributions::{Distribution, Normal};
-use std::time::{Duration, Instant};
-use std::{thread, time};
 use rand::prelude::*;
 use rand::seq::SliceRandom;
-
+use sdl2::render::{Canvas, Texture, TextureCreator};
+use sdl2::video::{Window, WindowContext};
+use std::time::{Duration, Instant};
+use std::{thread, time};
 
 fn matching_edge(parent2: &Network, inno_id: u64) -> Option<&Edge> {
     for edge in parent2.edges.iter() {
@@ -144,63 +143,60 @@ impl Individual for TestNetwork {
     }
 
     fn update_fitness(&mut self, canvas: &mut Canvas<Window>) -> () {
-        let mut fitness = 0.0;
+        let mut _fitness = 0.0;
         // self.network.pretty_print();
-        let mut output = self.network.feed_input(vec![0.0, 0.0]);
+        let output = self.network.feed_input(vec![0.0, 0.0]);
         assert_eq!(output.len(), 3);
 
-	let mut game_input = asteroids::GameInput{
+        let mut game_input = asteroids::GameInput {
             shoot: false,
             thrusters: false,
             rotation: 0.0,
-	};
+        };
 
-	let mut asteroids_game = asteroids::game_init();
+        let mut asteroids_game = asteroids::game_init();
 
-	// vision
+        // vision
 
-	// each item of vision is both a direction and distance to an asteroid. 
-	// the distance is from the ship, the network will have to figure out that
-	// the order of the input is clockwise from north. 
-	
-	
+        // each item of vision is both a direction and distance to an asteroid.
+        // the distance is from the ship, the network will have to figure out that
+        // the order of the input is clockwise from north.
+        let mut duration = 0;
+        let max_turns = 3000;
+        for _i in 0..max_turns {
+            if output[2] > 0.5 {
+                game_input.thrusters = true;
+            }
 
+            if output[1] < 0.5 {
+                game_input.shoot = true;
+            }
 
-	let mut rng = rand::thread_rng();
-	let mut duration = 0;
-	let max_turns = 3000;
-	for _i in  0..max_turns {
+            game_input.rotation = output[0];
 
-	    if output[2] > 0.5 {
-		game_input.thrusters = true;
-	    }
-	    
-	    if output[1] < 0.5 {
-		game_input.shoot = true;
-	    }
+            asteroids_game = asteroids::game_update(
+                &asteroids_game,
+                (duration as f64) * 0.01,
+                &game_input,
+                canvas,
+            );
+            let start = Instant::now();
+            canvas.present();
 
-	    game_input.rotation = output[0];
+            if asteroids_game.game_over {
+                if asteroids_game.game_over_is_win {
+                    self.fitness = 1000000.0;
+                } else {
+                    self.fitness = (_i as f64 / max_turns as f64) as f64;
+                }
+                break;
+            }
 
-	    asteroids_game = asteroids::game_update(&asteroids_game, (duration as f64) * 0.01, &game_input, canvas);
-	    let start = Instant::now();
-	    canvas.present();
-
-	    if asteroids_game.game_over {
-		if asteroids_game.game_over_is_win {
-		    self.fitness = 1000000.0;
-		}
-		else {
-		    self.fitness = (_i as f64 / max_turns as f64) as f64;
-		}
-		break;
-	    }
-
-	    thread::sleep(Duration::from_millis(10));
-	    duration = start.elapsed().as_millis();
-	    game_input.shoot = false;
-	    game_input.thrusters = false;
-	}
-
+            thread::sleep(Duration::from_millis(10));
+            duration = start.elapsed().as_millis();
+            game_input.shoot = false;
+            game_input.thrusters = false;
+        }
     }
 
     fn mutate(&mut self) -> () {

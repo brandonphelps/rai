@@ -8,10 +8,9 @@ use rand::seq::SliceRandom;
 use std::cmp::Reverse;
 use std::{thread, time};
 
-// are these important?
 mod asteroids;
-mod evo_algo;
 mod collision;
+mod evo_algo;
 mod hrm;
 mod neat;
 mod nn;
@@ -29,54 +28,6 @@ use sdl2::rect::{Point, Rect};
 use sdl2::keyboard::Keycode;
 use sdl2::render::{Canvas, Texture, TextureCreator};
 use sdl2::video::{Window, WindowContext};
-
-#[allow(non_upper_case_globals)]
-static SortedIdCount: AtomicUsize = AtomicUsize::new(0);
-static SIN_FID_COUNT: AtomicUsize = AtomicUsize::new(0);
-
-#[derive(Debug)]
-struct SinF {
-    pub value: f64,
-    pub ident: usize,
-}
-
-impl SinF {
-    // fn crossover(&self, other: &SinF) -> Box<SinF> {
-    //     return Box::new(SinF { value: ((self.value + other.value) / 2.0)});
-    // }
-
-    fn new(value: f64) -> SinF {
-        let old_count = SIN_FID_COUNT.fetch_add(1, Ordering::SeqCst);
-        SinF {
-            value: value,
-            ident: old_count,
-        }
-    }
-}
-
-impl Crossover for SinF {
-    type Output = SinF;
-    fn crossover(&self, _rhs: &SinF) -> SinF {
-        SinF::new((_rhs.value + self.value) / 2.0)
-    }
-}
-
-impl Individual for SinF {
-    fn update_fitness(&mut self, canvas: &mut Canvas<Window>) -> () {}
-
-    fn fitness(&self) -> f64 {
-        let _p = self.value * self.value.sin().powf(2.0);
-        return (_p + 100.0) * 1000.0;
-    }
-
-    fn mutate(&mut self) -> () {
-        self.value = 0.01;
-    }
-
-    fn print(&self) -> () {
-        print!("{:?}", self)
-    }
-}
 
 fn do_fitness_func<T: Individual>(individuals: &Vec<T>) -> () {
     for ind in individuals.iter() {
@@ -199,9 +150,7 @@ fn dummy_texture<'a>(
 }
 
 fn main() -> std::result::Result<(), String> {
-
-    let mut asteroids_game = asteroids::game_init();
-
+    let mut _asteroids_game = asteroids::game_init();
 
     let sdl_context = sdl2::init().unwrap();
     let video_subsystem = sdl_context.video().unwrap();
@@ -224,11 +173,12 @@ fn main() -> std::result::Result<(), String> {
 
     let (square_texture1, _square_texture2) = dummy_texture(&mut canvas, &texture_creator)?;
 
-    canvas.copy(&square_texture1, None, Rect::new(0, 0, 10, 10));
+    match canvas.copy(&square_texture1, None, Rect::new(0, 0, 10, 10)) {
+        Ok(_) => {}
+        Err(_) => {}
+    }
     // canvas.line(0, 0, 30, 20, Color::RGB(0,255, 255));
     canvas.present();
-
-
 
     let population_count = 20;
     let mut _iteration_count = 0;
@@ -248,7 +198,7 @@ fn main() -> std::result::Result<(), String> {
     // fitness evaluation
     let mut innovation_history = neat::InnovationHistory {
         // todo mark 3 and 1 as input + (1)bias * output
-        global_inno_id: (input_node_count * output_node_count) as usize, 
+        global_inno_id: (input_node_count * output_node_count) as usize,
         conn_history: vec![],
     };
 
@@ -282,7 +232,7 @@ fn main() -> std::result::Result<(), String> {
             average_fit += pop.fitness();
         }
         average_fit /= specific_pop.len() as f64;
-	println!("Average fitness: {}", average_fit);
+        println!("Average fitness: {}", average_fit);
 
         for spec in species.iter() {
             // add in the champ of the species in.
@@ -290,17 +240,21 @@ fn main() -> std::result::Result<(), String> {
                 spec.champion.unwrap().network.clone(),
             ));
             let mut spec_av_fit = spec.average_fitness();
-	    println!("Spec av fit: {}", spec_av_fit);
-	    if spec_av_fit <= 0.0 {
-		spec_av_fit = 1.0;
-	    }
-	    if average_fit <= 0.0 {
-		average_fit = 1.0;
-	    }
+            println!("Spec av fit: {}", spec_av_fit);
+            if spec_av_fit <= 0.0 {
+                spec_av_fit = 1.0;
+            }
+            if average_fit <= 0.0 {
+                average_fit = 1.0;
+            }
             // -1 for champion
-	    println!("spec_av_fit / average_fit: {}", (spec_av_fit / average_fit));
-	    println!("spec_av_fit / average_fit: {}", ((spec_av_fit / average_fit) * population_count as f64).floor());
-            let num_children = ((spec_av_fit / average_fit) * population_count as f64).floor() as u64 - 1;
+            println!("spec_av_fit / average_fit: {}", (spec_av_fit / average_fit));
+            println!(
+                "spec_av_fit / average_fit: {}",
+                ((spec_av_fit / average_fit) * population_count as f64).floor()
+            );
+            let num_children =
+                ((spec_av_fit / average_fit) * population_count as f64).floor() as u64 - 1;
             for _child_num in 0..num_children {
                 let mut new_child =
                     TestNetwork::from_network(spec.generate_offspring(&innovation_history));
@@ -315,7 +269,7 @@ fn main() -> std::result::Result<(), String> {
         for offpin in offspring.iter_mut() {
             offpin.update_fitness(&mut canvas);
         }
-	println!("offsprint count: {}", offspring.len());
+        println!("offsprint count: {}", offspring.len());
         // add in the offspring
         specific_pop.append(&mut offspring);
 
@@ -368,7 +322,6 @@ fn modify_sometimes(value: &mut Option<&mut String>) {
         println!("{}", m);
     }
 }
-
 
 #[cfg(test)]
 mod tests {
