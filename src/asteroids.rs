@@ -249,7 +249,6 @@ pub fn game_update(
         // todo: switch to filter on lifetime and can move retain to after this double loop?
         for bull in new_state.bullets.iter_mut() {
             if collision::collides(&ast.bounding_box(), &bull.bounding_box()) {
-                println!("Asteroid and bullet are colliding");
                 // break the asteroid into two, and give some random direction and velocity.
                 // remove the bullet.
 
