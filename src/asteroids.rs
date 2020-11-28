@@ -12,9 +12,9 @@ use crate::collision;
 use rand::Rng;
 
 #[derive(Debug, Clone)]
-struct MoveAblePos {
-    pos_x: f64,
-    pos_y: f64,
+pub struct MoveAblePos {
+    pub pos_x: f64,
+    pub pos_y: f64,
     velocity: f64,
     /// can only be values of 0 -> 2PI.
     direction: f64,
@@ -37,8 +37,8 @@ impl Asteroid {
 }
 
 #[derive(Clone, Debug)]
-struct Player {
-    rust_sux: MoveAblePos,
+pub struct Player {
+    pub rust_sux: MoveAblePos,
     radius: f64,
 }
 impl Player {
@@ -72,7 +72,7 @@ impl Bullet {
 #[derive(Clone, Debug)]
 pub struct GameState {
     asteroids: Vec<Asteroid>,
-    player: Player,
+    pub player: Player,
     bullets: Vec<Bullet>,
     shoot_bullet_cd: i16,
     world_width: f64,
@@ -105,7 +105,7 @@ pub fn game_init() -> GameState {
                 velocity: 0.0,
                 direction: 0.0,
             },
-            radius: 2.0,
+            radius: 5.0,
         },
         bullets: vec![],
         world_width: 100.0,
@@ -123,7 +123,7 @@ pub fn game_init() -> GameState {
                 velocity: rng.gen_range(1.0, 2.0),
                 direction: rng.gen_range(0.0, std::f64::consts::PI),
             },
-            radius: 6.0,
+            radius: 8.0,
         });
     }
     return game_state;
@@ -177,7 +177,6 @@ pub fn game_update(
     let pixels_to_meters = 10;
 
     new_state.shoot_bullet_cd = game_state.shoot_bullet_cd - 1;
-    println!("New bullet cd: {}", new_state.shoot_bullet_cd);
 
     if new_state.shoot_bullet_cd < 0 {
 	new_state.shoot_bullet_cd = 0;

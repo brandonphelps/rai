@@ -217,8 +217,6 @@ fn draw_network(network: &nn::Network, canvas: &mut Canvas<Window>) {
 fn asteroids_fitness(player: &mut nn::Network) -> () {
     let mut _fitness = 0.0;
     // self.network.pretty_print();
-    let output = player.feed_input(vec![0.0, 0.0]);
-    assert_eq!(output.len(), 3);
 
     let mut game_input = asteroids::GameInput {
         shoot: false,
@@ -258,6 +256,12 @@ fn asteroids_fitness(player: &mut nn::Network) -> () {
     let mut duration = 0;
     let max_turns = 3000;
     for _i in 0..max_turns {
+	// vision
+	
+	let output = player.feed_input(vec![asteroids_game.player.rust_sux.pos_x, asteroids_game.player.rust_sux.pos_y]);
+	assert_eq!(output.len(), 3);
+
+	// do thinking 
         if output[2] > 0.5 {
             game_input.thrusters = true;
         }
@@ -269,7 +273,6 @@ fn asteroids_fitness(player: &mut nn::Network) -> () {
         game_input.rotation = output[0];
 
 
-	// vision
 	canvas.set_draw_color(Color::RGB(0, 0, 0));
 	canvas.clear();
 	
@@ -279,7 +282,8 @@ fn asteroids_fitness(player: &mut nn::Network) -> () {
 	draw_network(&player, &mut canvas);
 
 	canvas.copy(&texture, None, Some(target)).unwrap();
-	
+
+	// process action based on thinking
         asteroids_game = asteroids::game_update(
             &asteroids_game,
             (duration as f64) * 0.01,
