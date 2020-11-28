@@ -317,6 +317,7 @@ fn run_ea(input_count: u32, output_count: u32, pop_count: u64, iter_count: u64, 
                 let mut new_child = spec.generate_offspring(&innovation_history).clone();
 		println!("Mutating child");
                 new_child.mutate(&mut innovation_history);
+		fitness_func(&mut new_child);
                 offspring.push(new_child);
             }
         }
@@ -326,7 +327,7 @@ fn run_ea(input_count: u32, output_count: u32, pop_count: u64, iter_count: u64, 
 
 
 	for ind in offspring.iter_mut() {
-	    fitness_func(ind);
+
 	}
 
 	specific_pop.append(&mut offspring);
@@ -352,17 +353,15 @@ fn run_ea(input_count: u32, output_count: u32, pop_count: u64, iter_count: u64, 
 fn main() -> std::result::Result<(), String> {
     let mut _asteroids_game = asteroids::game_init();
 
-    let population_count = 20;
-    let mut _iteration_count = 0;
+    let population_count = 200;
     let max_iter_count = 100000;
-
     let input_node_count = 16;
     let output_node_count = 3;
 
+    
+
     run_ea(input_node_count, output_node_count,
 	   population_count, max_iter_count, &asteroids_fitness);
-
-    // generate fitness values.
 
     Ok(())
 }

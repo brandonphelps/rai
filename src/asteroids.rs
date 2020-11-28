@@ -74,6 +74,7 @@ pub struct GameState {
     asteroids: Vec<Asteroid>,
     player: Player,
     bullets: Vec<Bullet>,
+    shoot_bullet_cd: u16,
     world_width: f64,
     world_height: f64,
     // if true then the game is finished.
@@ -109,6 +110,7 @@ pub fn game_init() -> GameState {
         bullets: vec![],
         world_width: 100.0,
         world_height: 100.0,
+	shoot_bullet_cd: 0,
     };
 
     let mut rng = rand::thread_rng();
@@ -121,20 +123,9 @@ pub fn game_init() -> GameState {
                 velocity: rng.gen_range(1.0, 2.0),
                 direction: rng.gen_range(0.0, std::f64::consts::PI),
             },
-            radius: 4.0,
+            radius: 6.0,
         });
     }
-
-    game_state.asteroids.push(Asteroid {
-        rust_sux: MoveAblePos {
-            pos_x: 10.0,
-            pos_y: 10.0,
-            velocity: 1.0,
-            direction: 90.0,
-        },
-        radius: 4.0,
-    });
-
     return game_state;
 }
 
@@ -187,8 +178,16 @@ pub fn game_update(
 
     let pixels_to_meters = 10;
 
-    if game_input.shoot {
+    new_state.shoot_bullet_cd = game_state.shoot_bullet_cd - 1;
+
+    if new_state.shoot_bullet_cd < 0 {
+	new_state.shoot_bullet_cd = 0;
+    }
+
+    if game_input.shoot && new_state.shoot_bullet_cd == 0 {
         shoot_bullet(&mut new_state);
+	// todo: what should the cd be? 
+	new_state.shoot_bullet_cd = 10;
     }
 
     if game_input.thrusters {
@@ -201,12 +200,12 @@ pub fn game_update(
     // todo: add in wrap around for bullets and asteroids and player etc.
     new_state.player.rust_sux.direction += game_input.rotation * dt;
 
-    if new_state.player.rust_sux.direction > std::f64::consts::PI {
-        new_state.player.rust_sux.direction -= std::f64::consts::PI;
+    if new_state.player.rust_sux.direction > 2.0 * std::f64::consts::PI {
+        new_state.player.rust_sux.direction -= 2.0 * std::f64::consts::PI;
     }
 
     if new_state.player.rust_sux.direction < 0.0 {
-        new_state.player.rust_sux.direction += std::f64::consts::PI;
+        new_state.player.rust_sux.direction += 2.0 * std::f64::consts::PI;
     }
 
     let mut player = &mut new_state.player;
