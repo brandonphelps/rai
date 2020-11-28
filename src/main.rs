@@ -170,20 +170,17 @@ fn main() -> std::result::Result<(), String> {
     canvas.present();
 
     let texture_creator: TextureCreator<_> = canvas.texture_creator();
-
     let (square_texture1, _square_texture2) = dummy_texture(&mut canvas, &texture_creator)?;
-
     match canvas.copy(&square_texture1, None, Rect::new(0, 0, 10, 10)) {
         Ok(_) => {}
         Err(_) => {}
     }
-    // canvas.line(0, 0, 30, 20, Color::RGB(0,255, 255));
+
     canvas.present();
 
     let population_count = 20;
     let mut _iteration_count = 0;
     let max_iter_count = 100000;
-    // let mut specific_pop: Vec<SinF> = Vec::new();
     let mut specific_pop: Vec<TestNetwork> = Vec::new();
 
     let input_node_count = 16;
@@ -197,7 +194,6 @@ fn main() -> std::result::Result<(), String> {
 
     // fitness evaluation
     let mut innovation_history = neat::InnovationHistory {
-        // todo mark 3 and 1 as input + (1)bias * output
         global_inno_id: (input_node_count * output_node_count) as usize,
         conn_history: vec![],
     };
@@ -269,8 +265,7 @@ fn main() -> std::result::Result<(), String> {
         for offpin in offspring.iter_mut() {
             offpin.update_fitness(&mut canvas);
         }
-        println!("offsprint count: {}", offspring.len());
-        // add in the offspring
+
         specific_pop.append(&mut offspring);
 
         // // cull population
@@ -291,37 +286,10 @@ fn main() -> std::result::Result<(), String> {
 
     specific_pop.sort_by_key(|indiv| Reverse((indiv.fitness() * 1000.0) as i128));
     let top = &mut specific_pop[0].network;
-
-    println!("Results");
-    println!("{:#?}", top);
-    println!("{:?}", top.feed_input(vec![0.0, 0.0]));
-    println!("{:?}", top.feed_input(vec![0.0, 1.0]));
-    println!("{:?}", top.feed_input(vec![1.0, 0.0]));
-    println!("{:?}", top.feed_input(vec![1.0, 1.0]));
     Ok(())
 }
 
 // todo look at this bench amrk thing https://stackoverflow.com/questions/60916194/how-to-sort-a-vector-in-descending-order-in-rust
-
-fn print_sometimes(ref value: &Option<&mut String>) {
-    if let Some(ref m) = value {
-        println!("{}", m);
-    }
-    if let Some(m) = &value {
-        println!("{}", *m);
-    }
-}
-
-fn modify_sometimes(value: &mut Option<&mut String>) {
-    if let Some(ref mut m) = value {
-        m.push(' ');
-        m.push('F');
-        m.push('O');
-        m.push('O');
-
-        println!("{}", m);
-    }
-}
 
 #[cfg(test)]
 mod tests {
