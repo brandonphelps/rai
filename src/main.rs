@@ -16,7 +16,6 @@ mod neat;
 mod nn;
 
 use evo_algo::{Crossover, Individual};
-use neat::TestNetwork;
 use std::time::{Duration, Instant};
 
 use std::sync::atomic::{AtomicUsize, Ordering};
@@ -149,26 +148,43 @@ fn dummy_texture<'a>(
     return Ok((square_texture1, square_texture2));
 }
 
+fn speciate(population: &Vec<nn::Network>) -> Vec<neat::Species> {
+    let mut species: Vec<neat::Species> = Vec::new();
 
-fn run_ea(input_count: u32, output_count: u32, pop_count: u64, iter_count: u64, fitness_func: &dyn Fn(&mut nn::Network)) -> () {
-    println!("Pop count: {} {}", pop_count, iter_count);
+    for test_n in population.iter() {
+        let mut found_spec = false;
 
-    // initializeation of population. 
+        for spec in species.iter_mut() {
+            if spec.same_species(&test_n.edges) {
+                spec.individuals.push(&test_n);
+                found_spec = true;
+            }
+        }
 
-    let mut individual = nn::Network::new(input_count, output_count, true);
-
-    fitness_func(&mut individual);
-
-    for _ in 0..pop_count {
-	
+        if !found_spec {
+            let mut new_spec = neat::Species::new(1.5, 0.8, 4.0);
+            new_spec.set_champion(&test_n);
+            species.push(new_spec);
+        }
     }
 
-    fitness_func(&mut individual);
-	
+    return species;
 }
 
-fn main() -> std::result::Result<(), String> {
-    let mut _asteroids_game = asteroids::game_init();
+
+fn asteroids_fitness(player: &mut nn::Network) -> () {
+    let mut _fitness = 0.0;
+    // self.network.pretty_print();
+    let output = player.feed_input(vec![0.0, 0.0]);
+    assert_eq!(output.len(), 3);
+
+    let mut game_input = asteroids::GameInput {
+        shoot: false,
+        thrusters: false,
+        rotation: 0.0,
+    };
+
+    let mut asteroids_game = asteroids::game_init();
 
     let sdl_context = sdl2::init().unwrap();
     let video_subsystem = sdl_context.video().unwrap();
@@ -185,74 +201,102 @@ fn main() -> std::result::Result<(), String> {
         .unwrap();
 
     canvas.clear();
-    canvas.present();
 
-    let texture_creator: TextureCreator<_> = canvas.texture_creator();
-    let (square_texture1, _square_texture2) = dummy_texture(&mut canvas, &texture_creator)?;
-    match canvas.copy(&square_texture1, None, Rect::new(0, 0, 10, 10)) {
-        Ok(_) => {}
-        Err(_) => {}
+
+
+    // vision
+
+    // each item of vision is both a direction and distance to an asteroid.
+    // the distance is from the ship, the network will have to figure out that
+    // the order of the input is clockwise from north.
+    let mut duration = 0;
+    let max_turns = 3000;
+    for _i in 0..max_turns {
+        if output[2] > 0.5 {
+            game_input.thrusters = true;
+        }
+
+        if output[1] < 0.5 {
+            game_input.shoot = true;
+        }
+
+        game_input.rotation = output[0];
+
+        asteroids_game = asteroids::game_update(
+            &asteroids_game,
+            (duration as f64) * 0.01,
+            &game_input,
+            &mut canvas,
+        );
+        let start = Instant::now();
+        canvas.present();
+
+        if asteroids_game.game_over {
+            if asteroids_game.game_over_is_win {
+                player.fitness = 1000000.0;
+            } else {
+                player.fitness = (_i as f64 / max_turns as f64) as f64;
+            }
+            break;
+        }
+
+        thread::sleep(Duration::from_millis(10));
+        duration = start.elapsed().as_millis();
+        game_input.shoot = false;
+        game_input.thrusters = false;
     }
+}
 
-    canvas.present();
 
-    let population_count = 20;
-    let mut _iteration_count = 0;
-    let max_iter_count = 100000;
-    let mut specific_pop: Vec<TestNetwork> = Vec::new();
-
-    let input_node_count = 16;
-    let output_node_count = 3;
-
-    for _n in 1..population_count + 1 {
-        let mut random_network = TestNetwork::new(input_node_count, output_node_count);
-        random_network.update_fitness(&mut canvas);
-        specific_pop.push(random_network);
-    }
-
-    // fitness evaluation
-    let mut innovation_history = neat::InnovationHistory {
-        global_inno_id: (input_node_count * output_node_count) as usize,
-        conn_history: vec![],
-    };
+fn run_ea(input_count: u32, output_count: u32, pop_count: u64, iter_count: u64, fitness_func: &dyn Fn(&mut nn::Network)) -> () {
+    println!("Pop count: {} {}", pop_count, iter_count);
 
     let mut average_history_per_iter: Vec<f64> = Vec::new();
 
-    for _i in
-        Prgrs::new(0..max_iter_count, max_iter_count).set_length_move(Length::Proportional(0.5))
-    {
-        let mut species: Vec<neat::Species> = Vec::new();
+    // initializeation.
+    // population holder. 
+    let mut specific_pop: Vec<nn::Network> = Vec::new();
+    let mut individual = nn::Network::new(input_count, output_count, true);
+    // fitness evaluation
+    let mut innovation_history = neat::InnovationHistory {
+        global_inno_id: (input_count * output_count) as usize,
+        conn_history: vec![],
+    };
+
+    fitness_func(&mut individual);
+
+    for _ in 0..pop_count+1 {
+	specific_pop.push(individual.clone());
+    }
+
+
+    for _ in 0..iter_count {
+
+	// move to speciate function
+	// specization. divide the population into different species. 
         // why can't this forloop be outside this forloop? something
         // about the specific_pop updating is mutable borrow after an immutable barrow on something?
-        for test_n in specific_pop.iter() {
-            let mut found_spec = false;
-            for spec in species.iter_mut() {
-                if spec.same_species(&test_n.network.edges) {
-                    spec.individuals.push(&test_n);
-                    found_spec = true;
-                }
-            }
-            if !found_spec {
-                let mut new_spec = neat::Species::new(1.5, 0.8, 4.0);
-                new_spec.set_champion(&test_n);
-                species.push(new_spec);
-            }
-        }
 
-        let mut offspring: Vec<TestNetwork> = Vec::new();
+	let mut species = speciate(&specific_pop); 
+	let species_count = species.len();
+	println!("Species count: {}", species_count);
 
-        let mut average_fit = 0.0;
-        for pop in specific_pop.iter() {
-            average_fit += pop.fitness();
-        }
-        average_fit /= specific_pop.len() as f64;
-        println!("Average fitness: {}", average_fit);
+	let mut offspring = Vec::new();
 
+	// there is prob some vector function for this or something with a closure? 
+	let mut average_fit = 0.0;
+	for ind in specific_pop.iter() {
+	    average_fit += ind.fitness();
+	}
+	average_fit /= specific_pop.len() as f64;
+
+	println!("Average fitness: {}", average_fit);
+
+	// generate offsprint from each of the species.
+	// the number of offspring depends on the average fitness of the species. 
         for spec in species.iter() {
             // add in the champ of the species in.
-            offspring.push(TestNetwork::from_network(
-                spec.champion.unwrap().network.clone(),
-            ));
+            offspring.push(spec.champion.unwrap().clone());
             let mut spec_av_fit = spec.average_fitness();
             println!("Spec av fit: {}", spec_av_fit);
             if spec_av_fit <= 0.0 {
@@ -265,32 +309,33 @@ fn main() -> std::result::Result<(), String> {
             println!("spec_av_fit / average_fit: {}", (spec_av_fit / average_fit));
             println!(
                 "spec_av_fit / average_fit: {}",
-                ((spec_av_fit / average_fit) * population_count as f64).floor()
+                ((spec_av_fit / average_fit) * pop_count as f64).floor()
             );
             let num_children =
-                ((spec_av_fit / average_fit) * population_count as f64).floor() as u64 - 1;
+                ((spec_av_fit / average_fit) * pop_count as f64).floor() as u64 - 1;
             for _child_num in 0..num_children {
-                let mut new_child =
-                    TestNetwork::from_network(spec.generate_offspring(&innovation_history));
-                new_child.custom_mutate(&mut innovation_history);
+                let mut new_child = spec.generate_offspring(&innovation_history).clone();
+		println!("Mutating child");
+                new_child.mutate(&mut innovation_history);
                 offspring.push(new_child);
             }
         }
 
-        let species_count = species.len();
-        species.clear();
 
-        for offpin in offspring.iter_mut() {
-            offpin.update_fitness(&mut canvas);
-        }
+	species.clear();
 
-        specific_pop.append(&mut offspring);
+
+	for ind in offspring.iter_mut() {
+	    fitness_func(ind);
+	}
+
+	specific_pop.append(&mut offspring);
 
         // // cull population
         specific_pop.sort_by_key(|indiv| Reverse((indiv.fitness() * 1000.0) as i128));
-        specific_pop.truncate(population_count);
+        specific_pop.truncate(pop_count as usize);
 
-        assert!(specific_pop.len() == population_count);
+        assert!(specific_pop.len() == pop_count as usize);
         println!(
             "Species({}) average fitness {} number of innovations: {}",
             species_count,
@@ -300,10 +345,25 @@ fn main() -> std::result::Result<(), String> {
         average_history_per_iter.push(average_fit / (specific_pop.len() as f64));
     }
 
+    specific_pop.sort_by_key(|indiv| Reverse((indiv.fitness() * 1000.0) as i128));
+    let _top = &mut specific_pop[0];
+}
+
+fn main() -> std::result::Result<(), String> {
+    let mut _asteroids_game = asteroids::game_init();
+
+    let population_count = 20;
+    let mut _iteration_count = 0;
+    let max_iter_count = 100000;
+
+    let input_node_count = 16;
+    let output_node_count = 3;
+
+    run_ea(input_node_count, output_node_count,
+	   population_count, max_iter_count, &asteroids_fitness);
+
     // generate fitness values.
 
-    specific_pop.sort_by_key(|indiv| Reverse((indiv.fitness() * 1000.0) as i128));
-    let _top = &mut specific_pop[0].network;
     Ok(())
 }
 

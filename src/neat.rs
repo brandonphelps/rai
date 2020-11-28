@@ -1,257 +1,15 @@
 #![allow(clippy::unused_unit)]
 #![allow(dead_code)]
-use crate::asteroids;
-use crate::evo_algo::{Crossover, Individual};
 use crate::nn::{Edge, Network};
 use rand::prelude::*;
 use rand::seq::SliceRandom;
-use sdl2::render::{Canvas};
-use sdl2::video::{Window};
-use std::time::{Duration, Instant};
-use std::{thread};
-
-fn matching_edge(parent2: &Network, inno_id: u64) -> Option<&Edge> {
-    for edge in parent2.edges.iter() {
-        if edge.inno_id == inno_id {
-            return Some(&edge);
-        }
-    }
-    return None;
-}
-
-impl Crossover for Network {
-    type Output = Network;
-
-    /// Creates a new network from two networks.  
-    fn crossover(&self, _rhs: &Network) -> Network {
-        let mut child_network = Network::new(_rhs.input_node_count, _rhs.output_node_count, false);
-
-        child_network.layer_count = self.layer_count;
-        child_network.bias_node_id = self.bias_node_id;
-
-        let mut rng = rand::thread_rng();
-        for edge in self.edges.iter() {
-            let parent2_edge_maybe = matching_edge(_rhs, edge.inno_id);
-            let mut child_edge_enabled = true;
-            // if parent 2 also contains the same edge then determine which to use.
-            if let Some(parent2_edge) = parent2_edge_maybe {
-                if !edge.enabled || !parent2_edge.enabled && rng.gen::<f64>() < 0.75 {
-                    child_edge_enabled = false;
-                }
-                // determine if edge froms from parent1 or parent2
-                let mut new_edge;
-                if rng.gen::<f64>() < 0.5 {
-                    new_edge = edge.clone();
-                    new_edge.enabled = child_edge_enabled;
-                } else {
-                    new_edge = parent2_edge.clone();
-                    new_edge.enabled = child_edge_enabled;
-                }
-                child_network.edges.push(new_edge);
-            } else {
-                // disjoint edge from parent 1 and parent 2.
-                child_network.edges.push(edge.clone());
-            }
-        }
-
-        for node in self.nodes.iter() {
-            child_network.nodes.push(node.clone());
-        }
-        return child_network;
-    }
-}
-
-#[derive(Debug)]
-pub struct TestNetwork {
-    pub network: Network,
-    fitness: f64,
-}
-
-impl TestNetwork {
-
-    pub fn new(input_count: u32, output_count: u32) -> TestNetwork {
-        let network = Network::new(input_count, output_count, true);
-
-        return TestNetwork {
-            network,
-            fitness: 0.0,
-        };
-    }
-
-    
-    pub fn from_network(network: Network) -> TestNetwork {
-        return TestNetwork {
-            network,
-            fitness: 0.0,
-        };
-    }
-
-    pub fn custom_mutate(&mut self, inno_history: &mut InnovationHistory) -> () {
-        let mut rng = rand::thread_rng();
-        // 80% chance to mutate edges node.
-        if rng.gen::<f64>() < 0.8 {
-            for edge_index in 0..self.network.edges.len() {
-                self.mutate_edge(edge_index);
-            }
-        }
-
-        // 5% add new connection
-        if rng.gen::<f64>() < 0.05 && !self.network.is_fully_connected() {
-            let mut node_one = self.network.random_node();
-            let mut node_two = self.network.random_node();
-
-            while self.network.are_connected(node_one, node_two)
-                || self.network.nodes[node_one].layer == self.network.nodes[node_two].layer
-            {
-                node_one = self.network.random_node();
-                node_two = self.network.random_node();
-            }
-            self.network
-                .add_connection(node_one, node_two, rng.gen::<f64>(), Some(inno_history));
-        }
-
-        // 3% add new node.
-        if rng.gen::<f64>() < 0.03 {
-            let edge = self.network.random_non_bias_edge();
-            self.network.add_node(
-                edge as usize,
-                rng.gen::<f64>(),
-                rng.gen::<f64>(),
-                Some(inno_history),
-            );
-        }
-    }
-
-    pub fn mutate_edge(&mut self, edge: usize) -> () {
-        let mut rng = rand::thread_rng();
-        if rng.gen::<f64>() < 0.1 {
-            self.network.edges[edge].weight = rng.gen::<f64>();
-        } else {
-            self.network.edges[edge].weight += rng.gen_range(-1.0, 1.0);
-            if self.network.edges[edge].weight > 1.0 {
-                self.network.edges[edge].weight = 1.0;
-            } else if self.network.edges[edge].weight < -1.0 {
-                self.network.edges[edge].weight = -1.0;
-            }
-        }
-    }
-}
-
-impl Individual for TestNetwork {
-    fn fitness(&self) -> f64 {
-        return self.fitness;
-    }
-
-    fn update_fitness(&mut self, canvas: &mut Canvas<Window>) -> () {
-        let mut _fitness = 0.0;
-        // self.network.pretty_print();
-        let output = self.network.feed_input(vec![0.0, 0.0]);
-        assert_eq!(output.len(), 3);
-
-        let mut game_input = asteroids::GameInput {
-            shoot: false,
-            thrusters: false,
-            rotation: 0.0,
-        };
-
-        let mut asteroids_game = asteroids::game_init();
-
-        // vision
-
-        // each item of vision is both a direction and distance to an asteroid.
-        // the distance is from the ship, the network will have to figure out that
-        // the order of the input is clockwise from north.
-        let mut duration = 0;
-        let max_turns = 3000;
-        for _i in 0..max_turns {
-            if output[2] > 0.5 {
-                game_input.thrusters = true;
-            }
-
-            if output[1] < 0.5 {
-                game_input.shoot = true;
-            }
-
-            game_input.rotation = output[0];
-
-            asteroids_game = asteroids::game_update(
-                &asteroids_game,
-                (duration as f64) * 0.01,
-                &game_input,
-                canvas,
-            );
-            let start = Instant::now();
-            canvas.present();
-
-            if asteroids_game.game_over {
-                if asteroids_game.game_over_is_win {
-                    self.fitness = 1000000.0;
-                } else {
-                    self.fitness = (_i as f64 / max_turns as f64) as f64;
-                }
-                break;
-            }
-
-            thread::sleep(Duration::from_millis(10));
-            duration = start.elapsed().as_millis();
-            game_input.shoot = false;
-            game_input.thrusters = false;
-        }
-    }
-
-    fn mutate(&mut self) -> () {
-        let mut rng = rand::thread_rng();
-        // 80% chance to mutate edges node.
-        if rng.gen::<f64>() < 0.8 {
-            for edge_index in 0..self.network.edges.len() {
-                self.mutate_edge(edge_index);
-            }
-        }
-
-        // 5% add new connection
-        if rng.gen::<f64>() < 0.05 && !self.network.is_fully_connected() {
-            let mut node_one = self.network.random_node();
-            let mut node_two = self.network.random_node();
-
-            while self.network.are_connected(node_one, node_two)
-                || self.network.nodes[node_one].layer == self.network.nodes[node_two].layer
-            {
-                node_one = self.network.random_node();
-                node_two = self.network.random_node();
-            }
-            self.network
-                .add_connection(node_one, node_two, rng.gen::<f64>(), None);
-        }
-
-        // 3% add new node.
-        if rng.gen::<f64>() < 0.03 {
-            let edge = self.network.random_non_bias_edge();
-            self.network
-                .add_node(edge as usize, rng.gen::<f64>(), rng.gen::<f64>(), None);
-        }
-    }
-
-    fn print(&self) -> () {}
-}
-
-impl Crossover for TestNetwork {
-    type Output = TestNetwork;
-
-    fn crossover(&self, _rhs: &TestNetwork) -> TestNetwork {
-        let child_network = self.network.crossover(&_rhs.network);
-        TestNetwork {
-            network: child_network,
-            fitness: 0.0,
-        }
-    }
-}
 
 pub struct Species<'a> {
     excess_coeff: f64,
     weight_diff_coeff: f64,
     compat_threashold: f64,
-    pub champion: Option<&'a TestNetwork>,
-    pub individuals: Vec<&'a TestNetwork>,
+    pub champion: Option<&'a Network>,
+    pub individuals: Vec<&'a Network>,
 }
 
 impl<'a> Species<'a> {
@@ -265,16 +23,16 @@ impl<'a> Species<'a> {
         };
     }
 
-    pub fn set_champion(&mut self, new_champ: &'a TestNetwork) -> () {
+    pub fn set_champion(&mut self, new_champ: &'a Network) -> () {
         self.champion = Some(new_champ);
         self.individuals.push(new_champ);
     }
 
     pub fn same_species(&self, other: &Vec<Edge>) -> bool {
         let excess_disjoin =
-            Species::get_excess_disjoint(&self.champion.unwrap().network.edges, other);
+            Species::get_excess_disjoint(&self.champion.unwrap().edges, other);
         let average_weight_diff =
-            Species::get_average_weight_diff(&self.champion.unwrap().network.edges, other);
+            Species::get_average_weight_diff(&self.champion.unwrap().edges, other);
 
         let compat = (self.excess_coeff * excess_disjoin as f64)
             + (self.weight_diff_coeff * average_weight_diff);
@@ -333,11 +91,11 @@ impl<'a> Species<'a> {
         let mut rng = rand::thread_rng();
 
         if rng.gen::<f64>() < 0.25 {
-            return self.individuals[0].network.clone();
+            return self.individuals[0].clone();
         }
 
-        let p_one = &self.individuals.choose(&mut rng).unwrap().network;
-        let p_two = &self.individuals.choose(&mut rng).unwrap().network;
+        let p_one = &self.individuals.choose(&mut rng).unwrap();
+        let p_two = &self.individuals.choose(&mut rng).unwrap();
         return p_one.crossover(&p_two);
     }
 }
@@ -430,8 +188,10 @@ impl ConnHistory {
     }
 }
 
-#[cfg(test)]
 
+
+
+#[cfg(test)]
 mod tests {
     use super::*;
 

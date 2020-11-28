@@ -4,6 +4,15 @@
 use crate::neat::InnovationHistory;
 use rand::prelude::*;
 
+fn matching_edge(parent2: &Network, inno_id: u64) -> Option<&Edge> {
+    for edge in parent2.edges.iter() {
+        if edge.inno_id == inno_id {
+            return Some(&edge);
+        }
+    }
+    return None;
+}
+
 #[derive(Debug, Clone)]
 pub struct Node {
     input_sum: f64,
@@ -21,6 +30,7 @@ impl Node {
     }
 }
 
+#[allow(dead_code)]
 fn sigmoid(value: f64) -> f64 {
     return 1.0 / (1.0 + std::f64::consts::E.powf(-1.0 * value));
 }
@@ -61,6 +71,10 @@ pub struct Network {
 }
 
 impl Network {
+    pub fn fitness(&self) -> f64 {
+	return self.fitness
+    }
+
     pub fn new(input_node_count: u32, output_node_count: u32, fully_connect: bool) -> Network {
         let mut network = Network {
             nodes: Vec::new(),
@@ -157,6 +171,7 @@ impl Network {
         }
     }
 
+    #[allow(dead_code)]
     pub fn feed_input(&mut self, inputs: Vec<f64>) -> Vec<f64> {
         let mut output = Vec::new();
         for i in 0..inputs.len() {
@@ -422,6 +437,43 @@ impl Network {
                 self.edges[edge].weight = -1.0;
             }
         }
+    }
+
+    pub fn crossover(&self, _rhs: &Network) -> Network {
+        let mut child_network = Network::new(_rhs.input_node_count, _rhs.output_node_count, false);
+
+        child_network.layer_count = self.layer_count;
+        child_network.bias_node_id = self.bias_node_id;
+
+        let mut rng = rand::thread_rng();
+        for edge in self.edges.iter() {
+            let parent2_edge_maybe = matching_edge(_rhs, edge.inno_id);
+            let mut child_edge_enabled = true;
+            // if parent 2 also contains the same edge then determine which to use.
+            if let Some(parent2_edge) = parent2_edge_maybe {
+                if !edge.enabled || !parent2_edge.enabled && rng.gen::<f64>() < 0.75 {
+                    child_edge_enabled = false;
+                }
+                // determine if edge froms from parent1 or parent2
+                let mut new_edge;
+                if rng.gen::<f64>() < 0.5 {
+                    new_edge = edge.clone();
+                    new_edge.enabled = child_edge_enabled;
+                } else {
+                    new_edge = parent2_edge.clone();
+                    new_edge.enabled = child_edge_enabled;
+                }
+                child_network.edges.push(new_edge);
+            } else {
+                // disjoint edge from parent 1 and parent 2.
+                child_network.edges.push(edge.clone());
+            }
+        }
+
+        for node in self.nodes.iter() {
+            child_network.nodes.push(node.clone());
+        }
+        return child_network;
     }
 
 }

@@ -1,5 +1,6 @@
 #![allow(unused_variables)]
 #![allow(unused_mut)]
+#![allow(dead_code)]
 
 use sdl2;
 use sdl2::pixels::Color;
