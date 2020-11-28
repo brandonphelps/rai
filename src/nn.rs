@@ -57,6 +57,7 @@ pub struct Network {
     pub output_node_count: u32,
     pub layer_count: u32,
     pub bias_node_id: u64,
+    pub fitness: f64,
 }
 
 impl Network {
@@ -68,6 +69,7 @@ impl Network {
             output_node_count,
             layer_count: 2,
             bias_node_id: 0,
+	    fitness: 0.0,
         };
         for _input_n in 0..input_node_count {
             network.new_node(0);
@@ -367,6 +369,61 @@ impl Network {
         self.edges.push(edge);
         return self.edges.len() - 1;
     }
+
+
+    #[allow(dead_code)]
+    pub fn mutate(&mut self, inno_history: &mut InnovationHistory) -> () {
+        let mut rng = rand::thread_rng();
+        // 80% chance to mutate edges node.
+        if rng.gen::<f64>() < 0.8 {
+            for edge_index in 0..self.edges.len() {
+                self.mutate_edge(edge_index);
+            }
+        }
+
+        // 5% add new connection
+        if rng.gen::<f64>() < 0.05 && !self.is_fully_connected() {
+            let mut node_one = self.random_node();
+            let mut node_two = self.random_node();
+
+            while self.are_connected(node_one, node_two)
+                || self.nodes[node_one].layer == self.nodes[node_two].layer
+            {
+                node_one = self.random_node();
+                node_two = self.random_node();
+            }
+            self
+                .add_connection(node_one, node_two, rng.gen::<f64>(), Some(inno_history));
+        }
+
+        // 3% add new node.
+        if rng.gen::<f64>() < 0.03 {
+            let edge = self.random_non_bias_edge();
+            self.add_node(
+                edge as usize,
+                rng.gen::<f64>(),
+                rng.gen::<f64>(),
+                Some(inno_history),
+            );
+        }
+    }
+
+
+    
+    fn mutate_edge(&mut self, edge: usize) -> () {
+        let mut rng = rand::thread_rng();
+        if rng.gen::<f64>() < 0.1 {
+            self.edges[edge].weight = rng.gen::<f64>();
+        } else {
+            self.edges[edge].weight += rng.gen_range(-1.0, 1.0);
+            if self.edges[edge].weight > 1.0 {
+                self.edges[edge].weight = 1.0;
+            } else if self.edges[edge].weight < -1.0 {
+                self.edges[edge].weight = -1.0;
+            }
+        }
+    }
+
 }
 
 #[cfg(test)]

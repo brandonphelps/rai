@@ -149,6 +149,24 @@ fn dummy_texture<'a>(
     return Ok((square_texture1, square_texture2));
 }
 
+
+fn run_ea(input_count: u32, output_count: u32, pop_count: u64, iter_count: u64, fitness_func: &dyn Fn(&mut nn::Network)) -> () {
+    println!("Pop count: {} {}", pop_count, iter_count);
+
+    // initializeation of population. 
+
+    let mut individual = nn::Network::new(input_count, output_count, true);
+
+    fitness_func(&mut individual);
+
+    for _ in 0..pop_count {
+	
+    }
+
+    fitness_func(&mut individual);
+	
+}
+
 fn main() -> std::result::Result<(), String> {
     let mut _asteroids_game = asteroids::game_init();
 
