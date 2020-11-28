@@ -285,7 +285,7 @@ fn main() -> std::result::Result<(), String> {
     // generate fitness values.
 
     specific_pop.sort_by_key(|indiv| Reverse((indiv.fitness() * 1000.0) as i128));
-    let top = &mut specific_pop[0].network;
+    let _top = &mut specific_pop[0].network;
     Ok(())
 }
 

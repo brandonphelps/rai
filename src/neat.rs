@@ -1,14 +1,14 @@
 #![allow(clippy::unused_unit)]
+#![allow(dead_code)]
 use crate::asteroids;
 use crate::evo_algo::{Crossover, Individual};
 use crate::nn::{Edge, Network};
-use rand::distributions::{Distribution, Normal};
 use rand::prelude::*;
 use rand::seq::SliceRandom;
-use sdl2::render::{Canvas, Texture, TextureCreator};
-use sdl2::video::{Window, WindowContext};
+use sdl2::render::{Canvas};
+use sdl2::video::{Window};
 use std::time::{Duration, Instant};
-use std::{thread, time};
+use std::{thread};
 
 fn matching_edge(parent2: &Network, inno_id: u64) -> Option<&Edge> {
     for edge in parent2.edges.iter() {
@@ -68,6 +68,7 @@ pub struct TestNetwork {
 }
 
 impl TestNetwork {
+
     pub fn new(input_count: u32, output_count: u32) -> TestNetwork {
         let network = Network::new(input_count, output_count, true);
 
@@ -77,6 +78,7 @@ impl TestNetwork {
         };
     }
 
+    
     pub fn from_network(network: Network) -> TestNetwork {
         return TestNetwork {
             network,
@@ -125,9 +127,7 @@ impl TestNetwork {
         if rng.gen::<f64>() < 0.1 {
             self.network.edges[edge].weight = rng.gen::<f64>();
         } else {
-            let normal = Normal::new(0.0, 0.5);
-            let delta = rng.sample::<f64, _>(&normal);
-            self.network.edges[edge].weight += delta;
+            self.network.edges[edge].weight += rng.gen_range(-1.0, 1.0);
             if self.network.edges[edge].weight > 1.0 {
                 self.network.edges[edge].weight = 1.0;
             } else if self.network.edges[edge].weight < -1.0 {

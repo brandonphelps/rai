@@ -3,10 +3,9 @@
 
 use sdl2;
 use sdl2::pixels::Color;
-use sdl2::rect::Point as sdl2Point;
 use sdl2::rect::Rect;
-use sdl2::render::{Canvas, Texture, TextureCreator};
-use sdl2::video::{Window, WindowContext};
+use sdl2::render::Canvas;
+use sdl2::video::Window;
 
 use crate::collision;
 use rand::Rng;

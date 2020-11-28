@@ -1,7 +1,7 @@
 #![allow(clippy::unused_unit)]
 
-use sdl2::render::{Canvas, Texture, TextureCreator};
-use sdl2::video::{Window, WindowContext};
+use sdl2::render::Canvas;
+use sdl2::video::Window;
 
 pub trait Individual {
     // can this return just a numeric traited instance?

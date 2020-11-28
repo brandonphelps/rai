@@ -136,6 +136,7 @@ impl Network {
         return (max_connections as usize) == self.edges.len();
     }
 
+    #[allow(dead_code)]
     pub fn pretty_print(&self) -> () {
         for layer in 0..self.layer_count {
             for node in self.nodes.iter() {
