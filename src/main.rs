@@ -171,6 +171,37 @@ fn speciate(population: &Vec<nn::Network>) -> Vec<neat::Species> {
     return species;
 }
 
+fn draw_network(network: &nn::Network, canvas: &mut Canvas<Window>) {
+    let mut nodes: Vec<&nn::Node> = Vec::new();
+    let mut poses: Vec<(u32, u32)> = Vec::new();
+
+    let width = 20; 
+    let height = 20;
+
+    canvas.set_draw_color(Color::RGB(255, 0, 0));
+    
+    for layer in 0..network.layer_count  { 
+	
+	let x: f64 = ((layer + 1) * width) as f64 / (network.layer_count+1) as f64;
+	for (n_index, node) in network.nodes.iter().enumerate() {
+	    if node.layer == layer.into() {
+		let y: f64 = ((n_index + 1) * height) as f64 / (network.nodes.len() + 1) as f64;
+		nodes.push(&node);
+		let t = (x as u32, y as u32);
+		poses.push(t);
+	    }
+	}
+    }
+    
+    let offset = 100;
+
+
+    for pose in poses.iter() {
+	canvas.fill_rect(Rect::new(
+	    offset + pose.0 as i32, offset + pose.1 as i32,
+	    10, 10));
+    }
+}
 
 fn asteroids_fitness(player: &mut nn::Network) -> () {
     let mut _fitness = 0.0;
@@ -204,7 +235,7 @@ fn asteroids_fitness(player: &mut nn::Network) -> () {
 
 
 
-    // vision
+
 
     // each item of vision is both a direction and distance to an asteroid.
     // the distance is from the ship, the network will have to figure out that
@@ -221,6 +252,14 @@ fn asteroids_fitness(player: &mut nn::Network) -> () {
         }
 
         game_input.rotation = output[0];
+
+
+
+	// vision
+	canvas.set_draw_color(Color::RGB(0, 0, 0));
+	canvas.clear();
+	
+	draw_network(&player, &mut canvas);
 
         asteroids_game = asteroids::game_update(
             &asteroids_game,

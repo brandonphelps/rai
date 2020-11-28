@@ -171,8 +171,6 @@ pub fn game_update(
     game_input: &GameInput,
     canvas: &mut Canvas<Window>,
 ) -> GameState {
-    canvas.set_draw_color(Color::RGB(0, 0, 0));
-    canvas.clear();
 
     let mut new_state = game_state.clone();
 
@@ -187,7 +185,7 @@ pub fn game_update(
     if game_input.shoot && new_state.shoot_bullet_cd == 0 {
         shoot_bullet(&mut new_state);
 	// todo: what should the cd be? 
-	new_state.shoot_bullet_cd = 10;
+	new_state.shoot_bullet_cd = 3;
     }
 
     if game_input.thrusters {
