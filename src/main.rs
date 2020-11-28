@@ -7,6 +7,7 @@ use rand::prelude::*;
 use rand::seq::SliceRandom;
 use std::cmp::Reverse;
 use std::{thread, time};
+use std::env;
 
 mod asteroids;
 mod collision;
@@ -173,10 +174,12 @@ fn speciate(population: &Vec<nn::Network>) -> Vec<neat::Species> {
 
 fn draw_network(network: &nn::Network, canvas: &mut Canvas<Window>) {
     let mut nodes: Vec<&nn::Node> = Vec::new();
+    let mut node_nums: Vec<u64> = Vec::new();
     let mut poses: Vec<(u32, u32)> = Vec::new();
 
-    let width = 20; 
+    let width = 80; 
     let height = 20;
+    let mut node_num = 0;
 
     canvas.set_draw_color(Color::RGB(255, 0, 0));
     
@@ -187,6 +190,8 @@ fn draw_network(network: &nn::Network, canvas: &mut Canvas<Window>) {
 	    if node.layer == layer.into() {
 		let y: f64 = ((n_index + 1) * height) as f64 / (network.nodes.len() + 1) as f64;
 		nodes.push(&node);
+		node_nums.push(node_num);
+		node_num += 1;
 		let t = (x as u32, y as u32);
 		poses.push(t);
 	    }
@@ -195,11 +200,17 @@ fn draw_network(network: &nn::Network, canvas: &mut Canvas<Window>) {
     
     let offset = 100;
 
+    for edge in network.edges.iter() {
+	if edge.enabled {
+	    
+	}
+    }
+
 
     for pose in poses.iter() {
-	canvas.fill_rect(Rect::new(
-	    offset + pose.0 as i32, offset + pose.1 as i32,
-	    10, 10));
+	let _p = canvas.fill_rect(Rect::new(
+	    (offset + pose.0 as i32) * 2, (offset + pose.1 as i32) * 2,
+	    5, 5));
     }
 }
 
@@ -218,6 +229,7 @@ fn asteroids_fitness(player: &mut nn::Network) -> () {
     let mut asteroids_game = asteroids::game_init();
 
     let sdl_context = sdl2::init().unwrap();
+    let ttf_context = sdl2::ttf::init().unwrap();
     let video_subsystem = sdl_context.video().unwrap();
     let window = video_subsystem
         .window("Window", 800, 600)
@@ -233,8 +245,11 @@ fn asteroids_fitness(player: &mut nn::Network) -> () {
 
     canvas.clear();
 
+    let mut font = ttf_context.load_font("lazy.ttf", 128).unwrap();
 
+    let texture_creator = canvas.texture_creator();
 
+    let target = Rect::new(100, 150, 300, 200);
 
 
     // each item of vision is both a direction and distance to an asteroid.
@@ -247,20 +262,24 @@ fn asteroids_fitness(player: &mut nn::Network) -> () {
             game_input.thrusters = true;
         }
 
-        if output[1] < 0.5 {
+        if output[1] >= 0.5 {
             game_input.shoot = true;
         }
 
         game_input.rotation = output[0];
 
 
-
 	// vision
 	canvas.set_draw_color(Color::RGB(0, 0, 0));
 	canvas.clear();
 	
+	let surface = font.render(&output[1].to_string()).blended(Color::RGBA(255, 0, 0, 255)).unwrap();
+	let texture = texture_creator.create_texture_from_surface(&surface).unwrap();
+
 	draw_network(&player, &mut canvas);
 
+	canvas.copy(&texture, None, Some(target)).unwrap();
+	
         asteroids_game = asteroids::game_update(
             &asteroids_game,
             (duration as f64) * 0.01,
@@ -365,7 +384,7 @@ fn run_ea(input_count: u32, output_count: u32, pop_count: u64, iter_count: u64, 
 	species.clear();
 
 
-	for ind in offspring.iter_mut() {
+	for _ind in offspring.iter_mut() {
 
 	}
 
@@ -397,8 +416,10 @@ fn main() -> std::result::Result<(), String> {
     let input_node_count = 16;
     let output_node_count = 3;
 
-    
+    let args: Vec<_> = env::args().collect();
 
+    println!("Linked sdl2_tff: {}", sdl2::ttf::get_linked_version());
+    
     run_ea(input_node_count, output_node_count,
 	   population_count, max_iter_count, &asteroids_fitness);
 

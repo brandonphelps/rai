@@ -5,6 +5,8 @@ authors = ["brandon phelps <bwp44f@mst.edu>"]
 edition = "2018"
 build="build.rs"
 
+include = ["resources/fonts/lazy.ttf"]
+
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
@@ -16,4 +18,4 @@ mugen={path="mugen", version="0.1.0"}
 [dependencies.sdl2]
 version="0.34"
 default-features = false
-features = ["image"]
+features = ["ttf", "image"]

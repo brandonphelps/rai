@@ -74,7 +74,7 @@ pub struct GameState {
     asteroids: Vec<Asteroid>,
     player: Player,
     bullets: Vec<Bullet>,
-    shoot_bullet_cd: u16,
+    shoot_bullet_cd: i16,
     world_width: f64,
     world_height: f64,
     // if true then the game is finished.
@@ -158,7 +158,7 @@ fn shoot_bullet(game_state: &mut GameState) -> () {
             velocity: p.rust_sux.velocity + 2.0,
             direction: p.rust_sux.direction,
         },
-        life_time: 30.0,
+        life_time: 10.0,
         radius: 2.0,
     };
 
@@ -177,6 +177,7 @@ pub fn game_update(
     let pixels_to_meters = 10;
 
     new_state.shoot_bullet_cd = game_state.shoot_bullet_cd - 1;
+    println!("New bullet cd: {}", new_state.shoot_bullet_cd);
 
     if new_state.shoot_bullet_cd < 0 {
 	new_state.shoot_bullet_cd = 0;
@@ -185,7 +186,7 @@ pub fn game_update(
     if game_input.shoot && new_state.shoot_bullet_cd == 0 {
         shoot_bullet(&mut new_state);
 	// todo: what should the cd be? 
-	new_state.shoot_bullet_cd = 3;
+	new_state.shoot_bullet_cd = 10;
     }
 
     if game_input.thrusters {
