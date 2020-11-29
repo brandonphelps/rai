@@ -21,7 +21,7 @@ pub struct MoveAblePos {
 }
 
 #[derive(Clone, Debug)]
-struct Asteroid {
+pub struct Asteroid {
     rust_sux: MoveAblePos,
     radius: f64,
 }
@@ -71,7 +71,7 @@ impl Bullet {
 
 #[derive(Clone, Debug)]
 pub struct GameState {
-    asteroids: Vec<Asteroid>,
+    pub asteroids: Vec<Asteroid>,
     pub player: Player,
     bullets: Vec<Bullet>,
     shoot_bullet_cd: i16,

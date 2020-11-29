@@ -258,23 +258,89 @@ fn asteroids_fitness(player: &mut nn::Network) -> () {
     for _i in 0..max_turns {
 	// vision
 	
-	let output = player.feed_input(vec![asteroids_game.player.rust_sux.pos_x, asteroids_game.player.rust_sux.pos_y]);
+	canvas.set_draw_color(Color::RGB(0, 0, 0));
+	canvas.clear();
+
+	let mut vision_input: [f64; 8] = [100000.0; 8];
+
+	canvas.set_draw_color(Color::RGB(0, 255, 0));
+	for asteroid_dist in 1..30 {
+	    for ast in asteroids_game.asteroids.iter() {
+		let mut vision_c = collision::Circle { pos_x: 0.0, pos_y: 0.0, radius: 1.0 };
+		if vision_input[0] == 100000.0 { 
+		    vision_c.pos_x = asteroids_game.player.rust_sux.pos_x + (asteroid_dist as f64);
+		    vision_c.pos_y = asteroids_game.player.rust_sux.pos_y;
+		    canvas.fill_rect(Rect::new(vision_c.pos_x as i32,
+					       vision_c.pos_y as i32,
+					       vision_c.radius as u32,
+					       vision_c.radius as u32));
+		    if collision::collides(&vision_c, &ast.bounding_box()) {
+			println!("Found an asteroid to my right!: {}", asteroid_dist);
+			vision_input[0] = asteroid_dist as f64;
+		    }
+		}
+		if vision_input[1] == 100000.0 {
+		    vision_c.pos_x = asteroids_game.player.rust_sux.pos_x - (asteroid_dist as f64);
+		    vision_c.pos_y = asteroids_game.player.rust_sux.pos_y;
+		    canvas.fill_rect(Rect::new(vision_c.pos_x as i32,
+					       vision_c.pos_y as i32,
+					       vision_c.radius as u32,
+					       vision_c.radius as u32));
+		    
+		    if collision::collides(&vision_c, &ast.bounding_box()) {
+			println!("Found an asteroid to my left!: {}", asteroid_dist);
+			vision_input[1] = asteroid_dist as f64;
+		    }
+		}
+		if vision_input[2] == 100000.0 {
+		    vision_c.pos_x = asteroids_game.player.rust_sux.pos_x;
+		    vision_c.pos_y = asteroids_game.player.rust_sux.pos_y + (asteroid_dist as f64);
+		    canvas.fill_rect(Rect::new(vision_c.pos_x as i32,
+					       vision_c.pos_y as i32,
+					       vision_c.radius as u32,
+					       vision_c.radius as u32));
+		    
+		    if collision::collides(&vision_c, &ast.bounding_box()) {
+			println!("Found an asteroid to my down!: {}", asteroid_dist);
+			vision_input[2] = asteroid_dist as f64;
+		    }
+		}
+		if vision_input[3] == 100000.0 {
+		    vision_c.pos_x = asteroids_game.player.rust_sux.pos_x;
+		    vision_c.pos_y = asteroids_game.player.rust_sux.pos_y - (asteroid_dist as f64);
+		    canvas.fill_rect(Rect::new(vision_c.pos_x as i32,
+					       vision_c.pos_y as i32,
+					       vision_c.radius as u32,
+					       vision_c.radius as u32));
+		    
+		    if collision::collides(&vision_c, &ast.bounding_box()) {
+			println!("Found an asteroid to my up!: {}", asteroid_dist);
+			vision_input[3] = asteroid_dist as f64;
+		    }
+		}
+	    }
+	}
+	
+	let output = player.feed_input(vec![asteroids_game.player.rust_sux.pos_x,
+					    asteroids_game.player.rust_sux.pos_y,
+					    vision_input[0],
+					    vision_input[1],
+					    vision_input[2],
+					    vision_input[3]]);
 	assert_eq!(output.len(), 3);
 
 	// do thinking 
-        if output[2] > 0.5 {
+        if output[2] <= 0.5 {
             game_input.thrusters = true;
         }
 
-        if output[1] >= 0.5 {
+        if output[1] <= 0.5 {
             game_input.shoot = true;
         }
 
         game_input.rotation = output[0];
 
 
-	canvas.set_draw_color(Color::RGB(0, 0, 0));
-	canvas.clear();
 	
 	let surface = font.render(&output[1].to_string()).blended(Color::RGBA(255, 0, 0, 255)).unwrap();
 	let texture = texture_creator.create_texture_from_surface(&surface).unwrap();
