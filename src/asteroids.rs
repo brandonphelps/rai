@@ -80,6 +80,7 @@ pub struct GameState {
     // if true then the game is finished.
     pub game_over: bool,
     pub game_over_is_win: bool,
+    score: u64,
 }
 
 pub struct GameInput {
@@ -111,6 +112,7 @@ pub fn game_init() -> GameState {
         world_width: 100.0,
         world_height: 100.0,
 	shoot_bullet_cd: 0,
+	score: 0,
     };
 
     let mut rng = rand::thread_rng();
@@ -277,6 +279,8 @@ pub fn game_update(
                     });
                 }
                 deleted_aster = true;
+		// 100 points per asteroid killed. 
+		new_state.score += 100;
                 bull.life_time = 0.0;
                 break;
             }

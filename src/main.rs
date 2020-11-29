@@ -275,7 +275,6 @@ fn asteroids_fitness(player: &mut nn::Network) -> () {
 					       vision_c.radius as u32,
 					       vision_c.radius as u32));
 		    if collision::collides(&vision_c, &ast.bounding_box()) {
-			println!("Found an asteroid to my right!: {}", asteroid_dist);
 			vision_input[0] = asteroid_dist as f64;
 		    }
 		}
@@ -288,7 +287,6 @@ fn asteroids_fitness(player: &mut nn::Network) -> () {
 					       vision_c.radius as u32));
 		    
 		    if collision::collides(&vision_c, &ast.bounding_box()) {
-			println!("Found an asteroid to my left!: {}", asteroid_dist);
 			vision_input[1] = asteroid_dist as f64;
 		    }
 		}
@@ -301,7 +299,6 @@ fn asteroids_fitness(player: &mut nn::Network) -> () {
 					       vision_c.radius as u32));
 		    
 		    if collision::collides(&vision_c, &ast.bounding_box()) {
-			println!("Found an asteroid to my down!: {}", asteroid_dist);
 			vision_input[2] = asteroid_dist as f64;
 		    }
 		}
@@ -314,19 +311,67 @@ fn asteroids_fitness(player: &mut nn::Network) -> () {
 					       vision_c.radius as u32));
 		    
 		    if collision::collides(&vision_c, &ast.bounding_box()) {
-			println!("Found an asteroid to my up!: {}", asteroid_dist);
 			vision_input[3] = asteroid_dist as f64;
+		    }
+		}
+		if vision_input[4] == 100000.0 { 
+		    vision_c.pos_x = asteroids_game.player.rust_sux.pos_x + (asteroid_dist as f64);
+		    vision_c.pos_y = asteroids_game.player.rust_sux.pos_y + (asteroid_dist as f64);
+		    canvas.fill_rect(Rect::new(vision_c.pos_x as i32,
+					       vision_c.pos_y as i32,
+					       vision_c.radius as u32,
+					       vision_c.radius as u32));
+		    if collision::collides(&vision_c, &ast.bounding_box()) {
+			vision_input[4] = asteroid_dist as f64;
+		    }
+		}
+		if vision_input[5] == 100000.0 {
+		    vision_c.pos_x = asteroids_game.player.rust_sux.pos_x - (asteroid_dist as f64);
+		    vision_c.pos_y = asteroids_game.player.rust_sux.pos_y - (asteroid_dist as f64);
+		    canvas.fill_rect(Rect::new(vision_c.pos_x as i32,
+					       vision_c.pos_y as i32,
+					       vision_c.radius as u32,
+					       vision_c.radius as u32));
+		    
+		    if collision::collides(&vision_c, &ast.bounding_box()) {
+			vision_input[5] = asteroid_dist as f64;
+		    }
+		}
+		if vision_input[6] == 100000.0 {
+		    vision_c.pos_x = asteroids_game.player.rust_sux.pos_x + (asteroid_dist as f64);
+		    vision_c.pos_y = asteroids_game.player.rust_sux.pos_y - (asteroid_dist as f64);
+		    canvas.fill_rect(Rect::new(vision_c.pos_x as i32,
+					       vision_c.pos_y as i32,
+					       vision_c.radius as u32,
+					       vision_c.radius as u32));
+		    
+		    if collision::collides(&vision_c, &ast.bounding_box()) {
+			vision_input[6] = asteroid_dist as f64;
+		    }
+		}
+		if vision_input[7] == 100000.0 {
+		    vision_c.pos_x = asteroids_game.player.rust_sux.pos_x - (asteroid_dist as f64);
+		    vision_c.pos_y = asteroids_game.player.rust_sux.pos_y + (asteroid_dist as f64);
+		    canvas.fill_rect(Rect::new(vision_c.pos_x as i32,
+					       vision_c.pos_y as i32,
+					       vision_c.radius as u32,
+					       vision_c.radius as u32));
+		    
+		    if collision::collides(&vision_c, &ast.bounding_box()) {
+			vision_input[7] = asteroid_dist as f64;
 		    }
 		}
 	    }
 	}
 	
-	let output = player.feed_input(vec![asteroids_game.player.rust_sux.pos_x,
-					    asteroids_game.player.rust_sux.pos_y,
-					    vision_input[0],
+	let output = player.feed_input(vec![vision_input[0],
 					    vision_input[1],
 					    vision_input[2],
-					    vision_input[3]]);
+					    vision_input[3],
+					    vision_input[4],
+					    vision_input[5],
+					    vision_input[6],
+					    vision_input[7]]);
 	assert_eq!(output.len(), 3);
 
 	// do thinking 
@@ -398,7 +443,8 @@ fn run_ea(input_count: u32, output_count: u32, pop_count: u64, iter_count: u64, 
     }
 
 
-    for _ in 0..iter_count {
+    for generation in 0..iter_count {
+	println!("Generation: {}", generation);
 
 	// move to speciate function
 	// specization. divide the population into different species. 
@@ -443,7 +489,6 @@ fn run_ea(input_count: u32, output_count: u32, pop_count: u64, iter_count: u64, 
                 ((spec_av_fit / average_fit) * pop_count as f64).floor() as u64 - 1;
             for _child_num in 0..num_children {
                 let mut new_child = spec.generate_offspring(&innovation_history).clone();
-		println!("Mutating child");
                 new_child.mutate(&mut innovation_history);
 		fitness_func(&mut new_child);
                 offspring.push(new_child);
