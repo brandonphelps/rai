@@ -243,7 +243,7 @@ fn asteroids_fitness(player: &mut nn::Network) -> () {
 
     canvas.clear();
 
-    let mut font = ttf_context.load_font("lazy.ttf", 128).unwrap();
+    let font = ttf_context.load_font("lazy.ttf", 128).unwrap();
 
     let texture_creator = canvas.texture_creator();
 
@@ -384,8 +384,6 @@ fn asteroids_fitness(player: &mut nn::Network) -> () {
         }
 
         game_input.rotation = output[0];
-
-
 	
 	let surface = font.render(&output[1].to_string()).blended(Color::RGBA(255, 0, 0, 255)).unwrap();
 	let texture = texture_creator.create_texture_from_surface(&surface).unwrap();
@@ -491,6 +489,7 @@ fn run_ea(input_count: u32, output_count: u32, pop_count: u64, iter_count: u64, 
                 let mut new_child = spec.generate_offspring(&innovation_history).clone();
                 new_child.mutate(&mut innovation_history);
 		fitness_func(&mut new_child);
+		println!("Evaluting child: {}", _child_num);
                 offspring.push(new_child);
             }
         }
@@ -531,7 +530,7 @@ fn main() -> std::result::Result<(), String> {
     let input_node_count = 16;
     let output_node_count = 3;
 
-    let args: Vec<_> = env::args().collect();
+    let _args: Vec<_> = env::args().collect();
 
     println!("Linked sdl2_tff: {}", sdl2::ttf::get_linked_version());
     
@@ -541,7 +540,14 @@ fn main() -> std::result::Result<(), String> {
     Ok(())
 }
 
+fn num_child_to_make(total_fitness: f64, species_fitness: f64, total_population: u64) -> u64 {
+    ((species_fitness / total_fitness) * total_population as f64) as u64
+}
+
+
 // todo look at this bench amrk thing https://stackoverflow.com/questions/60916194/how-to-sort-a-vector-in-descending-order-in-rust
+
+
 
 #[cfg(test)]
 mod tests {
@@ -597,7 +603,7 @@ mod tests {
 
         let mut spec = neat::Species::new(0.5, 0.4, 1.2);
 
-        let test_network = TestNetwork::from_network(network.clone());
+        let test_network = network.clone();
         spec.set_champion(&test_network);
         assert!(spec.same_species(&network.edges));
         assert!(spec.same_species(&network_two.edges));
@@ -649,10 +655,24 @@ mod tests {
 
         let mut spec = neat::Species::new(0.5, 0.4, 1.2);
 
-        let tmp_test = TestNetwork::from_network(network.clone());
+        let tmp_test = network.clone();
         spec.set_champion(&tmp_test);
         assert!(spec.same_species(&network.edges));
         assert!(!spec.same_species(&network_two.edges));
         assert!(!spec.same_species(&network_three.edges));
+    }
+
+    #[test]
+    fn test_child_num_people() {
+	let total_fitness = 100.0;
+	let total_pop = 100;
+
+	assert_eq!(num_child_to_make(total_fitness, 100.0, total_pop), 100);
+
+	// if a species has half the total pop then it should contribute to half the population.
+	assert_eq!(num_child_to_make(total_fitness, 50.0, total_pop), 50);
+
+	assert_eq!(num_child_to_make(total_fitness, 2.0, total_pop), 2);
+	assert_eq!(num_child_to_make(total_fitness, 50.0, 200), 100);
     }
 }
