@@ -68,6 +68,7 @@ dependencies = [
  "mugen",
  "prgrs",
  "rand",
+ "rasteroids",
  "sdl2",
 ]
 
@@ -113,6 +114,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "rasteroids"
+version = "0.1.0"
+source = "git+https://github.com/brandonphelps/rasteroids.git?branch=main#45c884f9e6810eb266998ba39608b05b74a94f92"
+dependencies = [
+ "rand",
+ "sdl2",
+]
+
+[[package]]
 name = "sdl2"
 version = "0.34.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -137,9 +147,9 @@ dependencies = [
 
 [[package]]
 name = "terminal_size"
-version = "0.1.13"
+version = "0.1.15"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "9a14cd9f8c72704232f0bfc8455c0e861f0ad4eb60cc9ec8a170e231414c1e13"
+checksum = "4bd2d183bd3fac5f5fe38ddbeb4dc9aec4a39a9d7d59e7491d900302da01cbe1"
 dependencies = [
  "libc",
  "winapi",

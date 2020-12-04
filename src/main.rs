@@ -9,8 +9,9 @@ use std::cmp::Reverse;
 use std::{thread, time};
 use std::env;
 
-mod asteroids;
-mod collision;
+use rasteroids::asteroids;
+use rasteroids::collision;
+
 mod evo_algo;
 mod hrm;
 mod neat;
@@ -477,19 +478,14 @@ fn run_ea(input_count: u32, output_count: u32, pop_count: u64, iter_count: u64, 
             if average_fit <= 0.0 {
                 average_fit = 1.0;
             }
-            // -1 for champion
-            println!("spec_av_fit / average_fit: {}", (spec_av_fit / average_fit));
-            println!(
-                "spec_av_fit / average_fit: {}",
-                ((spec_av_fit / average_fit) * pop_count as f64).floor()
-            );
-            let num_children =
-                ((spec_av_fit / average_fit) * pop_count as f64).floor() as u64 - 1;
+
+            let num_children = num_child_to_make(average_fit, spec_av_fit, pop_count);
+
             for _child_num in 0..num_children {
                 let mut new_child = spec.generate_offspring(&innovation_history).clone();
                 new_child.mutate(&mut innovation_history);
 		fitness_func(&mut new_child);
-		println!("Evaluting child: {}", _child_num);
+		println!("Evaluting child: {} {}", _child_num, new_child.fitness());
                 offspring.push(new_child);
             }
         }
@@ -526,7 +522,7 @@ fn main() -> std::result::Result<(), String> {
     let mut _asteroids_game = asteroids::game_init();
 
     let population_count = 200;
-    let max_iter_count = 100000;
+    let max_iter_count = 10000;
     let input_node_count = 16;
     let output_node_count = 3;
 
@@ -541,13 +537,13 @@ fn main() -> std::result::Result<(), String> {
 }
 
 fn num_child_to_make(total_fitness: f64, species_fitness: f64, total_population: u64) -> u64 {
+    assert!(total_fitness >= species_fitness);
+    println!("Total: ({}) Spec: ({}) Pop: ({})", total_fitness, species_fitness, total_population);
     ((species_fitness / total_fitness) * total_population as f64) as u64
 }
 
 
 // todo look at this bench amrk thing https://stackoverflow.com/questions/60916194/how-to-sort-a-vector-in-descending-order-in-rust
-
-
 
 #[cfg(test)]
 mod tests {
