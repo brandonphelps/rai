@@ -116,7 +116,7 @@ dependencies = [
 [[package]]
 name = "rasteroids"
 version = "0.1.0"
-source = "git+https://github.com/brandonphelps/rasteroids.git?branch=main#45c884f9e6810eb266998ba39608b05b74a94f92"
+source = "git+https://github.com/brandonphelps/rasteroids.git?branch=main#eef6100dd33bdc942f6e91ce3be8456f6f80db58"
 dependencies = [
  "rand",
  "sdl2",

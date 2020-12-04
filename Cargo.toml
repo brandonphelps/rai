@@ -18,6 +18,8 @@ mugen={path="mugen", version="0.1.0"}
 [dependencies.rasteroids]
 git = "https://github.com/brandonphelps/rasteroids.git"
 branch = "main"
+default-features = false
+features = ["gui"]
 
 [dependencies.sdl2]
 version="0.34"
