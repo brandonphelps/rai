@@ -397,8 +397,7 @@ fn asteroids_fitness(player: &mut nn::Network) -> () {
         asteroids_game = asteroids::game_update(
             &asteroids_game,
             (duration as f64) * 0.01,
-            &game_input,
-            &mut canvas,
+            &game_input
         );
         let start = Instant::now();
         canvas.present();
