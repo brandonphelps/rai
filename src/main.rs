@@ -30,34 +30,6 @@ use sdl2::keyboard::Keycode;
 use sdl2::render::{Canvas, Texture, TextureCreator};
 use sdl2::video::{Window, WindowContext};
 
-fn do_fitness_func<T: Individual>(individuals: &Vec<T>) -> () {
-    for ind in individuals.iter() {
-        ind.fitness();
-    }
-}
-
-fn select_parents<T: Individual>(individuals: &Vec<T>, parent_count: usize) -> Vec<&T> {
-    let mut parents: Vec<&T> = Vec::new();
-
-    let mut fitness_sum: f64 = 0.0;
-    for _ind in individuals.iter() {
-        fitness_sum += _ind.fitness();
-    }
-    let mut rng = rand::thread_rng();
-
-    for _ind in 1..parent_count {
-        let mut running_sum: f64 = 0.0;
-        let rand: f64 = rng.gen_range(0.0, fitness_sum);
-        for p in individuals.iter() {
-            running_sum += p.fitness();
-            if running_sum > rand {
-                parents.push(&p);
-            }
-        }
-    }
-    return parents;
-}
-
 // todo: allow user to specify parent selection algorithm.
 fn generate_offspring<T>(parents: &Vec<&T>, offspring_count: u128) -> Vec<T>
 where
@@ -85,13 +57,6 @@ where
     return offspring;
 }
 
-// fn run_dah_simulation<T>(initial_pop: Vec<T>, pop_count: u64, parent_count: u64, offspring_count: u64, iter_count: u64)
-// where
-//     T: Crossover<Output = T> + Individual
-// {
-
-// }
-
 fn find_sdl_gl_driver() -> Option<u32> {
     for (index, item) in sdl2::render::drivers().enumerate() {
         if item.name == "opengl" {
@@ -99,55 +64,6 @@ fn find_sdl_gl_driver() -> Option<u32> {
         }
     }
     None
-}
-
-fn dummy_texture<'a>(
-    canvas: &mut Canvas<Window>,
-    texture_creator: &'a TextureCreator<WindowContext>,
-) -> Result<(Texture<'a>, Texture<'a>), String> {
-    enum TextureColor {
-        Yellow,
-        White,
-    };
-
-    let mut square_texture1 = texture_creator
-        .create_texture_target(None, 10, 10)
-        .map_err(|e| e.to_string())?;
-    let mut square_texture2 = texture_creator
-        .create_texture_target(None, 10, 10)
-        .map_err(|e| e.to_string())?;
-
-    {
-        let textures = vec![
-            (&mut square_texture1, TextureColor::Yellow),
-            (&mut square_texture2, TextureColor::White),
-        ];
-
-        canvas
-            .with_multiple_texture_canvas(textures.iter(), |texture_canvas, user_context| {
-                texture_canvas.set_draw_color(Color::RGB(0, 0, 0));
-                texture_canvas.clear();
-                match *user_context {
-                    TextureColor::Yellow => {
-                        println!("Yello");
-                        for i in 0..10 {
-                            for j in 0..10 {
-                                if (i + j) % 4 == 0 {
-                                    texture_canvas.set_draw_color(Color::RGB(255, 255, 0));
-                                    texture_canvas
-                                        .draw_point(Point::new(i as i32, j as i32))
-                                        .expect("could not draw point");
-                                }
-                            }
-                        }
-                    }
-                    TextureColor::White => {}
-                };
-            })
-            .map_err(|e| e.to_string())?;
-    }
-
-    return Ok((square_texture1, square_texture2));
 }
 
 fn speciate(population: &Vec<nn::Network>) -> Vec<neat::Species> {
