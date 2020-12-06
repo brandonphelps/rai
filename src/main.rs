@@ -433,9 +433,8 @@ fn run_ea(input_count: u32, output_count: u32, pop_count: u64, iter_count: u64, 
     let _top = &mut specific_pop[0];
 }
 
-fn main() -> std::result::Result<(), String> {
-    let mut _asteroids_game = asteroids::game_init();
 
+fn main() -> std::result::Result<(), String> {
     let population_count = 200;
     let max_iter_count = 10000;
     let input_node_count = 16;
@@ -443,17 +442,16 @@ fn main() -> std::result::Result<(), String> {
 
     let _args: Vec<_> = env::args().collect();
 
-    println!("Linked sdl2_tff: {}", sdl2::ttf::get_linked_version());
-    
     run_ea(input_node_count, output_node_count,
 	   population_count, max_iter_count, &asteroids_fitness);
 
     Ok(())
 }
 
+// determine the number of children to create based on the total fitness and the specifies fitness. 
 fn num_child_to_make(total_fitness: f64, species_fitness: f64, total_population: u64) -> u64 {
-    assert!(total_fitness >= species_fitness);
     println!("Total: ({}) Spec: ({}) Pop: ({})", total_fitness, species_fitness, total_population);
+    assert!(total_fitness >= species_fitness);
     ((species_fitness / total_fitness) * total_population as f64) as u64
 }
 
