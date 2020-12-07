@@ -8,6 +8,7 @@ use rand::seq::SliceRandom;
 use std::cmp::Reverse;
 use std::{thread, time};
 use std::env;
+use std::fs;
 
 use rasteroids::asteroids;
 use rasteroids::collision;
@@ -57,37 +58,6 @@ where
     return offspring;
 }
 
-fn find_sdl_gl_driver() -> Option<u32> {
-    for (index, item) in sdl2::render::drivers().enumerate() {
-        if item.name == "opengl" {
-            return Some(index as u32);
-        }
-    }
-    None
-}
-
-fn speciate(population: &Vec<nn::Network>) -> Vec<neat::Species> {
-    let mut species: Vec<neat::Species> = Vec::new();
-
-    for test_n in population.iter() {
-        let mut found_spec = false;
-
-        for spec in species.iter_mut() {
-            if spec.same_species(&test_n.edges) {
-                spec.individuals.push(&test_n);
-                found_spec = true;
-            }
-        }
-
-        if !found_spec {
-            let mut new_spec = neat::Species::new(1.5, 0.8, 4.0);
-            new_spec.set_champion(&test_n);
-            species.push(new_spec);
-        }
-    }
-
-    return species;
-}
 
 fn draw_network(network: &nn::Network, canvas: &mut Canvas<Window>) {
     let mut nodes: Vec<&nn::Node> = Vec::new();
@@ -143,28 +113,37 @@ fn asteroids_fitness(player: &mut nn::Network) -> () {
 
     let mut asteroids_game = asteroids::game_init();
 
-    let sdl_context = sdl2::init().unwrap();
-    let ttf_context = sdl2::ttf::init().unwrap();
-    let video_subsystem = sdl_context.video().unwrap();
-    let window = video_subsystem
-        .window("Window", 800, 600)
-        .opengl()
-        .build()
-        .unwrap();
+    // let sdl_context = sdl2::init().unwrap();
+    // let ttf_context = sdl2::ttf::init().unwrap();
+    // let video_subsystem = sdl_context.video().unwrap();
+    // let window = video_subsystem
+    //     .window("Window", 800, 600)
+    //     .opengl()
+    //     .build()
+    //     .unwrap();
 
-    let mut canvas = window
-        .into_canvas()
-        .index(find_sdl_gl_driver().unwrap())
-        .build()
-        .unwrap();
+    // fn find_sdl_gl_driver() -> Option<u32> {
+    //     for (index, item) in sdl2::render::drivers().enumerate() {
+    //         if item.name == "opengl" {
+    //             return Some(index as u32);
+    //         }
+    //     }
+    //     None
+    // }
 
-    canvas.clear();
+    // let mut canvas = window
+    //     .into_canvas()
+    //     .index(find_sdl_gl_driver().unwrap())
+    //     .build()
+    //     .unwrap();
 
-    let font = ttf_context.load_font("lazy.ttf", 128).unwrap();
+    // canvas.clear();
 
-    let texture_creator = canvas.texture_creator();
+    // let font = ttf_context.load_font("lazy.ttf", 128).unwrap();
 
-    let target = Rect::new(100, 150, 300, 200);
+    // let texture_creator = canvas.texture_creator();
+
+    // let target = Rect::new(100, 150, 300, 200);
 
 
     // each item of vision is both a direction and distance to an asteroid.
@@ -175,22 +154,22 @@ fn asteroids_fitness(player: &mut nn::Network) -> () {
     for _i in 0..max_turns {
 	// vision
 	
-	canvas.set_draw_color(Color::RGB(0, 0, 0));
-	canvas.clear();
+	// canvas.set_draw_color(Color::RGB(0, 0, 0));
+	// canvas.clear();
 
 	let mut vision_input: [f64; 8] = [100000.0; 8];
 
-	canvas.set_draw_color(Color::RGB(0, 255, 0));
+	// canvas.set_draw_color(Color::RGB(0, 255, 0));
 	for asteroid_dist in 1..30 {
 	    for ast in asteroids_game.asteroids.iter() {
 		let mut vision_c = collision::Circle { pos_x: 0.0, pos_y: 0.0, radius: 1.0 };
 		if vision_input[0] == 100000.0 { 
 		    vision_c.pos_x = asteroids_game.player.rust_sux.pos_x + (asteroid_dist as f64);
 		    vision_c.pos_y = asteroids_game.player.rust_sux.pos_y;
-		    canvas.fill_rect(Rect::new(vision_c.pos_x as i32,
-					       vision_c.pos_y as i32,
-					       vision_c.radius as u32,
-					       vision_c.radius as u32));
+		    // canvas.fill_rect(Rect::new(vision_c.pos_x as i32,
+		    // 			       vision_c.pos_y as i32,
+		    // 			       vision_c.radius as u32,
+		    // 			       vision_c.radius as u32));
 		    if collision::collides(&vision_c, &ast.bounding_box()) {
 			vision_input[0] = asteroid_dist as f64;
 		    }
@@ -198,10 +177,10 @@ fn asteroids_fitness(player: &mut nn::Network) -> () {
 		if vision_input[1] == 100000.0 {
 		    vision_c.pos_x = asteroids_game.player.rust_sux.pos_x - (asteroid_dist as f64);
 		    vision_c.pos_y = asteroids_game.player.rust_sux.pos_y;
-		    canvas.fill_rect(Rect::new(vision_c.pos_x as i32,
-					       vision_c.pos_y as i32,
-					       vision_c.radius as u32,
-					       vision_c.radius as u32));
+		    // canvas.fill_rect(Rect::new(vision_c.pos_x as i32,
+		    // 			       vision_c.pos_y as i32,
+		    // 			       vision_c.radius as u32,
+		    // 			       vision_c.radius as u32));
 		    
 		    if collision::collides(&vision_c, &ast.bounding_box()) {
 			vision_input[1] = asteroid_dist as f64;
@@ -210,10 +189,10 @@ fn asteroids_fitness(player: &mut nn::Network) -> () {
 		if vision_input[2] == 100000.0 {
 		    vision_c.pos_x = asteroids_game.player.rust_sux.pos_x;
 		    vision_c.pos_y = asteroids_game.player.rust_sux.pos_y + (asteroid_dist as f64);
-		    canvas.fill_rect(Rect::new(vision_c.pos_x as i32,
-					       vision_c.pos_y as i32,
-					       vision_c.radius as u32,
-					       vision_c.radius as u32));
+		    // canvas.fill_rect(Rect::new(vision_c.pos_x as i32,
+		    // 			       vision_c.pos_y as i32,
+		    // 			       vision_c.radius as u32,
+		    // 			       vision_c.radius as u32));
 		    
 		    if collision::collides(&vision_c, &ast.bounding_box()) {
 			vision_input[2] = asteroid_dist as f64;
@@ -222,10 +201,10 @@ fn asteroids_fitness(player: &mut nn::Network) -> () {
 		if vision_input[3] == 100000.0 {
 		    vision_c.pos_x = asteroids_game.player.rust_sux.pos_x;
 		    vision_c.pos_y = asteroids_game.player.rust_sux.pos_y - (asteroid_dist as f64);
-		    canvas.fill_rect(Rect::new(vision_c.pos_x as i32,
-					       vision_c.pos_y as i32,
-					       vision_c.radius as u32,
-					       vision_c.radius as u32));
+		    // canvas.fill_rect(Rect::new(vision_c.pos_x as i32,
+		    // 			       vision_c.pos_y as i32,
+		    // 			       vision_c.radius as u32,
+		    // 			       vision_c.radius as u32));
 		    
 		    if collision::collides(&vision_c, &ast.bounding_box()) {
 			vision_input[3] = asteroid_dist as f64;
@@ -234,10 +213,10 @@ fn asteroids_fitness(player: &mut nn::Network) -> () {
 		if vision_input[4] == 100000.0 { 
 		    vision_c.pos_x = asteroids_game.player.rust_sux.pos_x + (asteroid_dist as f64);
 		    vision_c.pos_y = asteroids_game.player.rust_sux.pos_y + (asteroid_dist as f64);
-		    canvas.fill_rect(Rect::new(vision_c.pos_x as i32,
-					       vision_c.pos_y as i32,
-					       vision_c.radius as u32,
-					       vision_c.radius as u32));
+		    // canvas.fill_rect(Rect::new(vision_c.pos_x as i32,
+		    // 			       vision_c.pos_y as i32,
+		    // 			       vision_c.radius as u32,
+		    // 			       vision_c.radius as u32));
 		    if collision::collides(&vision_c, &ast.bounding_box()) {
 			vision_input[4] = asteroid_dist as f64;
 		    }
@@ -245,10 +224,10 @@ fn asteroids_fitness(player: &mut nn::Network) -> () {
 		if vision_input[5] == 100000.0 {
 		    vision_c.pos_x = asteroids_game.player.rust_sux.pos_x - (asteroid_dist as f64);
 		    vision_c.pos_y = asteroids_game.player.rust_sux.pos_y - (asteroid_dist as f64);
-		    canvas.fill_rect(Rect::new(vision_c.pos_x as i32,
-					       vision_c.pos_y as i32,
-					       vision_c.radius as u32,
-					       vision_c.radius as u32));
+		    // canvas.fill_rect(Rect::new(vision_c.pos_x as i32,
+		    // 			       vision_c.pos_y as i32,
+		    // 			       vision_c.radius as u32,
+		    // 			       vision_c.radius as u32));
 		    
 		    if collision::collides(&vision_c, &ast.bounding_box()) {
 			vision_input[5] = asteroid_dist as f64;
@@ -257,10 +236,10 @@ fn asteroids_fitness(player: &mut nn::Network) -> () {
 		if vision_input[6] == 100000.0 {
 		    vision_c.pos_x = asteroids_game.player.rust_sux.pos_x + (asteroid_dist as f64);
 		    vision_c.pos_y = asteroids_game.player.rust_sux.pos_y - (asteroid_dist as f64);
-		    canvas.fill_rect(Rect::new(vision_c.pos_x as i32,
-					       vision_c.pos_y as i32,
-					       vision_c.radius as u32,
-					       vision_c.radius as u32));
+		    // canvas.fill_rect(Rect::new(vision_c.pos_x as i32,
+		    // 			       vision_c.pos_y as i32,
+		    // 			       vision_c.radius as u32,
+		    // 			       vision_c.radius as u32));
 		    
 		    if collision::collides(&vision_c, &ast.bounding_box()) {
 			vision_input[6] = asteroid_dist as f64;
@@ -269,10 +248,10 @@ fn asteroids_fitness(player: &mut nn::Network) -> () {
 		if vision_input[7] == 100000.0 {
 		    vision_c.pos_x = asteroids_game.player.rust_sux.pos_x - (asteroid_dist as f64);
 		    vision_c.pos_y = asteroids_game.player.rust_sux.pos_y + (asteroid_dist as f64);
-		    canvas.fill_rect(Rect::new(vision_c.pos_x as i32,
-					       vision_c.pos_y as i32,
-					       vision_c.radius as u32,
-					       vision_c.radius as u32));
+		    // canvas.fill_rect(Rect::new(vision_c.pos_x as i32,
+		    // 			       vision_c.pos_y as i32,
+		    // 			       vision_c.radius as u32,
+		    // 			       vision_c.radius as u32));
 		    
 		    if collision::collides(&vision_c, &ast.bounding_box()) {
 			vision_input[7] = asteroid_dist as f64;
@@ -302,12 +281,11 @@ fn asteroids_fitness(player: &mut nn::Network) -> () {
 
         game_input.rotation = output[0];
 	
-	let surface = font.render(&output[1].to_string()).blended(Color::RGBA(255, 0, 0, 255)).unwrap();
-	let texture = texture_creator.create_texture_from_surface(&surface).unwrap();
+	// let surface = font.render(&output[1].to_string()).blended(Color::RGBA(255, 0, 0, 255)).unwrap();
+	// let texture = texture_creator.create_texture_from_surface(&surface).unwrap();
 
-	draw_network(&player, &mut canvas);
-
-	canvas.copy(&texture, None, Some(target)).unwrap();
+	// draw_network(&player, &mut canvas);
+	// canvas.copy(&texture, None, Some(target)).unwrap();
 
 	// process action based on thinking
         asteroids_game = asteroids::game_update(
@@ -316,7 +294,7 @@ fn asteroids_fitness(player: &mut nn::Network) -> () {
             &game_input
         );
         let start = Instant::now();
-        canvas.present();
+        // canvas.present();
 
         if asteroids_game.game_over {
             if asteroids_game.game_over_is_win {
@@ -365,7 +343,7 @@ fn run_ea(input_count: u32, output_count: u32, pop_count: u64, iter_count: u64, 
         // why can't this forloop be outside this forloop? something
         // about the specific_pop updating is mutable borrow after an immutable barrow on something?
 
-	let mut species = speciate(&specific_pop); 
+	let mut species = neat::speciate(&specific_pop); 
 	let species_count = species.len();
 	println!("Species count: {}", species_count);
 
@@ -441,14 +419,42 @@ fn main() -> std::result::Result<(), String> {
     let output_node_count = 3;
 
     let _args: Vec<_> = env::args().collect();
+    
+    use chrono::{Datelike, Timelike, Local, Utc};
 
-    run_ea(input_node_count, output_node_count,
-	   population_count, max_iter_count, &asteroids_fitness);
+    let now = Utc::now();
+    let (is_pm, mut now_hour) = now.hour12();
+    if is_pm {
+	now_hour += 12;
+    }
+    let folder_time = format!("{}{}{}", now_hour, now.minute(), now.second());
+
+
+    use std::process::Command;
+
+    let output = Command::new("git").args(&["rev-parse", "HEAD"]).output().expect("Failed to get git hash");
+    
+    let runner_version = match std::str::from_utf8(&output.stdout[0..6]) {
+	Ok(v) => v,
+	Err(e) => panic!("Failed to get runner version"),
+    };
+
+    let results_folder = format!("results/asteroids/{}_{}", folder_time, runner_version);
+    println!("Storing results in {}", results_folder);
+    match fs::create_dir_all(results_folder) {
+	Err(e) => println!("Failed to create folder: {}", e),
+	_ => (),
+    }
+    
+
+    // run_ea(input_node_count, output_node_count,
+    // 	   population_count, max_iter_count, &asteroids_fitness);
 
     Ok(())
 }
 
-// determine the number of children to create based on the total fitness and the specifies fitness. 
+/// Given the total fitness, species' fitness, and total pop, generate a total number of 
+/// items 
 fn num_child_to_make(total_fitness: f64, species_fitness: f64, total_population: u64) -> u64 {
     println!("Total: ({}) Spec: ({}) Pop: ({})", total_fitness, species_fitness, total_population);
     assert!(total_fitness >= species_fitness);

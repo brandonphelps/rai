@@ -13,7 +13,8 @@ include = ["resources/fonts/lazy.ttf"]
 rand="0.7.3"
 more-asserts="0.2"
 prgrs="0.6.4"
-mugen={path="mugen", version="0.1.0"}
+chrono="*"
+git2 = "0.13"
 
 [dependencies.rasteroids]
 git = "https://github.com/brandonphelps/rasteroids.git"

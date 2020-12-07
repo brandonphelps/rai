@@ -12,6 +12,33 @@ pub struct Species<'a> {
     pub individuals: Vec<&'a Network>,
 }
 
+/// Given a vector of individuals, return a vector of species, where the individuals
+/// are divided into species based on how similar they are. 
+pub fn speciate(population: &Vec<Network>) -> Vec<Species> {
+    let mut species: Vec<Species> = Vec::new();
+
+    for test_n in population.iter() {
+        let mut found_spec = false;
+
+        for spec in species.iter_mut() {
+            if spec.same_species(&test_n.edges) {
+                spec.individuals.push(&test_n);
+                found_spec = true;
+            }
+        }
+
+        if !found_spec {
+	    // todo: allow the params to be passed in or something. 
+            let mut new_spec = Species::new(1.5, 0.8, 4.0);
+            new_spec.set_champion(&test_n);
+            species.push(new_spec);
+        }
+    }
+
+    return species;
+}
+
+
 impl<'a> Species<'a> {
     pub fn new(excess_coeff: f64, weight_diff_coeff: f64, compat_threashold: f64) -> Species<'a> {
         return Species {
@@ -39,6 +66,7 @@ impl<'a> Species<'a> {
 
         return self.compat_threashold > compat;
     }
+
 
     /// returns the average fitness of the individuals within
     /// make sure that all individuals have their update_fitness funcs called before this one.
