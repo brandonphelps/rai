@@ -19,6 +19,7 @@ chrono="*"
 git2 = "0.13"
 serde= { version = "*", features = ["derive"]}
 serde_json="*"
+beanstalkd="*"
 
 [dependencies.rasteroids]
 git = "https://github.com/brandonphelps/rasteroids.git"
@@ -45,3 +46,7 @@ path = "src/main.rs"
 name = "watcher"
 path = "src/watcher.rs"
 required-features = ["gui"]
+
+[[bin]]
+name = "scheduler"
+path = "src/scheduler.rs"

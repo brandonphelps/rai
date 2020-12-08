@@ -7,10 +7,25 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "cdb031dd78e28731d87d56cc8ffef4a8f36ca26c38fe2de700543e627f8a464a"
 
 [[package]]
+name = "beanstalkd"
+version = "0.4.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "306bf45a74737ad160c217724e32e8c49d187cdeaab65cd9ba097adcdb5b5b85"
+dependencies = [
+ "bufstream",
+]
+
+[[package]]
 name = "bitflags"
 version = "1.2.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "cf1de2fe8c75bc145a2f577add951f8134889b4795d47466a54a5c846d691693"
+
+[[package]]
+name = "bufstream"
+version = "0.1.4"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "40e38929add23cdf8a366df9b0e088953150724bcbe5fc330b0d8eb3b328eec8"
 
 [[package]]
 name = "cc"
@@ -262,6 +277,7 @@ dependencies = [
 name = "rai"
 version = "0.1.0"
 dependencies = [
+ "beanstalkd",
  "chrono",
  "git2",
  "more-asserts",

@@ -10,7 +10,10 @@ use std::{thread, time};
 use std::env;
 use std::fs;
 
+extern crate beanstalkd;
+
 use rasteroids::asteroids;
+use beanstalkd::Beanstalkd;
 use rasteroids::collision;
 
 mod evo_algo;
@@ -34,8 +37,6 @@ fn asteroids_fitness(player: &mut nn::Network) -> () {
     };
 
     let mut asteroids_game = asteroids::game_init();
-
-
 
     // each item of vision is both a direction and distance to an asteroid.
     // the distance is from the ship, the network will have to figure out that
@@ -204,6 +205,10 @@ fn asteroids_fitness(player: &mut nn::Network) -> () {
 }
 
 
+fn evaluate_individual(individual: &mut nn::Network, fitness_func: &dyn Fn(&mut nn::Network)) -> () {
+    fitness_func(individual);
+}
+
 fn run_ea(input_count: u32,
 	  output_count: u32,
 	  pop_count: u64, iter_count: u64, results_folder: String,
@@ -222,12 +227,12 @@ fn run_ea(input_count: u32,
         conn_history: vec![],
     };
 
-    fitness_func(&mut individual);
+    // fitness_func(&mut individual);
+    evaluate_individual(&mut individual, fitness_func);
 
     for _ in 0..pop_count+1 {
 	specific_pop.push(individual.clone());
     }
-
 
     for generation in 0..iter_count {
 	let gen_folder = format!("{}/{}", results_folder, generation);
@@ -274,7 +279,8 @@ fn run_ea(input_count: u32,
             for _child_num in 0..num_children {
                 let mut new_child = spec.generate_offspring(&innovation_history).clone();
                 new_child.mutate(&mut innovation_history);
-		fitness_func(&mut new_child);
+		// fitness_func(&mut new_child);
+		evaluate_individual(&mut new_child, fitness_func);
 		println!("Evaluting child: {} {}", _child_num, new_child.fitness());
                 offspring.push(new_child);
             }
@@ -309,8 +315,20 @@ fn run_ea(input_count: u32,
     let _top = &mut specific_pop[0];
 }
 
+fn server_runner() -> () {
+    let mut beanstalkd = Beanstalkd::connect("192.168.1.77", 11300).unwrap();
+    beanstalkd.watch("rasteroids");
+    let p = beanstalkd.reserve().unwrap();
+
+    println!("{:#?}", p);
+    beanstalkd.delete(p.0);
+}
+
 
 fn main() -> std::result::Result<(), String> {
+    server_runner();
+    return Ok(());
+
     let population_count = 20;
     let max_iter_count = 10000;
     let input_node_count = 16;
@@ -343,7 +361,6 @@ fn main() -> std::result::Result<(), String> {
 	Err(e) => println!("Failed to create folder: {}", e),
 	_ => (),
     }
-    
 
     run_ea(input_node_count, output_node_count,
 	   population_count, max_iter_count,
