@@ -2,6 +2,8 @@
 //#[macro_use]
 // extern crate more_asserts;
 use crate::neat::InnovationHistory;
+use serde::{Deserialize, Serialize};
+use serde_json::Result;
 use rand::prelude::*;
 
 fn matching_edge(parent2: &Network, inno_id: u64) -> Option<&Edge> {
@@ -13,7 +15,7 @@ fn matching_edge(parent2: &Network, inno_id: u64) -> Option<&Edge> {
     return None;
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Node {
     input_sum: f64,
     output_sum: f64,
@@ -35,7 +37,7 @@ fn sigmoid(value: f64) -> f64 {
     return 1.0 / (1.0 + std::f64::consts::E.powf(-1.0 * value));
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Edge {
     pub from_node: u64,
     to_node: u64,
@@ -56,7 +58,8 @@ impl Edge {
     }
 }
 
-#[derive(Debug, Clone)]
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Network {
     // first I nodes are input nodes
     // after which the output nodes are next.
@@ -156,7 +159,7 @@ impl Network {
     pub fn pretty_print(&self) -> () {
         for layer in 0..self.layer_count {
             for node in self.nodes.iter() {
-                if node.layer == layer.into() {
+                if node.layer == layer as u64 {
                     println!("{:#?}", node);
                 }
             }
@@ -164,7 +167,7 @@ impl Network {
         for layer in 0..self.layer_count {
             println!("Layer: {}", layer);
             for edge in self.edges.iter() {
-                if edge.enabled && self.nodes[edge.from_node as usize].layer == layer.into() {
+                if edge.enabled && self.nodes[edge.from_node as usize].layer == layer as u64 {
                     println!("{:#?}", edge);
                 }
             }
@@ -186,7 +189,7 @@ impl Network {
         for layer in 0..self.layer_count {
             // println!("Feeding layer: {}", layer);
             for node_index in 0..self.nodes.len() {
-                if self.nodes[node_index].layer == layer.into() {
+                if self.nodes[node_index].layer == layer as u64 {
                     // set the output sum of the node so it can be used as input for next layer
                     if layer != 0 {
                         // println!("output: {} of {} {}", sigmoid(self.nodes[node_index].input_sum), node_index, self.nodes[node_index].input_sum);
@@ -326,7 +329,7 @@ impl Network {
         );
         self.edges.push(edge2);
 
-        if self.nodes[outgoing_node_id as usize].layer == current_node_layer.into() {
+        if self.nodes[outgoing_node_id as usize].layer == current_node_layer as u64 {
             for node_i in 0..self.nodes.len() - 1 {
                 let node_t = &mut self.nodes[node_i];
                 if node_t.layer >= current_node_layer {

@@ -9,12 +9,16 @@ include = ["resources/fonts/lazy.ttf"]
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
+
+
 [dependencies]
 rand="0.7.3"
 more-asserts="0.2"
 prgrs="0.6.4"
 chrono="*"
 git2 = "0.13"
+serde= { version = "*", features = ["derive"]}
+serde_json="*"
 
 [dependencies.rasteroids]
 git = "https://github.com/brandonphelps/rasteroids.git"
@@ -25,3 +29,19 @@ default-features = true
 version="0.34"
 default-features = false
 features = ["ttf", "image"]
+optional = true
+
+[features]
+default = []
+gui = ["sdl2"]
+
+
+[[bin]]
+name = "runner"
+path = "src/main.rs"
+
+
+[[bin]]
+name = "watcher"
+path = "src/watcher.rs"
+required-features = ["gui"]

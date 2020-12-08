@@ -1,13 +1,10 @@
 #![allow(clippy::unused_unit)]
 
-use sdl2::render::Canvas;
-use sdl2::video::Window;
-
 pub trait Individual {
     // can this return just a numeric traited instance?
     // post calculated fitness.
     fn fitness(&self) -> f64;
-    fn update_fitness(&mut self, canvas: &mut Canvas<Window>) -> ();
+    fn update_fitness(&mut self) -> ();
     fn print(&self) -> ();
     fn mutate(&mut self) -> ();
     // fn crossover(&self, other: Box<dyn Individual>) -> Box<dyn Individual>;

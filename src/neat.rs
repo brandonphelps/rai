@@ -81,6 +81,7 @@ impl<'a> Species<'a> {
 
     /// returns the number of excess and disjoint edges.
     /// i.e the number of extra edges and the number of non matching edges.
+    // todo: move outside the species impl? 
     pub fn get_excess_disjoint(one: &Vec<Edge>, two: &Vec<Edge>) -> usize {
         let mut matching = 0;
         for edge_one in one.iter() {
@@ -248,5 +249,13 @@ mod tests {
         // new connection that hasn't been seen before.
         let new_inno_num = innovation_history.get_inno_number(&network, 0, 20);
         assert_eq!(new_inno_num, global_inno_id + 1);
+    }
+
+    #[test]
+    fn test_excess_disjoin() {
+	let edge_one: Vec<Edge> = Vec::new();
+	let edge_two: Vec<Edge> = Vec::new();
+
+	assert_eq!(Species::get_excess_disjoint(&edge_one, &edge_two), 0);
     }
 }

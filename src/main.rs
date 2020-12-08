@@ -18,88 +18,10 @@ mod hrm;
 mod neat;
 mod nn;
 
-use evo_algo::{Crossover, Individual};
 use std::time::{Duration, Instant};
 
 use std::sync::atomic::{AtomicUsize, Ordering};
 
-use sdl2;
-use sdl2::pixels::Color;
-use sdl2::rect::{Point, Rect};
-
-use sdl2::keyboard::Keycode;
-use sdl2::render::{Canvas, Texture, TextureCreator};
-use sdl2::video::{Window, WindowContext};
-
-// todo: allow user to specify parent selection algorithm.
-fn generate_offspring<T>(parents: &Vec<&T>, offspring_count: u128) -> Vec<T>
-where
-    T: Crossover<Output = T> + Individual,
-{
-    let mut offspring: Vec<T> = Vec::new();
-
-    // breed offspring / mutate
-    let parent_one = match parents.choose(&mut rand::thread_rng()) {
-        None => panic!("None!"),
-        Some(fd) => fd,
-    };
-
-    let parent_two = match parents.choose(&mut rand::thread_rng()) {
-        None => panic!("None!"),
-        Some(fd) => fd,
-    };
-
-    for _offp in 1..offspring_count {
-        let mut child = parent_one.crossover(parent_two);
-        child.mutate();
-        offspring.push(child);
-    }
-
-    return offspring;
-}
-
-
-fn draw_network(network: &nn::Network, canvas: &mut Canvas<Window>) {
-    let mut nodes: Vec<&nn::Node> = Vec::new();
-    let mut node_nums: Vec<u64> = Vec::new();
-    let mut poses: Vec<(u32, u32)> = Vec::new();
-
-    let width = 80; 
-    let height = 20;
-    let mut node_num = 0;
-
-    canvas.set_draw_color(Color::RGB(255, 0, 0));
-    
-    for layer in 0..network.layer_count  { 
-	
-	let x: f64 = ((layer + 1) * width) as f64 / (network.layer_count+1) as f64;
-	for (n_index, node) in network.nodes.iter().enumerate() {
-	    if node.layer == layer.into() {
-		let y: f64 = ((n_index + 1) * height) as f64 / (network.nodes.len() + 1) as f64;
-		nodes.push(&node);
-		node_nums.push(node_num);
-		node_num += 1;
-		let t = (x as u32, y as u32);
-		poses.push(t);
-	    }
-	}
-    }
-    
-    let offset = 100;
-
-    for edge in network.edges.iter() {
-	if edge.enabled {
-	    
-	}
-    }
-
-
-    for pose in poses.iter() {
-	let _p = canvas.fill_rect(Rect::new(
-	    (offset + pose.0 as i32) * 2, (offset + pose.1 as i32) * 2,
-	    5, 5));
-    }
-}
 
 fn asteroids_fitness(player: &mut nn::Network) -> () {
     let mut _fitness = 0.0;
@@ -113,37 +35,6 @@ fn asteroids_fitness(player: &mut nn::Network) -> () {
 
     let mut asteroids_game = asteroids::game_init();
 
-    // let sdl_context = sdl2::init().unwrap();
-    // let ttf_context = sdl2::ttf::init().unwrap();
-    // let video_subsystem = sdl_context.video().unwrap();
-    // let window = video_subsystem
-    //     .window("Window", 800, 600)
-    //     .opengl()
-    //     .build()
-    //     .unwrap();
-
-    // fn find_sdl_gl_driver() -> Option<u32> {
-    //     for (index, item) in sdl2::render::drivers().enumerate() {
-    //         if item.name == "opengl" {
-    //             return Some(index as u32);
-    //         }
-    //     }
-    //     None
-    // }
-
-    // let mut canvas = window
-    //     .into_canvas()
-    //     .index(find_sdl_gl_driver().unwrap())
-    //     .build()
-    //     .unwrap();
-
-    // canvas.clear();
-
-    // let font = ttf_context.load_font("lazy.ttf", 128).unwrap();
-
-    // let texture_creator = canvas.texture_creator();
-
-    // let target = Rect::new(100, 150, 300, 200);
 
 
     // each item of vision is both a direction and distance to an asteroid.
@@ -313,7 +204,10 @@ fn asteroids_fitness(player: &mut nn::Network) -> () {
 }
 
 
-fn run_ea(input_count: u32, output_count: u32, pop_count: u64, iter_count: u64, fitness_func: &dyn Fn(&mut nn::Network)) -> () {
+fn run_ea(input_count: u32,
+	  output_count: u32,
+	  pop_count: u64, iter_count: u64, results_folder: String,
+	  fitness_func: &dyn Fn(&mut nn::Network)) -> () {
     println!("Pop count: {} {}", pop_count, iter_count);
 
     let mut average_history_per_iter: Vec<f64> = Vec::new();
@@ -336,6 +230,9 @@ fn run_ea(input_count: u32, output_count: u32, pop_count: u64, iter_count: u64, 
 
 
     for generation in 0..iter_count {
+	let gen_folder = format!("{}/{}", results_folder, generation);
+	fs::create_dir_all(gen_folder.clone());
+	
 	println!("Generation: {}", generation);
 
 	// move to speciate function
@@ -386,9 +283,9 @@ fn run_ea(input_count: u32, output_count: u32, pop_count: u64, iter_count: u64, 
 
 	species.clear();
 
-
-	for _ind in offspring.iter_mut() {
-
+	for (index, ind) in specific_pop.iter().enumerate() {
+	    let j = serde_json::to_string(&ind).unwrap();
+	    std::fs::write(format!("{}/{}", gen_folder, index), j).expect("Unable to write");
 	}
 
 	specific_pop.append(&mut offspring);
@@ -405,6 +302,7 @@ fn run_ea(input_count: u32, output_count: u32, pop_count: u64, iter_count: u64, 
             innovation_history.conn_history.len()
         );
         average_history_per_iter.push(average_fit / (specific_pop.len() as f64));
+
     }
 
     specific_pop.sort_by_key(|indiv| Reverse((indiv.fitness() * 1000.0) as i128));
@@ -413,7 +311,7 @@ fn run_ea(input_count: u32, output_count: u32, pop_count: u64, iter_count: u64, 
 
 
 fn main() -> std::result::Result<(), String> {
-    let population_count = 200;
+    let population_count = 20;
     let max_iter_count = 10000;
     let input_node_count = 16;
     let output_node_count = 3;
@@ -441,14 +339,16 @@ fn main() -> std::result::Result<(), String> {
 
     let results_folder = format!("results/asteroids/{}_{}", folder_time, runner_version);
     println!("Storing results in {}", results_folder);
-    match fs::create_dir_all(results_folder) {
+    match fs::create_dir_all(results_folder.clone()) {
 	Err(e) => println!("Failed to create folder: {}", e),
 	_ => (),
     }
     
 
-    // run_ea(input_node_count, output_node_count,
-    // 	   population_count, max_iter_count, &asteroids_fitness);
+    run_ea(input_node_count, output_node_count,
+	   population_count, max_iter_count,
+	   results_folder,
+	   &asteroids_fitness);
 
     Ok(())
 }
