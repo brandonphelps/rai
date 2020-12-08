@@ -13,7 +13,7 @@ pub struct Species<'a> {
 }
 
 /// Given a vector of individuals, return a vector of species, where the individuals
-/// are divided into species based on how similar they are. 
+/// are divided into species based on how similar they are.
 pub fn speciate(population: &Vec<Network>) -> Vec<Species> {
     let mut species: Vec<Species> = Vec::new();
 
@@ -28,7 +28,7 @@ pub fn speciate(population: &Vec<Network>) -> Vec<Species> {
         }
 
         if !found_spec {
-	    // todo: allow the params to be passed in or something. 
+            // todo: allow the params to be passed in or something.
             let mut new_spec = Species::new(1.5, 0.8, 4.0);
             new_spec.set_champion(&test_n);
             species.push(new_spec);
@@ -37,7 +37,6 @@ pub fn speciate(population: &Vec<Network>) -> Vec<Species> {
 
     return species;
 }
-
 
 impl<'a> Species<'a> {
     pub fn new(excess_coeff: f64, weight_diff_coeff: f64, compat_threashold: f64) -> Species<'a> {
@@ -56,8 +55,7 @@ impl<'a> Species<'a> {
     }
 
     pub fn same_species(&self, other: &Vec<Edge>) -> bool {
-        let excess_disjoin =
-            Species::get_excess_disjoint(&self.champion.unwrap().edges, other);
+        let excess_disjoin = Species::get_excess_disjoint(&self.champion.unwrap().edges, other);
         let average_weight_diff =
             Species::get_average_weight_diff(&self.champion.unwrap().edges, other);
 
@@ -66,7 +64,6 @@ impl<'a> Species<'a> {
 
         return self.compat_threashold > compat;
     }
-
 
     /// returns the average fitness of the individuals within
     /// make sure that all individuals have their update_fitness funcs called before this one.
@@ -81,7 +78,7 @@ impl<'a> Species<'a> {
 
     /// returns the number of excess and disjoint edges.
     /// i.e the number of extra edges and the number of non matching edges.
-    // todo: move outside the species impl? 
+    // todo: move outside the species impl?
     pub fn get_excess_disjoint(one: &Vec<Edge>, two: &Vec<Edge>) -> usize {
         let mut matching = 0;
         for edge_one in one.iter() {
@@ -217,9 +214,6 @@ impl ConnHistory {
     }
 }
 
-
-
-
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -253,9 +247,9 @@ mod tests {
 
     #[test]
     fn test_excess_disjoin() {
-	let edge_one: Vec<Edge> = Vec::new();
-	let edge_two: Vec<Edge> = Vec::new();
+        let edge_one: Vec<Edge> = Vec::new();
+        let edge_two: Vec<Edge> = Vec::new();
 
-	assert_eq!(Species::get_excess_disjoint(&edge_one, &edge_two), 0);
+        assert_eq!(Species::get_excess_disjoint(&edge_one, &edge_two), 0);
     }
 }

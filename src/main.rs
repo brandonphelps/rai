@@ -6,14 +6,14 @@ use rand::distributions::{Distribution, Normal};
 use rand::prelude::*;
 use rand::seq::SliceRandom;
 use std::cmp::Reverse;
-use std::{thread, time};
 use std::env;
 use std::fs;
+use std::{thread, time};
 
 extern crate beanstalkd;
 
-use rasteroids::asteroids;
 use beanstalkd::Beanstalkd;
+use rasteroids::asteroids;
 use rasteroids::collision;
 
 mod evo_algo;
@@ -25,6 +25,10 @@ use std::time::{Duration, Instant};
 
 use std::sync::atomic::{AtomicUsize, Ordering};
 
+// fmt cares about build ability or something
+// trait Scheduler {
+//     fn eval_fitness(&dyn Fn(&mut nn::Network));
+// }
 
 fn asteroids_fitness(player: &mut nn::Network) -> () {
     let mut _fitness = 0.0;
@@ -44,125 +48,131 @@ fn asteroids_fitness(player: &mut nn::Network) -> () {
     let mut duration = 0;
     let max_turns = 3000;
     for _i in 0..max_turns {
-	// vision
-	
-	// canvas.set_draw_color(Color::RGB(0, 0, 0));
-	// canvas.clear();
+        // vision
 
-	let mut vision_input: [f64; 8] = [100000.0; 8];
+        // canvas.set_draw_color(Color::RGB(0, 0, 0));
+        // canvas.clear();
 
-	// canvas.set_draw_color(Color::RGB(0, 255, 0));
-	for asteroid_dist in 1..30 {
-	    for ast in asteroids_game.asteroids.iter() {
-		let mut vision_c = collision::Circle { pos_x: 0.0, pos_y: 0.0, radius: 1.0 };
-		if vision_input[0] == 100000.0 { 
-		    vision_c.pos_x = asteroids_game.player.rust_sux.pos_x + (asteroid_dist as f64);
-		    vision_c.pos_y = asteroids_game.player.rust_sux.pos_y;
-		    // canvas.fill_rect(Rect::new(vision_c.pos_x as i32,
-		    // 			       vision_c.pos_y as i32,
-		    // 			       vision_c.radius as u32,
-		    // 			       vision_c.radius as u32));
-		    if collision::collides(&vision_c, &ast.bounding_box()) {
-			vision_input[0] = asteroid_dist as f64;
-		    }
-		}
-		if vision_input[1] == 100000.0 {
-		    vision_c.pos_x = asteroids_game.player.rust_sux.pos_x - (asteroid_dist as f64);
-		    vision_c.pos_y = asteroids_game.player.rust_sux.pos_y;
-		    // canvas.fill_rect(Rect::new(vision_c.pos_x as i32,
-		    // 			       vision_c.pos_y as i32,
-		    // 			       vision_c.radius as u32,
-		    // 			       vision_c.radius as u32));
-		    
-		    if collision::collides(&vision_c, &ast.bounding_box()) {
-			vision_input[1] = asteroid_dist as f64;
-		    }
-		}
-		if vision_input[2] == 100000.0 {
-		    vision_c.pos_x = asteroids_game.player.rust_sux.pos_x;
-		    vision_c.pos_y = asteroids_game.player.rust_sux.pos_y + (asteroid_dist as f64);
-		    // canvas.fill_rect(Rect::new(vision_c.pos_x as i32,
-		    // 			       vision_c.pos_y as i32,
-		    // 			       vision_c.radius as u32,
-		    // 			       vision_c.radius as u32));
-		    
-		    if collision::collides(&vision_c, &ast.bounding_box()) {
-			vision_input[2] = asteroid_dist as f64;
-		    }
-		}
-		if vision_input[3] == 100000.0 {
-		    vision_c.pos_x = asteroids_game.player.rust_sux.pos_x;
-		    vision_c.pos_y = asteroids_game.player.rust_sux.pos_y - (asteroid_dist as f64);
-		    // canvas.fill_rect(Rect::new(vision_c.pos_x as i32,
-		    // 			       vision_c.pos_y as i32,
-		    // 			       vision_c.radius as u32,
-		    // 			       vision_c.radius as u32));
-		    
-		    if collision::collides(&vision_c, &ast.bounding_box()) {
-			vision_input[3] = asteroid_dist as f64;
-		    }
-		}
-		if vision_input[4] == 100000.0 { 
-		    vision_c.pos_x = asteroids_game.player.rust_sux.pos_x + (asteroid_dist as f64);
-		    vision_c.pos_y = asteroids_game.player.rust_sux.pos_y + (asteroid_dist as f64);
-		    // canvas.fill_rect(Rect::new(vision_c.pos_x as i32,
-		    // 			       vision_c.pos_y as i32,
-		    // 			       vision_c.radius as u32,
-		    // 			       vision_c.radius as u32));
-		    if collision::collides(&vision_c, &ast.bounding_box()) {
-			vision_input[4] = asteroid_dist as f64;
-		    }
-		}
-		if vision_input[5] == 100000.0 {
-		    vision_c.pos_x = asteroids_game.player.rust_sux.pos_x - (asteroid_dist as f64);
-		    vision_c.pos_y = asteroids_game.player.rust_sux.pos_y - (asteroid_dist as f64);
-		    // canvas.fill_rect(Rect::new(vision_c.pos_x as i32,
-		    // 			       vision_c.pos_y as i32,
-		    // 			       vision_c.radius as u32,
-		    // 			       vision_c.radius as u32));
-		    
-		    if collision::collides(&vision_c, &ast.bounding_box()) {
-			vision_input[5] = asteroid_dist as f64;
-		    }
-		}
-		if vision_input[6] == 100000.0 {
-		    vision_c.pos_x = asteroids_game.player.rust_sux.pos_x + (asteroid_dist as f64);
-		    vision_c.pos_y = asteroids_game.player.rust_sux.pos_y - (asteroid_dist as f64);
-		    // canvas.fill_rect(Rect::new(vision_c.pos_x as i32,
-		    // 			       vision_c.pos_y as i32,
-		    // 			       vision_c.radius as u32,
-		    // 			       vision_c.radius as u32));
-		    
-		    if collision::collides(&vision_c, &ast.bounding_box()) {
-			vision_input[6] = asteroid_dist as f64;
-		    }
-		}
-		if vision_input[7] == 100000.0 {
-		    vision_c.pos_x = asteroids_game.player.rust_sux.pos_x - (asteroid_dist as f64);
-		    vision_c.pos_y = asteroids_game.player.rust_sux.pos_y + (asteroid_dist as f64);
-		    // canvas.fill_rect(Rect::new(vision_c.pos_x as i32,
-		    // 			       vision_c.pos_y as i32,
-		    // 			       vision_c.radius as u32,
-		    // 			       vision_c.radius as u32));
-		    
-		    if collision::collides(&vision_c, &ast.bounding_box()) {
-			vision_input[7] = asteroid_dist as f64;
-		    }
-		}
-	    }
-	}
-	
-	let output = player.feed_input(vec![vision_input[0],
-					    vision_input[1],
-					    vision_input[2],
-					    vision_input[3],
-					    vision_input[4],
-					    vision_input[5],
-					    vision_input[6],
-					    vision_input[7]]);
-	assert_eq!(output.len(), 3);
+        let mut vision_input: [f64; 8] = [100000.0; 8];
 
-	// do thinking 
+        // canvas.set_draw_color(Color::RGB(0, 255, 0));
+        for asteroid_dist in 1..30 {
+            for ast in asteroids_game.asteroids.iter() {
+                let mut vision_c = collision::Circle {
+                    pos_x: 0.0,
+                    pos_y: 0.0,
+                    radius: 1.0,
+                };
+                if vision_input[0] == 100000.0 {
+                    vision_c.pos_x = asteroids_game.player.rust_sux.pos_x + (asteroid_dist as f64);
+                    vision_c.pos_y = asteroids_game.player.rust_sux.pos_y;
+                    // canvas.fill_rect(Rect::new(vision_c.pos_x as i32,
+                    // 			       vision_c.pos_y as i32,
+                    // 			       vision_c.radius as u32,
+                    // 			       vision_c.radius as u32));
+                    if collision::collides(&vision_c, &ast.bounding_box()) {
+                        vision_input[0] = asteroid_dist as f64;
+                    }
+                }
+                if vision_input[1] == 100000.0 {
+                    vision_c.pos_x = asteroids_game.player.rust_sux.pos_x - (asteroid_dist as f64);
+                    vision_c.pos_y = asteroids_game.player.rust_sux.pos_y;
+                    // canvas.fill_rect(Rect::new(vision_c.pos_x as i32,
+                    // 			       vision_c.pos_y as i32,
+                    // 			       vision_c.radius as u32,
+                    // 			       vision_c.radius as u32));
+
+                    if collision::collides(&vision_c, &ast.bounding_box()) {
+                        vision_input[1] = asteroid_dist as f64;
+                    }
+                }
+                if vision_input[2] == 100000.0 {
+                    vision_c.pos_x = asteroids_game.player.rust_sux.pos_x;
+                    vision_c.pos_y = asteroids_game.player.rust_sux.pos_y + (asteroid_dist as f64);
+                    // canvas.fill_rect(Rect::new(vision_c.pos_x as i32,
+                    // 			       vision_c.pos_y as i32,
+                    // 			       vision_c.radius as u32,
+                    // 			       vision_c.radius as u32));
+
+                    if collision::collides(&vision_c, &ast.bounding_box()) {
+                        vision_input[2] = asteroid_dist as f64;
+                    }
+                }
+                if vision_input[3] == 100000.0 {
+                    vision_c.pos_x = asteroids_game.player.rust_sux.pos_x;
+                    vision_c.pos_y = asteroids_game.player.rust_sux.pos_y - (asteroid_dist as f64);
+                    // canvas.fill_rect(Rect::new(vision_c.pos_x as i32,
+                    // 			       vision_c.pos_y as i32,
+                    // 			       vision_c.radius as u32,
+                    // 			       vision_c.radius as u32));
+
+                    if collision::collides(&vision_c, &ast.bounding_box()) {
+                        vision_input[3] = asteroid_dist as f64;
+                    }
+                }
+                if vision_input[4] == 100000.0 {
+                    vision_c.pos_x = asteroids_game.player.rust_sux.pos_x + (asteroid_dist as f64);
+                    vision_c.pos_y = asteroids_game.player.rust_sux.pos_y + (asteroid_dist as f64);
+                    // canvas.fill_rect(Rect::new(vision_c.pos_x as i32,
+                    // 			       vision_c.pos_y as i32,
+                    // 			       vision_c.radius as u32,
+                    // 			       vision_c.radius as u32));
+                    if collision::collides(&vision_c, &ast.bounding_box()) {
+                        vision_input[4] = asteroid_dist as f64;
+                    }
+                }
+                if vision_input[5] == 100000.0 {
+                    vision_c.pos_x = asteroids_game.player.rust_sux.pos_x - (asteroid_dist as f64);
+                    vision_c.pos_y = asteroids_game.player.rust_sux.pos_y - (asteroid_dist as f64);
+                    // canvas.fill_rect(Rect::new(vision_c.pos_x as i32,
+                    // 			       vision_c.pos_y as i32,
+                    // 			       vision_c.radius as u32,
+                    // 			       vision_c.radius as u32));
+
+                    if collision::collides(&vision_c, &ast.bounding_box()) {
+                        vision_input[5] = asteroid_dist as f64;
+                    }
+                }
+                if vision_input[6] == 100000.0 {
+                    vision_c.pos_x = asteroids_game.player.rust_sux.pos_x + (asteroid_dist as f64);
+                    vision_c.pos_y = asteroids_game.player.rust_sux.pos_y - (asteroid_dist as f64);
+                    // canvas.fill_rect(Rect::new(vision_c.pos_x as i32,
+                    // 			       vision_c.pos_y as i32,
+                    // 			       vision_c.radius as u32,
+                    // 			       vision_c.radius as u32));
+
+                    if collision::collides(&vision_c, &ast.bounding_box()) {
+                        vision_input[6] = asteroid_dist as f64;
+                    }
+                }
+                if vision_input[7] == 100000.0 {
+                    vision_c.pos_x = asteroids_game.player.rust_sux.pos_x - (asteroid_dist as f64);
+                    vision_c.pos_y = asteroids_game.player.rust_sux.pos_y + (asteroid_dist as f64);
+                    // canvas.fill_rect(Rect::new(vision_c.pos_x as i32,
+                    // 			       vision_c.pos_y as i32,
+                    // 			       vision_c.radius as u32,
+                    // 			       vision_c.radius as u32));
+
+                    if collision::collides(&vision_c, &ast.bounding_box()) {
+                        vision_input[7] = asteroid_dist as f64;
+                    }
+                }
+            }
+        }
+
+        let output = player.feed_input(vec![
+            vision_input[0],
+            vision_input[1],
+            vision_input[2],
+            vision_input[3],
+            vision_input[4],
+            vision_input[5],
+            vision_input[6],
+            vision_input[7],
+        ]);
+        assert_eq!(output.len(), 3);
+
+        // do thinking
         if output[2] <= 0.5 {
             game_input.thrusters = true;
         }
@@ -172,21 +182,11 @@ fn asteroids_fitness(player: &mut nn::Network) -> () {
         }
 
         game_input.rotation = output[0];
-	
-	// let surface = font.render(&output[1].to_string()).blended(Color::RGBA(255, 0, 0, 255)).unwrap();
-	// let texture = texture_creator.create_texture_from_surface(&surface).unwrap();
 
-	// draw_network(&player, &mut canvas);
-	// canvas.copy(&texture, None, Some(target)).unwrap();
-
-	// process action based on thinking
-        asteroids_game = asteroids::game_update(
-            &asteroids_game,
-            (duration as f64) * 0.01,
-            &game_input
-        );
+        // process action based on thinking
+        asteroids_game =
+            asteroids::game_update(&asteroids_game, (duration as f64) * 0.01, &game_input);
         let start = Instant::now();
-        // canvas.present();
 
         if asteroids_game.game_over {
             if asteroids_game.game_over_is_win {
@@ -204,21 +204,28 @@ fn asteroids_fitness(player: &mut nn::Network) -> () {
     }
 }
 
-
-fn evaluate_individual(individual: &mut nn::Network, fitness_func: &dyn Fn(&mut nn::Network)) -> () {
+fn evaluate_individual(
+    beanstalk: &mut Beanstalkd,
+    individual: &mut nn::Network,
+    fitness_func: &dyn Fn(&mut nn::Network),
+) -> () {
     fitness_func(individual);
 }
 
-fn run_ea(input_count: u32,
-	  output_count: u32,
-	  pop_count: u64, iter_count: u64, results_folder: String,
-	  fitness_func: &dyn Fn(&mut nn::Network)) -> () {
+fn run_ea(
+    input_count: u32,
+    output_count: u32,
+    pop_count: u64,
+    iter_count: u64,
+    results_folder: String,
+    fitness_func: &dyn Fn(&mut nn::Network),
+) -> () {
     println!("Pop count: {} {}", pop_count, iter_count);
 
     let mut average_history_per_iter: Vec<f64> = Vec::new();
 
     // initializeation.
-    // population holder. 
+    // population holder.
     let mut specific_pop: Vec<nn::Network> = Vec::new();
     let mut individual = nn::Network::new(input_count, output_count, true);
     // fitness evaluation
@@ -227,41 +234,41 @@ fn run_ea(input_count: u32,
         conn_history: vec![],
     };
 
-    // fitness_func(&mut individual);
-    evaluate_individual(&mut individual, fitness_func);
+    fitness_func(&mut individual);
+    // evaluate_individual(&mut individual, fitness_func);
 
-    for _ in 0..pop_count+1 {
-	specific_pop.push(individual.clone());
+    for _ in 0..pop_count + 1 {
+        specific_pop.push(individual.clone());
     }
 
     for generation in 0..iter_count {
-	let gen_folder = format!("{}/{}", results_folder, generation);
-	fs::create_dir_all(gen_folder.clone());
-	
-	println!("Generation: {}", generation);
+        let gen_folder = format!("{}/{}", results_folder, generation);
+        fs::create_dir_all(gen_folder.clone());
 
-	// move to speciate function
-	// specization. divide the population into different species. 
+        println!("Generation: {}", generation);
+
+        // move to speciate function
+        // specization. divide the population into different species.
         // why can't this forloop be outside this forloop? something
         // about the specific_pop updating is mutable borrow after an immutable barrow on something?
 
-	let mut species = neat::speciate(&specific_pop); 
-	let species_count = species.len();
-	println!("Species count: {}", species_count);
+        let mut species = neat::speciate(&specific_pop);
+        let species_count = species.len();
+        println!("Species count: {}", species_count);
 
-	let mut offspring = Vec::new();
+        let mut offspring = Vec::new();
 
-	// there is prob some vector function for this or something with a closure? 
-	let mut average_fit = 0.0;
-	for ind in specific_pop.iter() {
-	    average_fit += ind.fitness();
-	}
-	average_fit /= specific_pop.len() as f64;
+        // there is prob some vector function for this or something with a closure?
+        let mut average_fit = 0.0;
+        for ind in specific_pop.iter() {
+            average_fit += ind.fitness();
+        }
+        average_fit /= specific_pop.len() as f64;
 
-	println!("Average fitness: {}", average_fit);
+        println!("Average fitness: {}", average_fit);
 
-	// generate offsprint from each of the species.
-	// the number of offspring depends on the average fitness of the species. 
+        // generate offsprint from each of the species.
+        // the number of offspring depends on the average fitness of the species.
         for spec in species.iter() {
             // add in the champ of the species in.
             offspring.push(spec.champion.unwrap().clone());
@@ -279,22 +286,21 @@ fn run_ea(input_count: u32,
             for _child_num in 0..num_children {
                 let mut new_child = spec.generate_offspring(&innovation_history).clone();
                 new_child.mutate(&mut innovation_history);
-		// fitness_func(&mut new_child);
-		evaluate_individual(&mut new_child, fitness_func);
-		println!("Evaluting child: {} {}", _child_num, new_child.fitness());
+                fitness_func(&mut new_child);
+                // evaluate_individual(&mut new_child, fitness_func);
+                println!("Evaluting child: {} {}", _child_num, new_child.fitness());
                 offspring.push(new_child);
             }
         }
 
+        species.clear();
 
-	species.clear();
+        for (index, ind) in specific_pop.iter().enumerate() {
+            let j = serde_json::to_string(&ind).unwrap();
+            std::fs::write(format!("{}/{}", gen_folder, index), j).expect("Unable to write");
+        }
 
-	for (index, ind) in specific_pop.iter().enumerate() {
-	    let j = serde_json::to_string(&ind).unwrap();
-	    std::fs::write(format!("{}/{}", gen_folder, index), j).expect("Unable to write");
-	}
-
-	specific_pop.append(&mut offspring);
+        specific_pop.append(&mut offspring);
 
         // // cull population
         specific_pop.sort_by_key(|indiv| Reverse((indiv.fitness() * 1000.0) as i128));
@@ -308,7 +314,6 @@ fn run_ea(input_count: u32,
             innovation_history.conn_history.len()
         );
         average_history_per_iter.push(average_fit / (specific_pop.len() as f64));
-
     }
 
     specific_pop.sort_by_key(|indiv| Reverse((indiv.fitness() * 1000.0) as i128));
@@ -324,7 +329,6 @@ fn server_runner() -> () {
     beanstalkd.delete(p.0);
 }
 
-
 fn main() -> std::result::Result<(), String> {
     server_runner();
     return Ok(());
@@ -335,49 +339,57 @@ fn main() -> std::result::Result<(), String> {
     let output_node_count = 3;
 
     let _args: Vec<_> = env::args().collect();
-    
-    use chrono::{Datelike, Timelike, Local, Utc};
+
+    use chrono::{Datelike, Local, Timelike, Utc};
 
     let now = Utc::now();
     let (is_pm, mut now_hour) = now.hour12();
     if is_pm {
-	now_hour += 12;
+        now_hour += 12;
     }
     let folder_time = format!("{}{}{}", now_hour, now.minute(), now.second());
 
-
     use std::process::Command;
 
-    let output = Command::new("git").args(&["rev-parse", "HEAD"]).output().expect("Failed to get git hash");
-    
+    let output = Command::new("git")
+        .args(&["rev-parse", "HEAD"])
+        .output()
+        .expect("Failed to get git hash");
+
     let runner_version = match std::str::from_utf8(&output.stdout[0..6]) {
-	Ok(v) => v,
-	Err(e) => panic!("Failed to get runner version"),
+        Ok(v) => v,
+        Err(e) => panic!("Failed to get runner version"),
     };
 
     let results_folder = format!("results/asteroids/{}_{}", folder_time, runner_version);
     println!("Storing results in {}", results_folder);
     match fs::create_dir_all(results_folder.clone()) {
-	Err(e) => println!("Failed to create folder: {}", e),
-	_ => (),
+        Err(e) => println!("Failed to create folder: {}", e),
+        _ => (),
     }
 
-    run_ea(input_node_count, output_node_count,
-	   population_count, max_iter_count,
-	   results_folder,
-	   &asteroids_fitness);
+    run_ea(
+        input_node_count,
+        output_node_count,
+        population_count,
+        max_iter_count,
+        results_folder,
+        &asteroids_fitness,
+    );
 
     Ok(())
 }
 
-/// Given the total fitness, species' fitness, and total pop, generate a total number of 
-/// items 
+/// Given the total fitness, species' fitness, and total pop, generate a total number of
+/// items
 fn num_child_to_make(total_fitness: f64, species_fitness: f64, total_population: u64) -> u64 {
-    println!("Total: ({}) Spec: ({}) Pop: ({})", total_fitness, species_fitness, total_population);
+    println!(
+        "Total: ({}) Spec: ({}) Pop: ({})",
+        total_fitness, species_fitness, total_population
+    );
     assert!(total_fitness >= species_fitness);
     ((species_fitness / total_fitness) * total_population as f64) as u64
 }
-
 
 // todo look at this bench amrk thing https://stackoverflow.com/questions/60916194/how-to-sort-a-vector-in-descending-order-in-rust
 
@@ -496,15 +508,15 @@ mod tests {
 
     #[test]
     fn test_child_num_people() {
-	let total_fitness = 100.0;
-	let total_pop = 100;
+        let total_fitness = 100.0;
+        let total_pop = 100;
 
-	assert_eq!(num_child_to_make(total_fitness, 100.0, total_pop), 100);
+        assert_eq!(num_child_to_make(total_fitness, 100.0, total_pop), 100);
 
-	// if a species has half the total pop then it should contribute to half the population.
-	assert_eq!(num_child_to_make(total_fitness, 50.0, total_pop), 50);
+        // if a species has half the total pop then it should contribute to half the population.
+        assert_eq!(num_child_to_make(total_fitness, 50.0, total_pop), 50);
 
-	assert_eq!(num_child_to_make(total_fitness, 2.0, total_pop), 2);
-	assert_eq!(num_child_to_make(total_fitness, 50.0, 200), 100);
+        assert_eq!(num_child_to_make(total_fitness, 2.0, total_pop), 2);
+        assert_eq!(num_child_to_make(total_fitness, 50.0, 200), 100);
     }
 }

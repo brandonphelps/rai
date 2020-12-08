@@ -3,12 +3,12 @@ use std::path::PathBuf;
 
 fn main() {
     let target = env::var("TARGET").unwrap();
-    
+
     if target.contains("pc-windows") {
         let manifest_dir = PathBuf::from(env::var("CARGO_MANIFEST_DIR").unwrap());
         let mut lib_dir = manifest_dir.clone();
         let mut dll_dir = manifest_dir.clone();
-	println!("lib_dir: {:?}", lib_dir);
+        println!("lib_dir: {:?}", lib_dir);
         if target.contains("msvc") {
             lib_dir.push("msvc");
             dll_dir.push("msvc");
@@ -34,7 +34,7 @@ fn main() {
                 let file_name = file_name.to_str().unwrap();
                 if file_name.ends_with(".dll") {
                     new_file_path.push(file_name);
-		    println!("Copying {:?} -> {:?}", entry_path, new_file_path.as_path());
+                    println!("Copying {:?} -> {:?}", entry_path, new_file_path.as_path());
                     std::fs::copy(&entry_path, new_file_path.as_path())
                         .expect("Can't copy from DLL dir");
                 }

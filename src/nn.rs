@@ -1,10 +1,8 @@
 // can't use this here ?
-//#[macro_use]
-// extern crate more_asserts;
 use crate::neat::InnovationHistory;
+use rand::prelude::*;
 use serde::{Deserialize, Serialize};
 use serde_json::Result;
-use rand::prelude::*;
 
 fn matching_edge(parent2: &Network, inno_id: u64) -> Option<&Edge> {
     for edge in parent2.edges.iter() {
@@ -58,7 +56,6 @@ impl Edge {
     }
 }
 
-
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Network {
     // first I nodes are input nodes
@@ -75,7 +72,7 @@ pub struct Network {
 
 impl Network {
     pub fn fitness(&self) -> f64 {
-	return self.fitness
+        return self.fitness;
     }
 
     pub fn new(input_node_count: u32, output_node_count: u32, fully_connect: bool) -> Network {
@@ -86,7 +83,7 @@ impl Network {
             output_node_count,
             layer_count: 2,
             bias_node_id: 0,
-	    fitness: 0.0,
+            fitness: 0.0,
         };
         for _input_n in 0..input_node_count {
             network.new_node(0);
@@ -388,7 +385,6 @@ impl Network {
         return self.edges.len() - 1;
     }
 
-
     #[allow(dead_code)]
     pub fn mutate(&mut self, inno_history: &mut InnovationHistory) -> () {
         let mut rng = rand::thread_rng();
@@ -410,8 +406,7 @@ impl Network {
                 node_one = self.random_node();
                 node_two = self.random_node();
             }
-            self
-                .add_connection(node_one, node_two, rng.gen::<f64>(), Some(inno_history));
+            self.add_connection(node_one, node_two, rng.gen::<f64>(), Some(inno_history));
         }
 
         // 3% add new node.
@@ -426,8 +421,6 @@ impl Network {
         }
     }
 
-
-    
     fn mutate_edge(&mut self, edge: usize) -> () {
         let mut rng = rand::thread_rng();
         if rng.gen::<f64>() < 0.1 {
@@ -478,7 +471,6 @@ impl Network {
         }
         return child_network;
     }
-
 }
 
 #[cfg(test)]
