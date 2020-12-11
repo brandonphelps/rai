@@ -13,6 +13,11 @@ use std::{thread, time};
 extern crate beanstalkd;
 
 use beanstalkd::Beanstalkd;
+
+use serde::{Deserialize, Serialize};
+use serde_json::Result;
+
+
 use rasteroids::asteroids;
 use rasteroids::collision;
 
@@ -20,15 +25,53 @@ mod evo_algo;
 mod hrm;
 mod neat;
 mod nn;
+mod distro;
 
 use std::time::{Duration, Instant};
 
 use std::sync::atomic::{AtomicUsize, Ordering};
 
 // fmt cares about build ability or something
-// trait Scheduler {
-//     fn eval_fitness(&dyn Fn(&mut nn::Network));
-// }
+struct Scheduler  {
+    current_jobs: Vec<u64>, 
+    job_queue: Beanstalkd, 
+}
+
+impl Scheduler {
+    // todo: allow for local where beanstalk is not used. 
+    pub fn new(host: &str, port: u16) -> Scheduler  {
+	let mut p = Beanstalkd::connect(host, port).unwrap();
+	p.watch("results");
+	return Scheduler {
+	    current_jobs: vec![],
+	    job_queue: p,
+	};
+    }
+
+    /// @param: fitness_func_name name of fitness function to run. 
+    pub fn schedule_job(&mut self, individual: &mut nn::Network, fitness_func_name: &String) -> () {
+	self.job_queue.tube(&fitness_func_name);
+
+	let job = distro::JobInfo { name: fitness_func_name.clone(),
+			    individual: individual.clone()
+	};
+
+	let job_str = serde_json::to_string(&job).unwrap();
+	match self.job_queue.put(&job_str, 1, 0, 120) {
+	    Ok(t) => self.current_jobs.push(t),
+	    Err(_) => { println!("Failed to schedule job") },
+	};
+    }
+
+    pub fn wait(&mut self) -> () {
+	// hold off or do w/e till scheduled items are finished.
+	while self.current_jobs.len() > 0 {
+	    println!("Waiting for jobs to finish");
+	    
+	}
+    }
+}
+
 
 fn asteroids_fitness(player: &mut nn::Network) -> () {
     let mut _fitness = 0.0;
@@ -218,7 +261,7 @@ fn run_ea(
     pop_count: u64,
     iter_count: u64,
     results_folder: String,
-    fitness_func: &dyn Fn(&mut nn::Network),
+    fitness_func: &impl Fn(&mut nn::Network),
 ) -> () {
     println!("Pop count: {} {}", pop_count, iter_count);
 
@@ -358,7 +401,7 @@ fn main() -> std::result::Result<(), String> {
 
     let runner_version = match std::str::from_utf8(&output.stdout[0..6]) {
         Ok(v) => v,
-        Err(e) => panic!("Failed to get runner version"),
+        Err(_e) => panic!("Failed to get runner version"),
     };
 
     let results_folder = format!("results/asteroids/{}_{}", folder_time, runner_version);

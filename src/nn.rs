@@ -2,7 +2,6 @@
 use crate::neat::InnovationHistory;
 use rand::prelude::*;
 use serde::{Deserialize, Serialize};
-use serde_json::Result;
 
 fn matching_edge(parent2: &Network, inno_id: u64) -> Option<&Edge> {
     for edge in parent2.edges.iter() {

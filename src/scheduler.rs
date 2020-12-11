@@ -2,9 +2,6 @@ extern crate beanstalkd;
 
 use beanstalkd::Beanstalkd;
 
-use serde::{Deserialize, Serialize};
-use serde_json::Result;
-
 mod neat;
 mod nn;
 
