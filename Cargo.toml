@@ -19,7 +19,7 @@ chrono="*"
 git2 = "0.13"
 serde= { version = "*", features = ["derive"]}
 serde_json="*"
-beanstalkd="*"
+beanstalkd= { version = "*", git = "https://github.com/brandonphelps/rust-beanstalkd", branch = "master" }
 
 [dependencies.rasteroids]
 git = "https://github.com/brandonphelps/rasteroids.git"
@@ -38,7 +38,7 @@ gui = ["sdl2"]
 
 
 [[bin]]
-name = "runner"
+name = "scheduler"
 path = "src/main.rs"
 
 
@@ -48,5 +48,5 @@ path = "src/watcher.rs"
 required-features = ["gui"]
 
 [[bin]]
-name = "scheduler"
-path = "src/scheduler.rs"
+name = "runner"
+path = "src/runner.rs"

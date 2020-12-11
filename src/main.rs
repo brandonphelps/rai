@@ -49,7 +49,8 @@ impl Scheduler {
     }
 
     /// @param: fitness_func_name name of fitness function to run. 
-    pub fn schedule_job(&mut self, individual: &mut nn::Network, fitness_func_name: &String) -> () {
+    pub fn schedule_job(&mut self, individual: &nn::Network, fitness_func_name: &String) -> () {
+
 	self.job_queue.tube(&fitness_func_name);
 
 	let job = distro::JobInfo { name: fitness_func_name.clone(),
@@ -57,6 +58,7 @@ impl Scheduler {
 	};
 
 	let job_str = serde_json::to_string(&job).unwrap();
+	println!("Scheduling a job: {:#?} {}", &job_str, job_str.len());
 	match self.job_queue.put(&job_str, 1, 0, 120) {
 	    Ok(t) => self.current_jobs.push(t),
 	    Err(_) => { println!("Failed to schedule job") },
@@ -67,7 +69,14 @@ impl Scheduler {
 	// hold off or do w/e till scheduled items are finished.
 	while self.current_jobs.len() > 0 {
 	    println!("Waiting for jobs to finish");
-	    
+	    let p = self.job_queue.reserve_with_timeout(10).unwrap();
+	    if p.1 == "TIMED_OUT".to_string() {
+		println!("No jobs");
+	    }
+	    else {
+		println!("{:#?}", p);
+	    }
+		
 	}
     }
 }
@@ -364,12 +373,14 @@ fn run_ea(
 }
 
 fn server_runner() -> () {
-    let mut beanstalkd = Beanstalkd::connect("192.168.1.77", 11300).unwrap();
-    beanstalkd.watch("rasteroids");
-    let p = beanstalkd.reserve().unwrap();
+    let mut schedu = Scheduler::new("192.168.1.77", 11300);
 
-    println!("{:#?}", p);
-    beanstalkd.delete(p.0);
+    schedu.schedule_job(&nn::Network::new(16, 3, true),
+			&"rasteroids".to_string());
+
+    println!("Waiting for results");
+    schedu.wait();
+
 }
 
 fn main() -> std::result::Result<(), String> {
@@ -378,7 +389,7 @@ fn main() -> std::result::Result<(), String> {
 
     let population_count = 20;
     let max_iter_count = 10000;
-    let input_node_count = 16;
+    let input_node_count = 8;
     let output_node_count = 3;
 
     let _args: Vec<_> = env::args().collect();
