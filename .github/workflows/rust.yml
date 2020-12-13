@@ -2,9 +2,9 @@ name: Rust
 
 on:
   push:
-    branches: [ feature/inno_to_neat ]
+    branches: [ master ]
   pull_request:
-    branches: [ feature/inno_to_neat ]
+    branches: [ master ]
 
 env:
   CARGO_TERM_COLOR: always
