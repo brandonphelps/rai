@@ -119,6 +119,7 @@ fn run_ea(
 ) -> () {
     println!("Pop count: {} {}", pop_count, iter_count);
 
+
     let mut average_history_per_iter: Vec<f64> = Vec::new();
 
     // initializeation.
@@ -183,12 +184,22 @@ fn run_ea(
             for _child_num in 0..num_children {
                 let mut new_child = spec.generate_offspring(&innovation_history).clone();
                 new_child.mutate(&mut innovation_history);
-                fitness_func(&mut new_child);
+                // fitness_func(&mut new_child);
                 // evaluate_individual(&mut new_child, fitness_func);
                 println!("Evaluting child: {} {}", _child_num, new_child.fitness());
                 offspring.push(new_child);
             }
         }
+
+	{
+	    let mut schedu = Scheduler::new("192.168.1.77", 11300);
+
+	    for off_p in offspring.iter_mut() {
+		schedu.schedule_job(off_p, &"rasteroids".to_string());
+	    }
+
+	    schedu.wait();
+	}
 
         species.clear();
 
@@ -239,9 +250,6 @@ fn server_runner() -> () {
 }
 
 fn main() -> std::result::Result<(), String> {
-    server_runner();
-    return Ok(());
-
     let population_count = 20;
     let max_iter_count = 10000;
     let input_node_count = 8;

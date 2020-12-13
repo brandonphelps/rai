@@ -8,7 +8,6 @@ mod neat;
 
 
 fn main() -> () {
-    println!("Hello world");
     let mut beanstalkd = Beanstalkd::connect("192.168.1.77", 11300).unwrap();
 
     beanstalkd.watch("rasteroids").unwrap();
@@ -19,7 +18,6 @@ fn main() -> () {
 
 	let job_str = p.1.as_str();
 	let mut result: distro::JobInfo  = serde_json::from_str(&job_str).unwrap();
-	println!("{:#?}", result);
 
 	// todo: either needs a way to touch the job or the timeout must be large. 
 	// or maybe run the job touch in another thread? 
