@@ -28,16 +28,20 @@ mod nn;
 mod distro;
 
 use std::time::{Duration, Instant};
+use std::collections::HashMap;
 
 use std::sync::atomic::{AtomicUsize, Ordering};
 
+
+
 // fmt cares about build ability or something
-struct Scheduler  {
-    current_jobs: Vec<u64>, 
-    job_queue: Beanstalkd, 
+struct Scheduler<'a>  {
+    current_jobs: Vec<(u128, &'a mut nn::Network)>, 
+    job_queue: Beanstalkd,
+    next_job_id: u128,
 }
 
-impl Scheduler {
+impl<'a> Scheduler<'a> {
     // todo: allow for local where beanstalk is not used. 
     pub fn new(host: &str, port: u16) -> Scheduler  {
 	let mut p = Beanstalkd::connect(host, port).unwrap();
@@ -45,22 +49,26 @@ impl Scheduler {
 	return Scheduler {
 	    current_jobs: vec![],
 	    job_queue: p,
+	    next_job_id: 0,
 	};
     }
 
     /// @param: fitness_func_name name of fitness function to run. 
-    pub fn schedule_job(&mut self, individual: &nn::Network, fitness_func_name: &String) -> () {
+    pub fn schedule_job(&mut self, individual: &'a mut nn::Network, fitness_func_name: &String) -> () {
 
 	self.job_queue.tube(&fitness_func_name);
+	let job_id = self.next_job_id + 1 as u128;
+	self.next_job_id += 1;
 
 	let job = distro::JobInfo { name: fitness_func_name.clone(),
-			    individual: individual.clone()
+				    individual: individual.clone(),
+				    job_id: job_id,
 	};
 
 	let job_str = serde_json::to_string(&job).unwrap();
 	println!("Scheduling a job: {:#?} {}", &job_str, job_str.len());
 	match self.job_queue.put(&job_str, 1, 0, 120) {
-	    Ok(t) => self.current_jobs.push(t),
+	    Ok(t) => self.current_jobs.push((job_id, individual)),
 	    Err(_) => { println!("Failed to schedule job") },
 	};
     }
@@ -68,191 +76,28 @@ impl Scheduler {
     pub fn wait(&mut self) -> () {
 	// hold off or do w/e till scheduled items are finished.
 	while self.current_jobs.len() > 0 {
-	    println!("Waiting for jobs to finish");
-	    let p = self.job_queue.reserve_with_timeout(10).unwrap();
+	    println!("Waiting for jobs to finish: {}", self.current_jobs.len());
+	    let p = self.job_queue.reserve_with_timeout(2).unwrap();
 	    if p.1 == "TIMED_OUT".to_string() {
-		println!("No jobs");
+		println!("No job results found");
 	    }
 	    else {
-		println!("{:#?}", p);
+		self.job_queue.delete(p.0);
+		// todo: pair fitness with the scheduled fitness items.
+		let mut i = 0;
+		let unpacked_result: distro::JobResults = serde_json::from_str(&p.1).unwrap();
+		for (index, job_r) in self.current_jobs.iter().enumerate() {
+
+		    if unpacked_result.job_id == job_r.0 { 
+			i = index;
+		    }
+		}
+		println!("item is index: {}", i);
+		let mut  queued_job = self.current_jobs.remove(i);
+		queued_job.1.fitness = unpacked_result.fitness;
+		println!("queued_job: {:#?}", queued_job);
 	    }
-		
 	}
-    }
-}
-
-
-fn asteroids_fitness(player: &mut nn::Network) -> () {
-    let mut _fitness = 0.0;
-    // self.network.pretty_print();
-
-    let mut game_input = asteroids::GameInput {
-        shoot: false,
-        thrusters: false,
-        rotation: 0.0,
-    };
-
-    let mut asteroids_game = asteroids::game_init();
-
-    // each item of vision is both a direction and distance to an asteroid.
-    // the distance is from the ship, the network will have to figure out that
-    // the order of the input is clockwise from north.
-    let mut duration = 0;
-    let max_turns = 3000;
-    for _i in 0..max_turns {
-        // vision
-
-        // canvas.set_draw_color(Color::RGB(0, 0, 0));
-        // canvas.clear();
-
-        let mut vision_input: [f64; 8] = [100000.0; 8];
-
-        // canvas.set_draw_color(Color::RGB(0, 255, 0));
-        for asteroid_dist in 1..30 {
-            for ast in asteroids_game.asteroids.iter() {
-                let mut vision_c = collision::Circle {
-                    pos_x: 0.0,
-                    pos_y: 0.0,
-                    radius: 1.0,
-                };
-                if vision_input[0] == 100000.0 {
-                    vision_c.pos_x = asteroids_game.player.rust_sux.pos_x + (asteroid_dist as f64);
-                    vision_c.pos_y = asteroids_game.player.rust_sux.pos_y;
-                    // canvas.fill_rect(Rect::new(vision_c.pos_x as i32,
-                    // 			       vision_c.pos_y as i32,
-                    // 			       vision_c.radius as u32,
-                    // 			       vision_c.radius as u32));
-                    if collision::collides(&vision_c, &ast.bounding_box()) {
-                        vision_input[0] = asteroid_dist as f64;
-                    }
-                }
-                if vision_input[1] == 100000.0 {
-                    vision_c.pos_x = asteroids_game.player.rust_sux.pos_x - (asteroid_dist as f64);
-                    vision_c.pos_y = asteroids_game.player.rust_sux.pos_y;
-                    // canvas.fill_rect(Rect::new(vision_c.pos_x as i32,
-                    // 			       vision_c.pos_y as i32,
-                    // 			       vision_c.radius as u32,
-                    // 			       vision_c.radius as u32));
-
-                    if collision::collides(&vision_c, &ast.bounding_box()) {
-                        vision_input[1] = asteroid_dist as f64;
-                    }
-                }
-                if vision_input[2] == 100000.0 {
-                    vision_c.pos_x = asteroids_game.player.rust_sux.pos_x;
-                    vision_c.pos_y = asteroids_game.player.rust_sux.pos_y + (asteroid_dist as f64);
-                    // canvas.fill_rect(Rect::new(vision_c.pos_x as i32,
-                    // 			       vision_c.pos_y as i32,
-                    // 			       vision_c.radius as u32,
-                    // 			       vision_c.radius as u32));
-
-                    if collision::collides(&vision_c, &ast.bounding_box()) {
-                        vision_input[2] = asteroid_dist as f64;
-                    }
-                }
-                if vision_input[3] == 100000.0 {
-                    vision_c.pos_x = asteroids_game.player.rust_sux.pos_x;
-                    vision_c.pos_y = asteroids_game.player.rust_sux.pos_y - (asteroid_dist as f64);
-                    // canvas.fill_rect(Rect::new(vision_c.pos_x as i32,
-                    // 			       vision_c.pos_y as i32,
-                    // 			       vision_c.radius as u32,
-                    // 			       vision_c.radius as u32));
-
-                    if collision::collides(&vision_c, &ast.bounding_box()) {
-                        vision_input[3] = asteroid_dist as f64;
-                    }
-                }
-                if vision_input[4] == 100000.0 {
-                    vision_c.pos_x = asteroids_game.player.rust_sux.pos_x + (asteroid_dist as f64);
-                    vision_c.pos_y = asteroids_game.player.rust_sux.pos_y + (asteroid_dist as f64);
-                    // canvas.fill_rect(Rect::new(vision_c.pos_x as i32,
-                    // 			       vision_c.pos_y as i32,
-                    // 			       vision_c.radius as u32,
-                    // 			       vision_c.radius as u32));
-                    if collision::collides(&vision_c, &ast.bounding_box()) {
-                        vision_input[4] = asteroid_dist as f64;
-                    }
-                }
-                if vision_input[5] == 100000.0 {
-                    vision_c.pos_x = asteroids_game.player.rust_sux.pos_x - (asteroid_dist as f64);
-                    vision_c.pos_y = asteroids_game.player.rust_sux.pos_y - (asteroid_dist as f64);
-                    // canvas.fill_rect(Rect::new(vision_c.pos_x as i32,
-                    // 			       vision_c.pos_y as i32,
-                    // 			       vision_c.radius as u32,
-                    // 			       vision_c.radius as u32));
-
-                    if collision::collides(&vision_c, &ast.bounding_box()) {
-                        vision_input[5] = asteroid_dist as f64;
-                    }
-                }
-                if vision_input[6] == 100000.0 {
-                    vision_c.pos_x = asteroids_game.player.rust_sux.pos_x + (asteroid_dist as f64);
-                    vision_c.pos_y = asteroids_game.player.rust_sux.pos_y - (asteroid_dist as f64);
-                    // canvas.fill_rect(Rect::new(vision_c.pos_x as i32,
-                    // 			       vision_c.pos_y as i32,
-                    // 			       vision_c.radius as u32,
-                    // 			       vision_c.radius as u32));
-
-                    if collision::collides(&vision_c, &ast.bounding_box()) {
-                        vision_input[6] = asteroid_dist as f64;
-                    }
-                }
-                if vision_input[7] == 100000.0 {
-                    vision_c.pos_x = asteroids_game.player.rust_sux.pos_x - (asteroid_dist as f64);
-                    vision_c.pos_y = asteroids_game.player.rust_sux.pos_y + (asteroid_dist as f64);
-                    // canvas.fill_rect(Rect::new(vision_c.pos_x as i32,
-                    // 			       vision_c.pos_y as i32,
-                    // 			       vision_c.radius as u32,
-                    // 			       vision_c.radius as u32));
-
-                    if collision::collides(&vision_c, &ast.bounding_box()) {
-                        vision_input[7] = asteroid_dist as f64;
-                    }
-                }
-            }
-        }
-
-        let output = player.feed_input(vec![
-            vision_input[0],
-            vision_input[1],
-            vision_input[2],
-            vision_input[3],
-            vision_input[4],
-            vision_input[5],
-            vision_input[6],
-            vision_input[7],
-        ]);
-        assert_eq!(output.len(), 3);
-
-        // do thinking
-        if output[2] <= 0.5 {
-            game_input.thrusters = true;
-        }
-
-        if output[1] <= 0.5 {
-            game_input.shoot = true;
-        }
-
-        game_input.rotation = output[0];
-
-        // process action based on thinking
-        asteroids_game =
-            asteroids::game_update(&asteroids_game, (duration as f64) * 0.01, &game_input);
-        let start = Instant::now();
-
-        if asteroids_game.game_over {
-            if asteroids_game.game_over_is_win {
-                player.fitness = 1000000.0;
-            } else {
-                player.fitness = (_i as f64 / max_turns as f64) as f64;
-            }
-            break;
-        }
-
-        thread::sleep(Duration::from_millis(10));
-        duration = start.elapsed().as_millis();
-        game_input.shoot = false;
-        game_input.thrusters = false;
     }
 }
 
@@ -375,12 +220,22 @@ fn run_ea(
 fn server_runner() -> () {
     let mut schedu = Scheduler::new("192.168.1.77", 11300);
 
-    schedu.schedule_job(&nn::Network::new(16, 3, true),
-			&"rasteroids".to_string());
+
+    let mut nn = nn::Network::new(16, 3, true);
+    let mut indivs: Vec<nn::Network> = Vec::new();
+    for i in 0..1000 { 
+	indivs.push(nn::Network::new(16, 3, true));
+    }
+
+    for p in indivs.iter_mut() {
+	schedu.schedule_job(p,
+			    &"rasteroids".to_string());
+    }
 
     println!("Waiting for results");
     schedu.wait();
 
+    println!("Results: {}", indivs[0].fitness());
 }
 
 fn main() -> std::result::Result<(), String> {
@@ -428,7 +283,7 @@ fn main() -> std::result::Result<(), String> {
         population_count,
         max_iter_count,
         results_folder,
-        &asteroids_fitness,
+        &distro::asteroids_fitness,
     );
 
     Ok(())
