@@ -29,7 +29,7 @@ pub fn speciate(population: &Vec<Network>) -> Vec<Species> {
 
         if !found_spec {
             // todo: allow the params to be passed in or something.
-            let mut new_spec = Species::new(1.5, 0.8, 4.0);
+            let mut new_spec = Species::new(1.0, 0.8, 4.0);
             new_spec.set_champion(&test_n);
             species.push(new_spec);
         }
@@ -74,6 +74,14 @@ impl<'a> Species<'a> {
             avg_fitness += ind.fitness();
         }
         return avg_fitness / self.individuals.len() as f64;
+    }
+
+    pub fn total_fitness(&self) -> f64 {
+	let mut fitness = 0.0;
+	for ind in self.individuals.iter() {
+	    fitness += ind.fitness();
+	}
+	return fitness;
     }
 
     /// returns the number of excess and disjoint edges.

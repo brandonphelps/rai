@@ -12,6 +12,8 @@ use std::{thread, time};
 
 extern crate beanstalkd;
 
+use beanstalkc::Beanstalkc;
+
 use beanstalkd::Beanstalkd;
 
 use serde::{Deserialize, Serialize};
@@ -37,14 +39,14 @@ use std::sync::atomic::{AtomicUsize, Ordering};
 // fmt cares about build ability or something
 struct Scheduler<'a>  {
     current_jobs: Vec<(u128, &'a mut nn::Network)>, 
-    job_queue: Beanstalkd,
+    job_queue: Beanstalkc,
     next_job_id: u128,
 }
 
 impl<'a> Scheduler<'a> {
     // todo: allow for local where beanstalk is not used. 
     pub fn new(host: &str, port: u16) -> Scheduler  {
-	let mut p = Beanstalkd::connect(host, port).unwrap();
+	let mut p = Beanstalkc::new().host(host).port(port).connect().expect("Connection failed");
 	p.watch("results");
 	return Scheduler {
 	    current_jobs: vec![],
@@ -56,7 +58,7 @@ impl<'a> Scheduler<'a> {
     /// @param: fitness_func_name name of fitness function to run. 
     pub fn schedule_job(&mut self, individual: &'a mut nn::Network, fitness_func_name: &String) -> () {
 
-	self.job_queue.tube(&fitness_func_name);
+	self.job_queue.use_tube(&fitness_func_name);
 	let job_id = self.next_job_id + 1 as u128;
 	self.next_job_id += 1;
 
@@ -66,8 +68,7 @@ impl<'a> Scheduler<'a> {
 	};
 
 	let job_str = serde_json::to_string(&job).unwrap();
-	println!("Scheduling a job: {:#?} {}", &job_str, job_str.len());
-	match self.job_queue.put(&job_str, 1, 0, 120) {
+	match self.job_queue.put(job_str.as_bytes(), 1, Duration::from_secs(0), Duration::from_secs(120)) {
 	    Ok(t) => self.current_jobs.push((job_id, individual)),
 	    Err(_) => { println!("Failed to schedule job") },
 	};
@@ -77,25 +78,28 @@ impl<'a> Scheduler<'a> {
 	// hold off or do w/e till scheduled items are finished.
 	while self.current_jobs.len() > 0 {
 	    println!("Waiting for jobs to finish: {}", self.current_jobs.len());
-	    let p = self.job_queue.reserve_with_timeout(2).unwrap();
-	    if p.1 == "TIMED_OUT".to_string() {
-		println!("No job results found");
-	    }
-	    else {
-		self.job_queue.delete(p.0);
-		// todo: pair fitness with the scheduled fitness items.
-		let mut i = 0;
-		let unpacked_result: distro::JobResults = serde_json::from_str(&p.1).unwrap();
-		for (index, job_r) in self.current_jobs.iter().enumerate() {
+	    let mut current_job = self.job_queue.reserve_with_timeout(Duration::from_secs(2));
+	    match current_job {
+		Ok(mut job_info) => {
+		    job_info.delete();
+		    // self.job_queue.delete(current_job.id());
+		    // todo: pair fitness with the scheduled fitness items.
+		    let mut i = 0;
+		    let unpacked_result: distro::JobResults = serde_json::from_slice(&job_info.body()).unwrap();
+		    for (index, job_r) in self.current_jobs.iter().enumerate() {
 
-		    if unpacked_result.job_id == job_r.0 { 
-			i = index;
+			if unpacked_result.job_id == job_r.0 { 
+			    i = index;
+			}
 		    }
-		}
-		println!("item is index: {}", i);
-		let mut  queued_job = self.current_jobs.remove(i);
-		queued_job.1.fitness = unpacked_result.fitness;
-		println!("queued_job: {:#?}", queued_job);
+		    println!("item is index: {}", i);
+		    let mut  queued_job = self.current_jobs.remove(i);
+		    queued_job.1.fitness = unpacked_result.fitness;
+		},
+
+		Err(_) => {
+		    println!("No job results found");
+		},
 	    }
 	}
     }
@@ -117,9 +121,6 @@ fn run_ea(
     results_folder: String,
     fitness_func: &impl Fn(&mut nn::Network),
 ) -> () {
-    println!("Pop count: {} {}", pop_count, iter_count);
-
-
     let mut average_history_per_iter: Vec<f64> = Vec::new();
 
     // initializeation.
@@ -132,8 +133,8 @@ fn run_ea(
         conn_history: vec![],
     };
 
+    // run the first one locally. 
     fitness_func(&mut individual);
-    // evaluate_individual(&mut individual, fitness_func);
 
     for _ in 0..pop_count + 1 {
         specific_pop.push(individual.clone());
@@ -158,43 +159,35 @@ fn run_ea(
 
         // there is prob some vector function for this or something with a closure?
         let mut average_fit = 0.0;
+	let mut total_fitness = 0.0;
         for ind in specific_pop.iter() {
-            average_fit += ind.fitness();
+            total_fitness += ind.fitness();
         }
-        average_fit /= specific_pop.len() as f64;
+        average_fit = total_fitness / (specific_pop.len() as f64);
 
-        println!("Average fitness: {}", average_fit);
+        println!("Fitness ({}), ({})", total_fitness, average_fit);
 
         // generate offsprint from each of the species.
         // the number of offspring depends on the average fitness of the species.
         for spec in species.iter() {
             // add in the champ of the species in.
             offspring.push(spec.champion.unwrap().clone());
-            let mut spec_av_fit = spec.average_fitness();
-            println!("Spec av fit: {}", spec_av_fit);
-            if spec_av_fit <= 0.0 {
-                spec_av_fit = 1.0;
-            }
-            if average_fit <= 0.0 {
-                average_fit = 1.0;
-            }
+            let mut spec_fitness = spec.total_fitness();
 
-            let num_children = num_child_to_make(average_fit, spec_av_fit, pop_count);
+            let num_children = num_child_to_make(total_fitness, spec_fitness, pop_count);
 
             for _child_num in 0..num_children {
                 let mut new_child = spec.generate_offspring(&innovation_history).clone();
                 new_child.mutate(&mut innovation_history);
-                // fitness_func(&mut new_child);
-                // evaluate_individual(&mut new_child, fitness_func);
-                println!("Evaluting child: {} {}", _child_num, new_child.fitness());
                 offspring.push(new_child);
             }
         }
 
 	{
 	    let mut schedu = Scheduler::new("192.168.1.77", 11300);
-
 	    for off_p in offspring.iter_mut() {
+                // fitness_func(&mut new_child);
+                // evaluate_individual(&mut new_child, fitness_func);
 		schedu.schedule_job(off_p, &"rasteroids".to_string());
 	    }
 
@@ -250,7 +243,7 @@ fn server_runner() -> () {
 }
 
 fn main() -> std::result::Result<(), String> {
-    let population_count = 20;
+    let population_count = 400;
     let max_iter_count = 10000;
     let input_node_count = 8;
     let output_node_count = 3;

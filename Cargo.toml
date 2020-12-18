@@ -20,6 +20,7 @@ git2 = "0.13"
 serde= { version = "*", features = ["derive"]}
 serde_json="*"
 beanstalkd= { version = "*", git = "https://github.com/brandonphelps/rust-beanstalkd", branch = "master" }
+beanstalkc = {version = "*" } 
 
 [dependencies.rasteroids]
 git = "https://github.com/brandonphelps/rasteroids.git"
