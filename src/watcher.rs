@@ -17,6 +17,25 @@ fn draw_network(network: &nn::Network, canvas: &mut Canvas<Window>) {
     let mut node_nums: Vec<u64> = Vec::new();
     let mut poses: Vec<(u32, u32)> = Vec::new();
 
+    let tile_width = 50;
+    let tile_height = 50; 
+
+    canvas.set_draw_color(Color::RGB(255, 255, 0));
+
+    // get max number of nodes in across all layers
+    let mut max_num_nodes_in_layer = 0;
+    for n in 0..network.layer_count {
+	let nodes_per_layer = node_per_layer(&network, n);
+	if max_num_nodes_in_layer < nodes_per_layer  {
+	    max_num_nodes_in_layer = nodes_per_layer;
+	}
+    }
+
+    for layer in 0..network.layer_count {
+	
+    }
+
+    
     let width = 80;
     let height = 20;
     let mut node_num = 0;
@@ -87,6 +106,8 @@ pub fn main() {
 
     canvas.clear();
 
+    let network = nn::Network::new(10, 4, true);
+    
     // let font = ttf_context.load_font("lazy.ttf", 128).unwrap();
 
     // let texture_creator = canvas.texture_creator();
@@ -94,8 +115,6 @@ pub fn main() {
     // let target = Rect::new(100, 150, 300, 200);
 
     let ten_millis = time::Duration::from_millis(10);
-    
-
     let mut event_pump = sdl_context.event_pump().unwrap();
     let mut frame: u32 = 0;
     'running: loop {
@@ -114,10 +133,12 @@ pub fn main() {
 	canvas.set_draw_color(Color::RGB(0, 0, 0));
 	canvas.clear();
 
+	draw_network(&network, &mut canvas);
+
 
 	canvas.present();
-	
 
+	thread::sleep(ten_millis);
     }
 
 }

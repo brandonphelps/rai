@@ -69,6 +69,20 @@ pub struct Network {
     pub fitness: f64,
 }
 
+pub fn node_per_layer(network: &Network, num_layer: u64) -> Option<u64> {
+    let mut node_count = 0; 
+    if num_layer > network.layer_count.into() {
+	return None;
+    } else { 
+	for n in network.nodes.iter() {
+	    if n.layer == num_layer {
+		node_count += 1;
+	    }
+	}
+	return Some(node_count);
+    }
+}
+
 impl Network {
     pub fn fitness(&self) -> f64 {
         return self.fitness;
@@ -287,14 +301,14 @@ impl Network {
     /// Takes an edge and inserts a node inline.
     pub fn add_node(
         &mut self,
-        _edge_index: usize,
+        edge_index: usize,
         edge1_w: f64,
         edge2_w: f64,
         mut inno_handler: Option<&mut InnovationHistory>,
     ) -> u64 {
-        self.edges[_edge_index].enabled = false;
+        self.edges[edge_index].enabled = false;
 
-        let edge = &self.edges[_edge_index];
+        let edge = &self.edges[edge_index];
         let incoming_node_id = edge.from_node;
         let outgoing_node_id = edge.to_node;
 
@@ -672,5 +686,23 @@ mod tests {
             println!("Result of r: {}", r);
             assert!(false);
         }
+    }
+
+    #[test]
+    fn test_nodes_per_layer() {
+	let mut network = Network::new(2, 3, true);
+	// +1 for bias node.
+	assert_eq!(node_per_layer(&network, 0).unwrap(), 2+1);
+	assert_eq!(node_per_layer(&network, 1).unwrap(), 3);
+
+	network.add_node(2, 1.0, 3.0, None);
+	assert_eq!(node_per_layer(&network, 0).unwrap(), 2+1);
+	assert_eq!(node_per_layer(&network, 1).unwrap(), 1);
+	assert_eq!(node_per_layer(&network, 2).unwrap(), 3);
+    }
+
+    #[test]
+    fn test_max_nodes_of_layers() {
+	
     }
 }
