@@ -37,7 +37,7 @@ fn sigmoid(value: f64) -> f64 {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Edge {
     pub from_node: u64,
-    to_node: u64,
+    pub to_node: u64,
     pub weight: f64,
     pub enabled: bool,
     pub inno_id: u64,

@@ -9,6 +9,8 @@ use sdl2::video::{Window, WindowContext};
 
 use std::{thread, time};
 
+use std::collections::HashMap;
+
 mod neat;
 mod nn;
 
@@ -17,59 +19,101 @@ fn draw_network(network: &nn::Network, canvas: &mut Canvas<Window>) {
     let mut node_nums: Vec<u64> = Vec::new();
     let mut poses: Vec<(u32, u32)> = Vec::new();
 
-    let tile_width = 50;
-    let tile_height = 50; 
+    let tile_width = 20;
+    let tile_height = 20; 
+    let node_width = 10;
+    let node_height = 10;
 
     canvas.set_draw_color(Color::RGB(255, 255, 0));
 
     // get max number of nodes in across all layers
     let mut max_num_nodes_in_layer = 0;
     for n in 0..network.layer_count {
-	let nodes_per_layer = node_per_layer(&network, n);
+	let nodes_per_layer = nn::node_per_layer(&network, n as u64).unwrap();
 	if max_num_nodes_in_layer < nodes_per_layer  {
 	    max_num_nodes_in_layer = nodes_per_layer;
 	}
     }
 
-    for layer in 0..network.layer_count {
-	
+    // draw grid
+    for row_x in 0..network.layer_count {
+	for col_y in 0..max_num_nodes_in_layer {
+	    canvas.fill_rect(Rect::new(((row_x * tile_width) + 5 as u32 * row_x) as i32,
+				       ((col_y * tile_height) + 5 * col_y) as i32,
+				       tile_width as u32,
+				       tile_height as u32));
+	}
     }
 
-    
-    let width = 80;
-    let height = 20;
-    let mut node_num = 0;
 
     canvas.set_draw_color(Color::RGB(255, 0, 0));
 
-    for layer in 0..network.layer_count {
-        let x: f64 = ((layer + 1) * width) as f64 / (network.layer_count + 1) as f64;
-        for (n_index, node) in network.nodes.iter().enumerate() {
-            if node.layer == layer as u64 {
-                let y: f64 = ((n_index + 1) * height) as f64 / (network.nodes.len() + 1) as f64;
-                nodes.push(&node);
-                node_nums.push(node_num);
-                node_num += 1;
-                let t = (x as u32, y as u32);
-                poses.push(t);
-            }
-        }
+    let mut node_index: u64 = 0;
+    let mut node_pos = HashMap::new();
+    
+    
+    // draw nodes in network
+    for row_x in 0..network.layer_count {
+	let nodes_per_layer = nn::node_per_layer(&network, row_x as u64).unwrap();
+	for col_y in 0..nodes_per_layer {
+
+	    let pos_x = ((row_x * tile_width) + 5 as u32 * row_x) as i32;
+	    let pos_y = ((col_y * tile_height) + 5 * col_y) as i32;
+	    canvas.fill_rect(Rect::new(pos_x,
+				       pos_y,
+				       node_width as u32,
+				       node_height as u32));
+	    node_pos.insert(node_index , (pos_x, pos_y));
+	    node_index += 1;
+	}
     }
 
-    let offset = 100;
+    canvas.set_draw_color(Color::RGB(0, 0, 255));
 
+    // draw the lines
     for edge in network.edges.iter() {
-        if edge.enabled {}
+	let start_node = node_pos.get(&edge.from_node).unwrap();
+	let end_node = node_pos.get(&edge.to_node).unwrap();
+	
+	canvas.draw_line(Point::new(start_node.0, start_node.1),
+			 Point::new(end_node.0, end_node.1));
+			 
     }
+    
+    // let width = 80;
+    // let height = 20;
+    // let mut node_num = 0;
 
-    for pose in poses.iter() {
-        let _p = canvas.fill_rect(Rect::new(
-            (offset + pose.0 as i32) * 2,
-            (offset + pose.1 as i32) * 2,
-            5,
-            5,
-        ));
-    }
+    // canvas.set_draw_color(Color::RGB(255, 0, 0));
+
+    // for layer in 0..network.layer_count {
+    //     let x: f64 = ((layer + 1) * width) as f64 / (network.layer_count + 1) as f64;
+    //     for (n_index, node) in network.nodes.iter().enumerate() {
+    //         if node.layer == layer as u64 {
+    //             let y: f64 = ((n_index + 1) * height) as f64 / (network.nodes.len() + 1) as f64;
+    //             nodes.push(&node);
+    //             node_nums.push(node_num);
+    //             node_num += 1;
+    //             let t = (x as u32, y as u32);
+    //             poses.push(t);
+    //         }
+    //     }
+    // }
+
+    // let offset = 100;
+
+    // for edge in network.edges.iter() {
+    //     if edge.enabled {}
+    // }
+
+    // for pose in poses.iter() {
+    //     let _p = canvas.fill_rect(Rect::new(
+    //         (offset + pose.0 as i32) * 2,
+    //         (offset + pose.1 as i32) * 2,
+    //         5,
+    //         5,
+    //     ));
+    // }
 }
 
 // let surface = font.render(&output[1].to_string()).blended(Color::RGBA(255, 0, 0, 255)).unwrap();
@@ -106,7 +150,9 @@ pub fn main() {
 
     canvas.clear();
 
-    let network = nn::Network::new(10, 4, true);
+    let mut network = nn::Network::new(10, 4, true);
+
+    network.add_node(2, 1.0, 2.0, None);
     
     // let font = ttf_context.load_font("lazy.ttf", 128).unwrap();
 
