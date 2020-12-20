@@ -77,7 +77,6 @@ impl<'a> Scheduler<'a> {
     pub fn wait(&mut self) -> () {
 	// hold off or do w/e till scheduled items are finished.
 	while self.current_jobs.len() > 0 {
-	    println!("Waiting for jobs to finish: {}", self.current_jobs.len());
 	    let mut current_job = self.job_queue.reserve_with_timeout(Duration::from_secs(2));
 	    match current_job {
 		Ok(mut job_info) => {
@@ -92,14 +91,11 @@ impl<'a> Scheduler<'a> {
 			    i = index;
 			}
 		    }
-		    println!("item is index: {}", i);
 		    let mut  queued_job = self.current_jobs.remove(i);
 		    queued_job.1.fitness = unpacked_result.fitness;
 		},
 
-		Err(_) => {
-		    println!("No job results found");
-		},
+		Err(_) => (),
 	    }
 	}
     }
@@ -183,7 +179,9 @@ fn run_ea(
             }
         }
 
+	let start = Instant::now();
 	{
+	    
 	    let mut schedu = Scheduler::new("192.168.1.77", 11300);
 	    for off_p in offspring.iter_mut() {
                 // fitness_func(&mut new_child);
@@ -192,6 +190,10 @@ fn run_ea(
 	    }
 
 	    schedu.wait();
+	}
+	let duration = start.elapsed();
+	if duration.as_secs() != 0 {
+	    println!("Fitness per second: {}", offspring.len() as f64 / duration.as_secs() as f64);
 	}
 
         species.clear();
@@ -238,7 +240,6 @@ fn server_runner() -> () {
 
     println!("Waiting for results");
     schedu.wait();
-
     println!("Results: {}", indivs[0].fitness());
 }
 

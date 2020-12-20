@@ -51,3 +51,8 @@ required-features = ["gui"]
 [[bin]]
 name = "runner"
 path = "src/runner.rs"
+
+[[bin]]
+name = "game_of_life"
+path = "src/game_of_life.rs"
+required-features = ["gui"]
