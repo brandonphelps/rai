@@ -28,6 +28,7 @@ pub struct EaFuncMap {
 }
 
 
+#[cfg(not(feature="gui"))]
 impl EaFuncMap {
     #[allow(dead_code)]
     pub fn do_func(func_name: &String, indi: &mut Network) -> () {
@@ -37,7 +38,146 @@ impl EaFuncMap {
     }
 }
 
+pub fn asteroids_thinker(player: &mut Network, game_state: &asteroids::GameState) -> asteroids::GameInput {
+    let mut game_input = asteroids::GameInput {
+        shoot: false,
+        thrusters: false,
+        rotation: 0.0,
+    };
+    let mut vision_input: [f64; 8] = [100000.0; 8];
 
+    // canvas.set_draw_color(Color::RGB(0, 255, 0));
+    for asteroid_dist in 1..30 {
+        for ast in game_state.asteroids.iter() {
+            let mut vision_c = collision::Circle {
+                pos_x: 0.0,
+                pos_y: 0.0,
+                radius: 1.0,
+            };
+            if vision_input[0] == 100000.0 {
+                vision_c.pos_x = game_state.player.rust_sux.pos_x + (asteroid_dist as f64);
+                vision_c.pos_y = game_state.player.rust_sux.pos_y;
+                // canvas.fill_rect(Rect::new(vision_c.pos_x as i32,
+                // 			       vision_c.pos_y as i32,
+                // 			       vision_c.radius as u32,
+                // 			       vision_c.radius as u32));
+                if collision::collides(&vision_c, &ast.bounding_box()) {
+                    vision_input[0] = asteroid_dist as f64;
+                }
+            }
+            if vision_input[1] == 100000.0 {
+                vision_c.pos_x = game_state.player.rust_sux.pos_x - (asteroid_dist as f64);
+                vision_c.pos_y = game_state.player.rust_sux.pos_y;
+                // canvas.fill_rect(Rect::new(vision_c.pos_x as i32,
+                // 			       vision_c.pos_y as i32,
+                // 			       vision_c.radius as u32,
+                // 			       vision_c.radius as u32));
+
+                if collision::collides(&vision_c, &ast.bounding_box()) {
+                    vision_input[1] = asteroid_dist as f64;
+                }
+            }
+            if vision_input[2] == 100000.0 {
+                vision_c.pos_x = game_state.player.rust_sux.pos_x;
+                vision_c.pos_y = game_state.player.rust_sux.pos_y + (asteroid_dist as f64);
+                // canvas.fill_rect(Rect::new(vision_c.pos_x as i32,
+                // 			       vision_c.pos_y as i32,
+                // 			       vision_c.radius as u32,
+                // 			       vision_c.radius as u32));
+
+                if collision::collides(&vision_c, &ast.bounding_box()) {
+                    vision_input[2] = asteroid_dist as f64;
+                }
+            }
+            if vision_input[3] == 100000.0 {
+                vision_c.pos_x = game_state.player.rust_sux.pos_x;
+                vision_c.pos_y = game_state.player.rust_sux.pos_y - (asteroid_dist as f64);
+                // canvas.fill_rect(Rect::new(vision_c.pos_x as i32,
+                // 			       vision_c.pos_y as i32,
+                // 			       vision_c.radius as u32,
+                // 			       vision_c.radius as u32));
+
+                if collision::collides(&vision_c, &ast.bounding_box()) {
+                    vision_input[3] = asteroid_dist as f64;
+                }
+            }
+            if vision_input[4] == 100000.0 {
+                vision_c.pos_x = game_state.player.rust_sux.pos_x + (asteroid_dist as f64);
+                vision_c.pos_y = game_state.player.rust_sux.pos_y + (asteroid_dist as f64);
+                // canvas.fill_rect(Rect::new(vision_c.pos_x as i32,
+                // 			       vision_c.pos_y as i32,
+                // 			       vision_c.radius as u32,
+                // 			       vision_c.radius as u32));
+                if collision::collides(&vision_c, &ast.bounding_box()) {
+                    vision_input[4] = asteroid_dist as f64;
+                }
+            }
+            if vision_input[5] == 100000.0 {
+                vision_c.pos_x = game_state.player.rust_sux.pos_x - (asteroid_dist as f64);
+                vision_c.pos_y = game_state.player.rust_sux.pos_y - (asteroid_dist as f64);
+                // canvas.fill_rect(Rect::new(vision_c.pos_x as i32,
+                // 			       vision_c.pos_y as i32,
+                // 			       vision_c.radius as u32,
+                // 			       vision_c.radius as u32));
+
+                if collision::collides(&vision_c, &ast.bounding_box()) {
+                    vision_input[5] = asteroid_dist as f64;
+                }
+            }
+            if vision_input[6] == 100000.0 {
+                vision_c.pos_x = game_state.player.rust_sux.pos_x + (asteroid_dist as f64);
+                vision_c.pos_y = game_state.player.rust_sux.pos_y - (asteroid_dist as f64);
+                // canvas.fill_rect(Rect::new(vision_c.pos_x as i32,
+                // 			       vision_c.pos_y as i32,
+                // 			       vision_c.radius as u32,
+                // 			       vision_c.radius as u32));
+
+                if collision::collides(&vision_c, &ast.bounding_box()) {
+                    vision_input[6] = asteroid_dist as f64;
+                }
+            }
+            if vision_input[7] == 100000.0 {
+                vision_c.pos_x = game_state.player.rust_sux.pos_x - (asteroid_dist as f64);
+                vision_c.pos_y = game_state.player.rust_sux.pos_y + (asteroid_dist as f64);
+                // canvas.fill_rect(Rect::new(vision_c.pos_x as i32,
+                // 			       vision_c.pos_y as i32,
+                // 			       vision_c.radius as u32,
+                // 			       vision_c.radius as u32));
+
+                if collision::collides(&vision_c, &ast.bounding_box()) {
+                    vision_input[7] = asteroid_dist as f64;
+                }
+            }
+        }
+    }
+
+    let output = player.feed_input(vec![
+        vision_input[0],
+        vision_input[1],
+        vision_input[2],
+        vision_input[3],
+        vision_input[4],
+        vision_input[5],
+        vision_input[6],
+        vision_input[7],
+    ]);
+    assert_eq!(output.len(), 3);
+
+    // do thinking
+    if output[2] <= 0.5 {
+        game_input.thrusters = true;
+    }
+
+    if output[1] <= 0.5 {
+        game_input.shoot = true;
+    }
+
+    game_input.rotation = output[0];
+    return game_input;
+}
+
+
+#[cfg(not(feature = "gui"))]
 pub fn asteroids_fitness(player: &mut Network) -> () {
     let mut _fitness = 0.0;
     // self.network.pretty_print();
@@ -61,135 +201,7 @@ pub fn asteroids_fitness(player: &mut Network) -> () {
         // canvas.set_draw_color(Color::RGB(0, 0, 0));
         // canvas.clear();
 
-        let mut vision_input: [f64; 8] = [100000.0; 8];
-
-        // canvas.set_draw_color(Color::RGB(0, 255, 0));
-        for asteroid_dist in 1..30 {
-            for ast in asteroids_game.asteroids.iter() {
-                let mut vision_c = collision::Circle {
-                    pos_x: 0.0,
-                    pos_y: 0.0,
-                    radius: 1.0,
-                };
-                if vision_input[0] == 100000.0 {
-                    vision_c.pos_x = asteroids_game.player.rust_sux.pos_x + (asteroid_dist as f64);
-                    vision_c.pos_y = asteroids_game.player.rust_sux.pos_y;
-                    // canvas.fill_rect(Rect::new(vision_c.pos_x as i32,
-                    // 			       vision_c.pos_y as i32,
-                    // 			       vision_c.radius as u32,
-                    // 			       vision_c.radius as u32));
-                    if collision::collides(&vision_c, &ast.bounding_box()) {
-                        vision_input[0] = asteroid_dist as f64;
-                    }
-                }
-                if vision_input[1] == 100000.0 {
-                    vision_c.pos_x = asteroids_game.player.rust_sux.pos_x - (asteroid_dist as f64);
-                    vision_c.pos_y = asteroids_game.player.rust_sux.pos_y;
-                    // canvas.fill_rect(Rect::new(vision_c.pos_x as i32,
-                    // 			       vision_c.pos_y as i32,
-                    // 			       vision_c.radius as u32,
-                    // 			       vision_c.radius as u32));
-
-                    if collision::collides(&vision_c, &ast.bounding_box()) {
-                        vision_input[1] = asteroid_dist as f64;
-                    }
-                }
-                if vision_input[2] == 100000.0 {
-                    vision_c.pos_x = asteroids_game.player.rust_sux.pos_x;
-                    vision_c.pos_y = asteroids_game.player.rust_sux.pos_y + (asteroid_dist as f64);
-                    // canvas.fill_rect(Rect::new(vision_c.pos_x as i32,
-                    // 			       vision_c.pos_y as i32,
-                    // 			       vision_c.radius as u32,
-                    // 			       vision_c.radius as u32));
-
-                    if collision::collides(&vision_c, &ast.bounding_box()) {
-                        vision_input[2] = asteroid_dist as f64;
-                    }
-                }
-                if vision_input[3] == 100000.0 {
-                    vision_c.pos_x = asteroids_game.player.rust_sux.pos_x;
-                    vision_c.pos_y = asteroids_game.player.rust_sux.pos_y - (asteroid_dist as f64);
-                    // canvas.fill_rect(Rect::new(vision_c.pos_x as i32,
-                    // 			       vision_c.pos_y as i32,
-                    // 			       vision_c.radius as u32,
-                    // 			       vision_c.radius as u32));
-
-                    if collision::collides(&vision_c, &ast.bounding_box()) {
-                        vision_input[3] = asteroid_dist as f64;
-                    }
-                }
-                if vision_input[4] == 100000.0 {
-                    vision_c.pos_x = asteroids_game.player.rust_sux.pos_x + (asteroid_dist as f64);
-                    vision_c.pos_y = asteroids_game.player.rust_sux.pos_y + (asteroid_dist as f64);
-                    // canvas.fill_rect(Rect::new(vision_c.pos_x as i32,
-                    // 			       vision_c.pos_y as i32,
-                    // 			       vision_c.radius as u32,
-                    // 			       vision_c.radius as u32));
-                    if collision::collides(&vision_c, &ast.bounding_box()) {
-                        vision_input[4] = asteroid_dist as f64;
-                    }
-                }
-                if vision_input[5] == 100000.0 {
-                    vision_c.pos_x = asteroids_game.player.rust_sux.pos_x - (asteroid_dist as f64);
-                    vision_c.pos_y = asteroids_game.player.rust_sux.pos_y - (asteroid_dist as f64);
-                    // canvas.fill_rect(Rect::new(vision_c.pos_x as i32,
-                    // 			       vision_c.pos_y as i32,
-                    // 			       vision_c.radius as u32,
-                    // 			       vision_c.radius as u32));
-
-                    if collision::collides(&vision_c, &ast.bounding_box()) {
-                        vision_input[5] = asteroid_dist as f64;
-                    }
-                }
-                if vision_input[6] == 100000.0 {
-                    vision_c.pos_x = asteroids_game.player.rust_sux.pos_x + (asteroid_dist as f64);
-                    vision_c.pos_y = asteroids_game.player.rust_sux.pos_y - (asteroid_dist as f64);
-                    // canvas.fill_rect(Rect::new(vision_c.pos_x as i32,
-                    // 			       vision_c.pos_y as i32,
-                    // 			       vision_c.radius as u32,
-                    // 			       vision_c.radius as u32));
-
-                    if collision::collides(&vision_c, &ast.bounding_box()) {
-                        vision_input[6] = asteroid_dist as f64;
-                    }
-                }
-                if vision_input[7] == 100000.0 {
-                    vision_c.pos_x = asteroids_game.player.rust_sux.pos_x - (asteroid_dist as f64);
-                    vision_c.pos_y = asteroids_game.player.rust_sux.pos_y + (asteroid_dist as f64);
-                    // canvas.fill_rect(Rect::new(vision_c.pos_x as i32,
-                    // 			       vision_c.pos_y as i32,
-                    // 			       vision_c.radius as u32,
-                    // 			       vision_c.radius as u32));
-
-                    if collision::collides(&vision_c, &ast.bounding_box()) {
-                        vision_input[7] = asteroid_dist as f64;
-                    }
-                }
-            }
-        }
-
-        let output = player.feed_input(vec![
-            vision_input[0],
-            vision_input[1],
-            vision_input[2],
-            vision_input[3],
-            vision_input[4],
-            vision_input[5],
-            vision_input[6],
-            vision_input[7],
-        ]);
-        assert_eq!(output.len(), 3);
-
-        // do thinking
-        if output[2] <= 0.5 {
-            game_input.thrusters = true;
-        }
-
-        if output[1] <= 0.5 {
-            game_input.shoot = true;
-        }
-
-        game_input.rotation = output[0];
+	game_input = asteroids_thinker(player, &asteroids_game);
 
         // process action based on thinking
         asteroids_game =
@@ -204,6 +216,8 @@ pub fn asteroids_fitness(player: &mut Network) -> () {
             }
             break;
         }
+
+
 
         thread::sleep(Duration::from_millis(10));
         duration = start.elapsed().as_millis();

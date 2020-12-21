@@ -9,10 +9,14 @@ use sdl2::video::{Window, WindowContext};
 
 use std::{thread, time};
 
+use std::time::{Duration, Instant};
 use std::collections::HashMap;
+
+use rasteroids::asteroids;
 
 mod neat;
 mod nn;
+mod distro;
 
 fn draw_network(network: &nn::Network, canvas: &mut Canvas<Window>, x_offset: u32, y_offset: u64) {
     let mut nodes: Vec<&nn::Node> = Vec::new();
@@ -116,20 +120,18 @@ pub fn main() {
 
     canvas.clear();
 
-    let mut network = nn::Network::new(10, 4, true);
+    let mut network = nn::Network::new(16, 3, true);
 
     network.add_node(2, 1.0, 2.0, None);
-    
-    // let font = ttf_context.load_font("lazy.ttf", 128).unwrap();
 
-    // let texture_creator = canvas.texture_creator();
-
-    // let target = Rect::new(100, 150, 300, 200);
+    let mut asteroids_game = asteroids::game_init();
+    let mut duration = 0;
 
     let ten_millis = time::Duration::from_millis(10);
     let mut event_pump = sdl_context.event_pump().unwrap();
     let mut frame: u32 = 0;
     'running: loop {
+        let start = Instant::now();
 	for event in event_pump.poll_iter() {
 	    match event {
 		Event::Quit { .. }
@@ -145,12 +147,15 @@ pub fn main() {
 	canvas.set_draw_color(Color::RGB(0, 0, 0));
 	canvas.clear();
 
-	draw_network(&network, &mut canvas, 40, 0);
+	draw_network(&network, &mut canvas, 400, 0);
+	
+	let game_input = distro::asteroids_thinker(&mut network, &asteroids_game);
+
+	asteroids_game = asteroids::game_update(&asteroids_game, (duration as f64) * 0.01, &game_input, &mut canvas);
 
 
 	canvas.present();
-
-	thread::sleep(ten_millis);
+        duration = start.elapsed().as_millis();
     }
 
 }
