@@ -136,10 +136,10 @@ pub fn asteroids_thinker(player: &mut Network, game_state: &asteroids::GameState
         game_input.thrusters = true;
     }
 
-    if output[1] => 0.5 {
+    if output[1] >= 0.5 {
         game_input.shoot = true;
     }
-    if output[0] => 0.5 {
+    if output[0] >= 0.5 {
 	game_input.rotation -= 0.39268;
     }
     else {

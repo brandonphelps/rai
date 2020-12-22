@@ -65,10 +65,9 @@ fn draw_network(network: &nn::Network, canvas: &mut Canvas<Window>, x_offset: u3
     for row_x in 0..network.layer_count {
 	let nodes_per_layer = nn::node_per_layer(&network, row_x as u64).unwrap();
 
-	let input_layer = network.get_layer(0);
+	let input_layer = network.get_layer(row_x as u64);
 
 	for col_y in 0..nodes_per_layer {
-
 	    let pos_x = (((row_x * tile_width) + 5 as u32 * row_x) + x_offset) as i32;
 	    let pos_y = (((col_y * tile_height) + 5 * col_y) + y_offset) as i32;
 	    
@@ -177,19 +176,14 @@ fn playthrough_asteroids(network: &mut nn::Network, canvas: &mut Canvas<Window>,
 	
 	let game_input = distro::asteroids_thinker(network, &asteroids_game);
 
-	frame += 1;
+	canvas.set_draw_color(Color::RGB(0, 0, 0));
+	canvas.clear();
 
-	if frame == 30 { 
-	    canvas.set_draw_color(Color::RGB(0, 0, 0));
-	    canvas.clear();
+	draw_network(network, canvas, 400, 0);
 
-	    draw_network(network, canvas, 400, 0);
-
-	    asteroids_game = asteroids::game_update(&asteroids_game, (duration as f64) * 0.01, &game_input, canvas);
-	    if asteroids_game.game_over {
-		break;
-	    }
-	    frame = 0;
+	asteroids_game = asteroids::game_update(&asteroids_game, (duration as f64) * 0.01, &game_input, canvas);
+	if asteroids_game.game_over {
+	    break;
 	}
 
 	canvas.present();
@@ -252,7 +246,7 @@ pub fn main() {
 	};
 
 	for (index, network) in network_list.iter().enumerate() { 
-	    if network.fitness() > 0.0 { 
+	    if network.fitness() > 100.0 { 
 
 		println!("Layer count: {}", network.layer_count);
 		for i in 0..network.layer_count {
