@@ -175,6 +175,7 @@ fn run_ea(
             for _child_num in 0..num_children {
                 let mut new_child = spec.generate_offspring(&innovation_history).clone();
                 new_child.mutate(&mut innovation_history);
+		// assert_eq!(node_per_layer(new_child.
                 offspring.push(new_child);
             }
         }

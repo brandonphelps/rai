@@ -448,15 +448,16 @@ impl Network {
         }
     }
 
-    pub fn crossover(&self, _rhs: &Network) -> Network {
-        let mut child_network = Network::new(_rhs.input_node_count, _rhs.output_node_count, false);
-
+    pub fn crossover(&self, rhs: &Network) -> Network {
+        let mut child_network = Network::new(rhs.input_node_count, rhs.output_node_count, false);
+	child_network.nodes.clear();
+	child_network.edges.clear();
         child_network.layer_count = self.layer_count;
         child_network.bias_node_id = self.bias_node_id;
 
         let mut rng = rand::thread_rng();
         for edge in self.edges.iter() {
-            let parent2_edge_maybe = matching_edge(_rhs, edge.inno_id);
+            let parent2_edge_maybe = matching_edge(rhs, edge.inno_id);
             let mut child_edge_enabled = true;
             // if parent 2 also contains the same edge then determine which to use.
             if let Some(parent2_edge) = parent2_edge_maybe {
@@ -717,5 +718,27 @@ mod tests {
     #[test]
     fn test_max_nodes_of_layers() {
 	
+    }
+
+    #[test]
+    fn test_crossover() {
+	let network_one = Network::new(2, 3, true);
+	let network_two = Network::new(2, 3, true);
+
+	assert_eq!(node_per_layer(&network_one, 0).unwrap(), 2+1);
+	assert_eq!(node_per_layer(&network_one, 1).unwrap(), 3);
+
+	assert_eq!(node_per_layer(&network_two, 0).unwrap(), 2+1);
+	assert_eq!(node_per_layer(&network_two, 1).unwrap(), 3);
+
+	
+	let network_three = network_one.crossover(&network_two);
+
+	assert_eq!(node_per_layer(&network_three, 0).unwrap(), 2+1);
+
+
+	assert_eq!(node_per_layer(&network_three, 1).unwrap(), 3);
+        network_three.pretty_print();
+	assert_eq!(1,2 );
     }
 }
