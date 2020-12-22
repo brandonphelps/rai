@@ -90,12 +90,6 @@ fn draw_network(network: &nn::Network, canvas: &mut Canvas<Window>, x_offset: u3
     }
 }
 
-// let surface = font.render(&output[1].to_string()).blended(Color::RGBA(255, 0, 0, 255)).unwrap();
-// let texture = texture_creator.create_texture_from_surface(&surface).unwrap();
-
-// draw_network(&player, &mut canvas);
-// canvas.copy(&texture, None, Some(target)).unwrap();
-
 fn read_file(filepath: &str) -> String {
     let contents = fs::read_to_string(filepath).expect("Somethign went wrong with reading form");
     return contents;
@@ -223,7 +217,7 @@ pub fn main() {
     for gen in 3..50 {
 	let network_list = playthrough.get(&gen).unwrap();
 	for (index, network) in network_list.iter().enumerate() { 
-	    if network.fitness() > 100.0 { 
+	    if network.fitness() > 200.0 { 
 		println!("Playing generation: {}", gen);
 		println!("playing network: {} which has fitness of {}", index, network.fitness());
 		// let mut network = nn::Network::new(16, 3, true);

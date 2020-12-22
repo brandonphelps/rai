@@ -531,10 +531,15 @@ mod tests {
         let mut output = network.feed_input(vec![0.3]);
         assert_eq!(network.layer_count, 2);
         assert_eq!(output.len(), 3);
+	assert_eq!(node_per_layer(&network, 0).unwrap(), 2);
+
         network.add_node(2, 1.0, 2.0, None);
         output = network.feed_input(vec![0.4]);
         assert_eq!(network.layer_count, 3);
         assert_eq!(output.len(), 3);
+
+	assert_eq!(node_per_layer(&network, 0).unwrap(), 2);
+
         println!("Output of graph");
         network.pretty_print();
     }
@@ -545,8 +550,9 @@ mod tests {
 
         network.add_connection(0, 1, 0.5, None);
 
+	assert_eq!(node_per_layer(&network, 0).unwrap(), 2);
+
         let input_value = vec![1.0, 2.0];
-        println!("First evaulation");
         let mut output_values = network.feed_input(input_value);
 
         // simplest network
@@ -558,6 +564,7 @@ mod tests {
         println!("Second evaulation");
         output_values = network.feed_input(vec![1.0]);
         assert_eq!(output_values.len(), 1);
+	assert_eq!(node_per_layer(&network, 0).unwrap(), 2);
         assert_eq!(output_values[0], 0.6224593312018546);
     }
 
@@ -587,6 +594,7 @@ mod tests {
             println!("Checking: {} -> {}", edge.from_node, edge.to_node);
             assert!(from_node.layer < to_node.layer);
         }
+	assert_eq!(node_per_layer(&network, 0).unwrap(), 5)
     }
 
     #[test]
@@ -699,7 +707,12 @@ mod tests {
 	assert_eq!(node_per_layer(&network, 0).unwrap(), 2+1);
 	assert_eq!(node_per_layer(&network, 1).unwrap(), 1);
 	assert_eq!(node_per_layer(&network, 2).unwrap(), 3);
+
+	network.add_node(0, 2.0, 2.0, None);
+	assert_eq!(node_per_layer(&network, 0).unwrap(), 2+1);
+	assert_eq!(node_per_layer(&network, 2).unwrap(), 3);
     }
+
 
     #[test]
     fn test_max_nodes_of_layers() {

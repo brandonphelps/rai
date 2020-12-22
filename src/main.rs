@@ -244,7 +244,7 @@ fn server_runner() -> () {
 }
 
 fn main() -> std::result::Result<(), String> {
-    let population_count = 400;
+    let population_count = 20;
     let max_iter_count = 10000;
     let input_node_count = 8;
     let output_node_count = 3;
