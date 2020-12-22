@@ -20,8 +20,9 @@ jobs:
     - uses: actions-rs/toolchain@v1
       with:
         toolchain: nightly
-        components: clippy, llvm-tools-preview, grcov
-        
+        components: clippy, llvm-tools-preview
+    - name: Install Step
+      run: cargo install grcov
     - name: Build
       run: cargo build --verbose
       env:
