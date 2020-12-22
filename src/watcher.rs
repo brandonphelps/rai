@@ -216,8 +216,15 @@ pub fn main() {
 
     for gen in 3..50 {
 	let network_list = playthrough.get(&gen).unwrap();
+
 	for (index, network) in network_list.iter().enumerate() { 
 	    if network.fitness() > 200.0 { 
+
+		println!("Layer count: {}", network.layer_count);
+		for i in 0..network.layer_count {
+		    println!("Layer {} node count {}", i, nn::node_per_layer(&network, i as u64).unwrap());
+		}
+
 		println!("Playing generation: {}", gen);
 		println!("playing network: {} which has fitness of {}", index, network.fitness());
 		// let mut network = nn::Network::new(16, 3, true);
