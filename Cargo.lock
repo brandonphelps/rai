@@ -356,7 +356,7 @@ dependencies = [
 [[package]]
 name = "rasteroids"
 version = "0.1.0"
-source = "git+https://github.com/brandonphelps/rasteroids.git?branch=main#9d48baad5d9afc8b38455cb67ac7893e4ecc69df"
+source = "git+https://github.com/brandonphelps/rasteroids.git?branch=main#5c3bb4e9ce7f24adc3f29c91b81734a95052ca66"
 dependencies = [
  "rand",
 ]

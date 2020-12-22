@@ -14,8 +14,8 @@ fn matching_edge(parent2: &Network, inno_id: u64) -> Option<&Edge> {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Node {
-    input_sum: f64,
-    output_sum: f64,
+    pub input_sum: f64,
+    pub output_sum: f64,
     pub layer: u64,
 }
 
@@ -30,7 +30,7 @@ impl Node {
 }
 
 #[allow(dead_code)]
-fn sigmoid(value: f64) -> f64 {
+pub fn sigmoid(value: f64) -> f64 {
     return 1.0 / (1.0 + std::f64::consts::E.powf(-1.0 * value));
 }
 

@@ -64,13 +64,35 @@ fn draw_network(network: &nn::Network, canvas: &mut Canvas<Window>, x_offset: u3
     // draw nodes in network
     for row_x in 0..network.layer_count {
 	let nodes_per_layer = nn::node_per_layer(&network, row_x as u64).unwrap();
+
+	let input_layer = network.get_layer(0);
+
 	for col_y in 0..nodes_per_layer {
 
 	    let pos_x = (((row_x * tile_width) + 5 as u32 * row_x) + x_offset) as i32;
 	    let pos_y = (((col_y * tile_height) + 5 * col_y) + y_offset) as i32;
+	    
+	    let op = input_layer[col_y as usize].output_sum;
 
-	    // println!("Input: {}", network.
+	    // draw up the output values so that we can see
+	    // the brain "thinking", attempt to have blue be "activated"
+	    // and red is not activated, should likely use the output of sigmoid instead of
+	    // this.
+	    if op == 100_000.0 {
+		canvas.set_draw_color(Color::RGB(255, 0, 0));
+	    }
+	    else {
+	    // 	let red = (255 / 30) as u8 * op as u8;
+	    // 	let blue = (255 / (op as u8 + 1)) as u8;
+	    // 	canvas.set_draw_color(Color::RGB(red, blue, 0));
+		let color_scale = nn::sigmoid(op);
+		let red = (255.0 * (1.0 - color_scale)) as u8;
+		let blue = (255.0 * color_scale) as u8;
+		canvas.set_draw_color(Color::RGB(red, 0, blue));
 
+	    }
+
+	    
 	    canvas.fill_rect(Rect::new(pos_x,
 				       pos_y,
 				       node_width as u32,
@@ -112,6 +134,7 @@ fn load_playthrough(directory: &str) -> HashMap<u64, Vec<nn::Network>> {
 	let path = entry.path();
 	if path.is_dir() {
 	    let gen_id = path.file_name().unwrap().to_str().unwrap().parse::<u64>().unwrap();
+	    println!("Gen id: {}", gen_id);
 	    let mut individuals = Vec::new();
 	    for individual in fs::read_dir(path).unwrap() {
 		let ind_e = individual.unwrap();
@@ -122,8 +145,6 @@ fn load_playthrough(directory: &str) -> HashMap<u64, Vec<nn::Network>> {
 		    individuals.push(network);
 		}
 	    }
-
-	    
 	    results.insert(gen_id, individuals);
 	}
     }
@@ -137,7 +158,7 @@ fn playthrough_asteroids(network: &mut nn::Network, canvas: &mut Canvas<Window>,
     let mut duration = 0;
 
     let ten_millis = time::Duration::from_millis(10);
-    let mut frame: u32 = 0;
+    let mut frame: u64 = 0;
     'running: loop {
         let start = Instant::now();
 	for event in event_pump.poll_iter() {
@@ -152,17 +173,23 @@ fn playthrough_asteroids(network: &mut nn::Network, canvas: &mut Canvas<Window>,
 	    }
 	}
 
-	canvas.set_draw_color(Color::RGB(0, 0, 0));
-	canvas.clear();
 
-	draw_network(network, canvas, 400, 0);
 	
 	let game_input = distro::asteroids_thinker(network, &asteroids_game);
 
-	asteroids_game = asteroids::game_update(&asteroids_game, (duration as f64) * 0.01, &game_input, canvas);
+	frame += 1;
 
-	if asteroids_game.game_over {
-	    break;
+	if frame == 30 { 
+	    canvas.set_draw_color(Color::RGB(0, 0, 0));
+	    canvas.clear();
+
+	    draw_network(network, canvas, 400, 0);
+
+	    asteroids_game = asteroids::game_update(&asteroids_game, (duration as f64) * 0.01, &game_input, canvas);
+	    if asteroids_game.game_over {
+		break;
+	    }
+	    frame = 0;
 	}
 
 	canvas.present();
@@ -216,11 +243,16 @@ pub fn main() {
 
     canvas.clear();
 
-    for gen in 3..50 {
-	let network_list = playthrough.get(&gen).unwrap();
+    for gen in 0..50 {
+	let network_list = match playthrough.get(&gen) {
+	    Some(t) => { t },
+	    None => { println!("No generation: {}", gen);
+			break;
+	    },
+	};
 
 	for (index, network) in network_list.iter().enumerate() { 
-	    if network.fitness() > 200.0 { 
+	    if network.fitness() > 0.0 { 
 
 		println!("Layer count: {}", network.layer_count);
 		for i in 0..network.layer_count {

@@ -39,11 +39,6 @@ impl EaFuncMap {
 }
 
 pub fn asteroids_thinker(player: &mut Network, game_state: &asteroids::GameState) -> asteroids::GameInput {
-    let mut game_input = asteroids::GameInput {
-        shoot: false,
-        thrusters: false,
-        rotation: 0.0,
-    };
     let mut vision_input: [f64; 8] = [100000.0; 8];
 
     // canvas.set_draw_color(Color::RGB(0, 255, 0));
@@ -130,16 +125,27 @@ pub fn asteroids_thinker(player: &mut Network, game_state: &asteroids::GameState
     ]);
     assert_eq!(output.len(), 3);
 
+    let mut game_input = asteroids::GameInput {
+        shoot: false,
+        thrusters: false,
+        rotation: 0.0,
+    };
+
     // do thinking
-    if output[2] <= 0.5 {
+    if output[2] >= 0.5 {
         game_input.thrusters = true;
     }
 
-    if output[1] <= 0.5 {
+    if output[1] => 0.5 {
         game_input.shoot = true;
     }
+    if output[0] => 0.5 {
+	game_input.rotation -= 0.39268;
+    }
+    else {
+	game_input.rotation += 0.39268;
+    }
 
-    game_input.rotation = output[0];
     return game_input;
 }
 
@@ -156,8 +162,9 @@ pub fn asteroids_fitness(player: &mut Network) -> () {
     // the distance is from the ship, the network will have to figure out that
     // the order of the input is clockwise from north.
     let mut duration = 0;
-    let max_turns = 6000;
-    for _i in 0..max_turns {
+    let max_turns = 100_000;
+    let mut i = 0;
+    while i < max_turns {
         // vision
 	let game_input = asteroids_thinker(player, &asteroids_game);
 
@@ -170,13 +177,20 @@ pub fn asteroids_fitness(player: &mut Network) -> () {
             if asteroids_game.game_over_is_win {
                 player.fitness = 1000000.0;
             } else {
-		println!("Asteroid score: {}", asteroids_game.score);
-                player.fitness = asteroids_game.score as f64 + (_i as f64 / max_turns as f64) as f64;
+                player.fitness = asteroids_game.score as f64;
             }
             break;
         }
 
         thread::sleep(Duration::from_millis(10));
         duration = start.elapsed().as_millis();
+	i += 1;
     }
+    if i == max_turns {
+	player.fitness -= i as f64 * 0.01;
+    }
+    if player.fitness <= 0.0 {
+	player.fitness = 0.001;
+    }
+    println!("Player fitness {} Asteroid score {}", player.fitness, asteroids_game.score);
 }
