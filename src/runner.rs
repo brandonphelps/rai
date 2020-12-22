@@ -15,6 +15,7 @@ fn main() -> () {
     let mut beanstalkd = Beanstalkc::new().host("192.168.1.77").port(11300).connect().unwrap();
 
     beanstalkd.watch("rasteroids").unwrap();
+    beanstalkd.use_tube("results");
     while true { 
 
 	let mut current_job = beanstalkd.reserve().unwrap();
@@ -40,6 +41,8 @@ fn main() -> () {
 
 	let result = distro::JobResults { job_id: result.job_id,
 					  fitness: result.individual.fitness() };
+
+
 
 	let result_str = serde_json::to_string(&result).unwrap();
 	match beanstalkd.put(result_str.as_bytes(), 1, Duration::from_secs(0), Duration::from_secs(120)) {
