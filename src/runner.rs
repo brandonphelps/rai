@@ -4,6 +4,8 @@ use beanstalkd::Beanstalkd;
 use beanstalkc::Beanstalkc;
 use core::time::Duration;
 
+use std::str;
+
 mod distro;
 mod nn;
 mod neat;
@@ -18,7 +20,15 @@ fn main() -> () {
 	let mut current_job = beanstalkd.reserve().unwrap();
 
 	let job_str = current_job.body();
-	let mut result: distro::JobInfo  = serde_json::from_slice(&job_str).unwrap();
+	
+	let mut result: distro::JobInfo = match serde_json::from_slice(&job_str) {
+	    Ok(r) => r,
+	    Err(t) => {
+		println!("Got an err on str: {}", str::from_utf8(&job_str).unwrap());
+
+		panic!(t);
+	    },
+	};
 
 	// todo: either needs a way to touch the job or the timeout must be large. 
 	// or maybe run the job touch in another thread? 
