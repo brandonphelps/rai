@@ -60,8 +60,7 @@ fn draw_network(network: &nn::Network, canvas: &mut Canvas<Window>, x_offset: u3
 
     let mut node_index: u64 = 0;
     let mut node_pos = HashMap::new();
-    
-    
+
     // draw nodes in network
     for row_x in 0..network.layer_count {
 	let nodes_per_layer = nn::node_per_layer(&network, row_x as u64).unwrap();
@@ -69,6 +68,9 @@ fn draw_network(network: &nn::Network, canvas: &mut Canvas<Window>, x_offset: u3
 
 	    let pos_x = (((row_x * tile_width) + 5 as u32 * row_x) + x_offset) as i32;
 	    let pos_y = (((col_y * tile_height) + 5 * col_y) + y_offset) as i32;
+
+	    // println!("Input: {}", network.
+
 	    canvas.fill_rect(Rect::new(pos_x,
 				       pos_y,
 				       node_width as u32,

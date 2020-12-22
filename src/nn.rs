@@ -184,6 +184,16 @@ impl Network {
         }
     }
 
+    pub fn get_layer(&self, layer_num: u64) -> Vec<&Node>  {
+	let mut res: Vec<&Node> = Vec::new();
+	for n in self.nodes.iter() {
+	    if layer_num == n.layer { 
+		res.push(n);
+	    }
+	}
+	return res;
+    }
+
     #[allow(dead_code)]
     pub fn feed_input(&mut self, inputs: Vec<f64>) -> Vec<f64> {
         let mut output = Vec::new();
@@ -730,15 +740,25 @@ mod tests {
 
 	assert_eq!(node_per_layer(&network_two, 0).unwrap(), 2+1);
 	assert_eq!(node_per_layer(&network_two, 1).unwrap(), 3);
-
 	
 	let network_three = network_one.crossover(&network_two);
 
 	assert_eq!(node_per_layer(&network_three, 0).unwrap(), 2+1);
-
-
 	assert_eq!(node_per_layer(&network_three, 1).unwrap(), 3);
+
+	network_one.pretty_print();
+
         network_three.pretty_print();
-	assert_eq!(1,2 );
+    }
+
+    #[test]
+    fn test_get_layer() {
+	let network_one = Network::new(2, 3, true);
+
+	let p = network_one.get_layer(0);
+	assert_eq!(p.len(), 3);
+	for i in p.iter() {
+	    assert_eq!(i.layer, 0);
+	}
     }
 }
