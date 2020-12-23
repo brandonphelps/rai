@@ -18,14 +18,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "beanstalkd"
-version = "0.4.1"
-source = "git+https://github.com/brandonphelps/rust-beanstalkd?branch=master#3a5e22740abc89424ac96f80d6bffd40686c2431"
-dependencies = [
- "bufstream",
-]
-
-[[package]]
 name = "bitflags"
 version = "1.2.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -106,6 +98,12 @@ dependencies = [
  "openssl-sys",
  "url",
 ]
+
+[[package]]
+name = "hsl"
+version = "0.1.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "575fb7f1167f3b88ed825e90eb14918ac460461fdeaa3965c6a50951dee1c970"
 
 [[package]]
 name = "idna"
@@ -300,9 +298,9 @@ name = "rai"
 version = "0.1.0"
 dependencies = [
  "beanstalkc",
- "beanstalkd",
  "chrono",
  "git2",
+ "hsl",
  "more-asserts",
  "prgrs",
  "rand",

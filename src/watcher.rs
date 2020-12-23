@@ -77,18 +77,25 @@ fn draw_network(network: &nn::Network, canvas: &mut Canvas<Window>, x_offset: u3
 	    // the brain "thinking", attempt to have blue be "activated"
 	    // and red is not activated, should likely use the output of sigmoid instead of
 	    // this.
-	    if op == 100_000.0 {
-		canvas.set_draw_color(Color::RGB(255, 0, 0));
+	    // output row is special
+	    if row_x == network.layer_count  {
+		if op == 100_000.0 {
+		    canvas.set_draw_color(Color::RGB(255, 0, 0));
+		}
+		else {
+		    let color_scale = nn::sigmoid(op);
+		    if color_scale <= 0.5 {
+			canvas.set_draw_color(Color::RGB(0, 0, 255));
+		    } else {
+			canvas.set_draw_color(Color::RGB(255, 0, 0));
+		    }
+		}
 	    }
 	    else {
-	    // 	let red = (255 / 30) as u8 * op as u8;
-	    // 	let blue = (255 / (op as u8 + 1)) as u8;
-	    // 	canvas.set_draw_color(Color::RGB(red, blue, 0));
 		let color_scale = nn::sigmoid(op);
-		let red = (255.0 * (1.0 - color_scale)) as u8;
 		let blue = (255.0 * color_scale) as u8;
+		let red = 255 - blue;
 		canvas.set_draw_color(Color::RGB(red, 0, blue));
-
 	    }
 
 	    
@@ -245,21 +252,35 @@ pub fn main() {
 	    },
 	};
 
-	for (index, network) in network_list.iter().enumerate() { 
-	    if network.fitness() > 100.0 { 
+	let mut max_fitness = 0.0;
+	let mut max_network = None;
+	let mut index = 0;
+	for (c_index, network) in network_list.iter().enumerate() { 
+	    if network.fitness() > max_fitness {
+		max_fitness = network.fitness();
+		max_network = Some(network);
+		index = c_index;
+	    }
+	}
 
-		println!("Layer count: {}", network.layer_count);
-		for i in 0..network.layer_count {
-		    println!("Layer {} node count {}", i, nn::node_per_layer(&network, i as u64).unwrap());
-		}
-
+	//for (index, network) in network_list.iter().enumerate() { 
+	    
+	//if network.fitness() > 100.0 { 
+	match max_network {
+	    Some(network) => { 
 		println!("Playing generation: {}", gen);
 		println!("playing network: {} which has fitness of {}", index, network.fitness());
 		// let mut network = nn::Network::new(16, 3, true);
 		// network.add_node(2, 1.0, 2.0, None);
 		let mut copy_network = network.clone();
 		playthrough_asteroids(&mut copy_network, &mut canvas, &mut event_pump);
+	    },
+	    None => {
+		println!("No network to play");
 	    }
 	}
+
+	//     }
+	// }
     }
 }

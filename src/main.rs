@@ -10,12 +10,7 @@ use std::env;
 use std::fs;
 use std::{thread, time};
 
-extern crate beanstalkd;
-
 use beanstalkc::Beanstalkc;
-
-use beanstalkd::Beanstalkd;
-
 use serde::{Deserialize, Serialize};
 use serde_json::Result;
 
@@ -101,13 +96,6 @@ impl<'a> Scheduler<'a> {
     }
 }
 
-fn evaluate_individual(
-    beanstalk: &mut Beanstalkd,
-    individual: &mut nn::Network,
-    fitness_func: &dyn Fn(&mut nn::Network),
-) -> () {
-    fitness_func(individual);
-}
 
 fn run_ea(
     input_count: u32,

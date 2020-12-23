@@ -41,7 +41,9 @@ impl EaFuncMap {
 pub fn asteroids_thinker(player: &mut Network, game_state: &asteroids::GameState) -> asteroids::GameInput {
     let mut vision_input: [f64; 8] = [100000.0; 8];
 
-    // canvas.set_draw_color(Color::RGB(0, 255, 0));
+    // each item of vision is both a direction and distance to an asteroid.
+    // the distance is from the ship, the network will have to figure out that
+    // the order of the input is clockwise from north.
     for asteroid_dist in 1..30 {
         for ast in game_state.asteroids.iter() {
             let mut vision_c = collision::Circle {
@@ -132,14 +134,14 @@ pub fn asteroids_thinker(player: &mut Network, game_state: &asteroids::GameState
     };
 
     // do thinking
-    if output[2] >= 0.5 {
+    if output[2] <= 0.5 {
         game_input.thrusters = true;
     }
 
-    if output[1] >= 0.5 {
+    if output[1] <= 0.5 {
         game_input.shoot = true;
     }
-    if output[0] >= 0.5 {
+    if output[0] <= 0.5 {
 	game_input.rotation -= 0.39268;
     }
     else {
@@ -152,19 +154,11 @@ pub fn asteroids_thinker(player: &mut Network, game_state: &asteroids::GameState
 
 #[cfg(not(feature = "gui"))]
 pub fn asteroids_fitness(player: &mut Network) -> () {
-    let mut _fitness = 0.0;
-    // self.network.pretty_print();
-
-
     let mut asteroids_game = asteroids::game_init();
 
-    // each item of vision is both a direction and distance to an asteroid.
-    // the distance is from the ship, the network will have to figure out that
-    // the order of the input is clockwise from north.
     let mut duration = 0;
     let max_turns = 100_000;
-    let mut i = 0;
-    while i < max_turns {
+    for i in 0..max_turns {
         // vision
 	let game_input = asteroids_thinker(player, &asteroids_game);
 
@@ -175,19 +169,15 @@ pub fn asteroids_fitness(player: &mut Network) -> () {
 
         if asteroids_game.game_over {
             if asteroids_game.game_over_is_win {
-                player.fitness = 1000000.0;
+                player.fitness = asteroids_game.score as f64;
             } else {
                 player.fitness = asteroids_game.score as f64;
+		player.fitness -= i as f64 * 0.01;
             }
             break;
         }
-
         thread::sleep(Duration::from_millis(10));
         duration = start.elapsed().as_millis();
-	i += 1;
-    }
-    if i == max_turns {
-	player.fitness -= i as f64 * 0.01;
     }
     if player.fitness <= 0.0 {
 	player.fitness = 0.001;

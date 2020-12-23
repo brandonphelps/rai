@@ -1,6 +1,3 @@
-extern crate beanstalkd;
-
-use beanstalkd::Beanstalkd;
 use beanstalkc::Beanstalkc;
 use core::time::Duration;
 
