@@ -27,7 +27,6 @@ jobs:
         run: cargo install grcov
       - name: Checking directory
         run: ls 
-        run: ls target
       - name: Running grcov
         run: grcov ./target/debug -s . -t html --llvm --branch --ignore-not-existing -o ./target/debug/coverage
         
