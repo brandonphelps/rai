@@ -22,12 +22,11 @@ jobs:
           CARGO_INCREMENTAL: '0'
           RUSTFLAGS: '-Zprofile -Ccodegen-units=1 -Cinline-threshold=0 -Clink-dead-code -Coverflow-checks=off -Cpanic=abort -Zpanic_abort_tests'
           RUSTDOCFLAGS: '-Zprofile -Ccodegen-units=1 -Cinline-threshold=0 -Clink-dead-code -Coverflow-checks=off -Cpanic=abort -Zpanic_abort_tests'
-      - uses: actions-rs/grcov@v0.1
-      - name: test
-        run: ls /tmp
-
+      - name: Running grcov
+        run: grcov ./target/debug -s . -t html --llvm --branch --ignore-not-existing -o ./target/debug/coverage
+        
       - name: Upload artifact
         uses: actions/upload-artifact@v2
         with:
           name: grcov-report
-          path: /tmp/grcov-report*
+          path: ./target/debug/coverage/*
