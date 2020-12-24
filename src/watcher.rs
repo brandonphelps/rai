@@ -1,5 +1,6 @@
 use std::{env, fs};
 
+use hsl::HSL;
 
 use sdl2;
 use sdl2::pixels::Color;
@@ -21,6 +22,20 @@ use rasteroids::asteroids;
 mod neat;
 mod nn;
 mod distro;
+
+fn scale_value(y2: f64, y1: f64, x: f64) -> f64 {
+    return (((y2 - y1)  * x) + y1) as f64;
+}
+
+fn color_scale(r_one: u8, g_one: u8, b_one: u8, r_two: u8, g_two: u8, b_two: u8, scale: f64) -> (u8, u8, u8) {
+    let start_hsl = HSL::from_rgb(&[r_one, g_one, b_one]);
+    let end_hsl = HSL::from_rgb(&[r_two, g_two, b_two]);
+
+    let rest = HSL { h: scale_value(end_hsl.h, start_hsl.h, scale),
+		    s: scale_value(end_hsl.s, start_hsl.s, scale),
+		    l: scale_value(end_hsl.l, start_hsl.l, scale) };
+    return rest.to_rgb();
+}
 
 fn draw_network(network: &nn::Network, canvas: &mut Canvas<Window>, x_offset: u32, y_offset: u64) {
     let mut nodes: Vec<&nn::Node> = Vec::new();
@@ -63,6 +78,7 @@ fn draw_network(network: &nn::Network, canvas: &mut Canvas<Window>, x_offset: u3
 
     // draw nodes in network
     for row_x in 0..network.layer_count {
+	println!("Row: {}", row_x);
 	let nodes_per_layer = nn::node_per_layer(&network, row_x as u64).unwrap();
 
 	let input_layer = network.get_layer(row_x as u64);
@@ -78,24 +94,22 @@ fn draw_network(network: &nn::Network, canvas: &mut Canvas<Window>, x_offset: u3
 	    // and red is not activated, should likely use the output of sigmoid instead of
 	    // this.
 	    // output row is special
-	    if row_x == network.layer_count  {
+	    if row_x == network.layer_count-1  {
+		let color_scale_f = nn::sigmoid(op);
+		println!("Color: {}", color_scale_f);
+		let new_color = color_scale(255, 0, 0, 0,0, 255, color_scale_f);
+		canvas.set_draw_color(Color::RGB(new_color.0, new_color.1, new_color.2));
+	    }
+	    else {
 		if op == 100_000.0 {
 		    canvas.set_draw_color(Color::RGB(255, 0, 0));
 		}
-		else {
-		    let color_scale = nn::sigmoid(op);
-		    if color_scale <= 0.5 {
-			canvas.set_draw_color(Color::RGB(0, 0, 255));
-		    } else {
-			canvas.set_draw_color(Color::RGB(255, 0, 0));
-		    }
+		else
+		{
+		    let color_scale_f = nn::sigmoid(op);
+		    let new_color = color_scale(255, 0, 0, 0,0, 255, color_scale_f);
+		    canvas.set_draw_color(Color::RGB(new_color.0, new_color.1, new_color.2));
 		}
-	    }
-	    else {
-		let color_scale = nn::sigmoid(op);
-		let blue = (255.0 * color_scale) as u8;
-		let red = 255 - blue;
-		canvas.set_draw_color(Color::RGB(red, 0, blue));
 	    }
 
 	    
@@ -112,11 +126,12 @@ fn draw_network(network: &nn::Network, canvas: &mut Canvas<Window>, x_offset: u3
 
     // draw the lines
     for edge in network.edges.iter() {
-	let start_node = node_pos.get(&edge.from_node).unwrap();
-	let end_node = node_pos.get(&edge.to_node).unwrap();
-	
-	canvas.draw_line(Point::new(start_node.0, start_node.1),
-			 Point::new(end_node.0, end_node.1));
+	if edge.enabled { 
+	    let start_node = node_pos.get(&edge.from_node).unwrap();
+	    let end_node = node_pos.get(&edge.to_node).unwrap();
+	    canvas.draw_line(Point::new(start_node.0, start_node.1),
+			     Point::new(end_node.0, end_node.1));
+	}
     }
 }
 
