@@ -17,17 +17,21 @@ jobs:
       - uses: actions-rs/cargo@v1
         with:
           command: test
-          args: --no-fail-fast
+          args: --no-fail-fast --lib
         env:
           CARGO_INCREMENTAL: '0'
-          RUSTFLAGS: '-Zprofile -Ccodegen-units=1 -Cinline-threshold=0 -Clink-dead-code -Coverflow-checks=off -Cpanic=abort -Zpanic_abort_tests'
+          RUSTFLAGS: '-Zprofile -Ccodegen-units=1 -Copt-level=0 -Cinline-threshold=0 -Clink-dead-code -Coverflow-checks=off -Cpanic=abort -Zpanic_abort_tests'
           RUSTDOCFLAGS: '-Zprofile -Ccodegen-units=1 -Cinline-threshold=0 -Clink-dead-code -Coverflow-checks=off -Cpanic=abort -Zpanic_abort_tests'
-      - uses: actions-rs/grcov@v0.1
-      - name: test
-        run: ls /tmp
-
+          RUST_TEST_THREADS: '1'
+      - name: Installing grcov
+        run: cargo install grcov
+      - name: Checking directory
+        run: ls 
+      - name: Running grcov
+        run: grcov ./target/debug -s . -t html --llvm --branch --ignore-not-existing -o ./target/debug/coverage
+        
       - name: Upload artifact
         uses: actions/upload-artifact@v2
         with:
           name: grcov-report
-          path: /tmp/grcov-report*
+          path: ./target/debug/coverage/*
