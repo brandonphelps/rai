@@ -1,13 +1,12 @@
-
 // common utils amonst job doers and job creators
 
-use serde::{Deserialize, Serialize};
 use rasteroids::asteroids;
 use rasteroids::collision;
+use serde::{Deserialize, Serialize};
 
-use std::time::{Duration, Instant};
-use std::{thread};
 use crate::nn::Network;
+use std::thread;
+use std::time::{Duration, Instant};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct JobInfo {
@@ -17,28 +16,28 @@ pub struct JobInfo {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct JobResults  {
+pub struct JobResults {
     pub job_id: u128,
-    pub fitness: f64, 
+    pub fitness: f64,
 }
 
 #[allow(dead_code)]
-pub struct EaFuncMap {
+pub struct EaFuncMap {}
 
-}
-
-
-#[cfg(not(feature="gui"))]
+#[cfg(not(feature = "gui"))]
 impl EaFuncMap {
     #[allow(dead_code)]
     pub fn do_func(func_name: &String, indi: &mut Network) -> () {
-	if func_name.as_str() == "rasteroids" {
-	    asteroids_fitness(indi);
-	}
+        if func_name.as_str() == "rasteroids" {
+            asteroids_fitness(indi);
+        }
     }
 }
 
-pub fn asteroids_thinker(player: &mut Network, game_state: &asteroids::GameState) -> asteroids::GameInput {
+pub fn asteroids_thinker(
+    player: &mut Network,
+    game_state: &asteroids::GameState,
+) -> asteroids::GameInput {
     let mut vision_input: [f64; 8] = [100000.0; 8];
 
     // each item of vision is both a direction and distance to an asteroid.
@@ -142,15 +141,13 @@ pub fn asteroids_thinker(player: &mut Network, game_state: &asteroids::GameState
         game_input.shoot = true;
     }
     if output[0] <= 0.5 {
-	game_input.rotation -= 0.39268;
-    }
-    else {
-	game_input.rotation += 0.39268;
+        game_input.rotation -= 0.39268;
+    } else {
+        game_input.rotation += 0.39268;
     }
 
     return game_input;
 }
-
 
 #[cfg(not(feature = "gui"))]
 pub fn asteroids_fitness(player: &mut Network) -> () {
@@ -160,7 +157,7 @@ pub fn asteroids_fitness(player: &mut Network) -> () {
     let max_turns = 100_000;
     for i in 0..max_turns {
         // vision
-	let game_input = asteroids_thinker(player, &asteroids_game);
+        let game_input = asteroids_thinker(player, &asteroids_game);
 
         // process action based on thinking
         asteroids_game =
@@ -172,7 +169,7 @@ pub fn asteroids_fitness(player: &mut Network) -> () {
                 player.fitness = asteroids_game.score as f64;
             } else {
                 player.fitness = asteroids_game.score as f64;
-		player.fitness -= i as f64 * 0.01;
+                player.fitness -= i as f64 * 0.01;
             }
             break;
         }
@@ -180,7 +177,10 @@ pub fn asteroids_fitness(player: &mut Network) -> () {
         duration = start.elapsed().as_millis();
     }
     if player.fitness <= 0.0 {
-	player.fitness = 0.001;
+        player.fitness = 0.001;
     }
-    println!("Player fitness {} Asteroid score {}", player.fitness, asteroids_game.score);
+    println!(
+        "Player fitness {} Asteroid score {}",
+        player.fitness, asteroids_game.score
+    );
 }

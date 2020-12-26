@@ -1,6 +1,6 @@
 #![allow(clippy::unused_unit)]
 #![allow(dead_code)]
-use crate::nn::{Edge, Network, node_per_layer};
+use crate::nn::{Edge, Network};
 use rand::prelude::*;
 use rand::seq::SliceRandom;
 
@@ -77,11 +77,11 @@ impl<'a> Species<'a> {
     }
 
     pub fn total_fitness(&self) -> f64 {
-	let mut fitness = 0.0;
-	for ind in self.individuals.iter() {
-	    fitness += ind.fitness();
-	}
-	return fitness;
+        let mut fitness = 0.0;
+        for ind in self.individuals.iter() {
+            fitness += ind.fitness();
+        }
+        return fitness;
     }
 
     /// returns the number of excess and disjoint edges.
@@ -125,14 +125,14 @@ impl<'a> Species<'a> {
         let mut rng = rand::thread_rng();
 
         if rng.gen::<f64>() < 0.25 {
-	    // todo: have this randomly choose an individual.
-	    let p = *self.individuals.choose(&mut rng).unwrap();
-	    return p.clone();
+            // todo: have this randomly choose an individual.
+            let p = *self.individuals.choose(&mut rng).unwrap();
+            return p.clone();
         }
 
         let p_one = &self.individuals.choose(&mut rng).unwrap();
         let p_two = &self.individuals.choose(&mut rng).unwrap();
-	// todo: put mutation call here?
+        // todo: put mutation call here?
         return p_one.crossover(&p_two);
     }
 }
@@ -228,6 +228,7 @@ impl ConnHistory {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::nn::{node_per_layer, Edge, Network};    
 
     #[test]
     fn test_matches() {
@@ -265,32 +266,30 @@ mod tests {
     }
 
     #[test]
-    fn test_offspring_generate()  {
-	let mut species = Species::new(1.5, 2.0, 0.4);
+    fn test_offspring_generate() {
+        let mut species = Species::new(1.5, 2.0, 0.4);
 
-	let network_one = Network::new(3, 2, true);
-	let network_two = Network::new(3, 2, true);
-	
-	assert_eq!(node_per_layer(&network_one, 0).unwrap(), 4);
-	assert_eq!(node_per_layer(&network_one, 1).unwrap(), 2);
+        let network_one = Network::new(3, 2, true);
+        let network_two = Network::new(3, 2, true);
 
-	assert_eq!(node_per_layer(&network_two, 0).unwrap(), 4);
-	assert_eq!(node_per_layer(&network_two, 1).unwrap(), 2);
+        assert_eq!(node_per_layer(&network_one, 0).unwrap(), 4);
+        assert_eq!(node_per_layer(&network_one, 1).unwrap(), 2);
 
+        assert_eq!(node_per_layer(&network_two, 0).unwrap(), 4);
+        assert_eq!(node_per_layer(&network_two, 1).unwrap(), 2);
 
-	species.individuals.push(&network_one);
-	species.individuals.push(&network_two);
+        species.individuals.push(&network_one);
+        species.individuals.push(&network_two);
 
+        let mut inno_history = InnovationHistory {
+            global_inno_id: (3 * 2) as usize,
+            conn_history: vec![],
+        };
 
-	let mut inno_history = InnovationHistory {
-	    global_inno_id: (3 * 2) as usize,
-	    conn_history: vec![],
-	};
-
-	for i in 0..100 {
-	    let offspring = species.generate_offspring(&inno_history);
-	    assert_eq!(node_per_layer(&offspring, 0).unwrap(), 4);
-	    assert_eq!(node_per_layer(&offspring, 1).unwrap(), 2);
-	}
+        for i in 0..100 {
+            let offspring = species.generate_offspring(&inno_history);
+            assert_eq!(node_per_layer(&offspring, 0).unwrap(), 4);
+            assert_eq!(node_per_layer(&offspring, 1).unwrap(), 2);
+        }
     }
 }

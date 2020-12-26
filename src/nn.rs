@@ -70,16 +70,16 @@ pub struct Network {
 }
 
 pub fn node_per_layer(network: &Network, num_layer: u64) -> Option<u64> {
-    let mut node_count = 0; 
+    let mut node_count = 0;
     if num_layer > network.layer_count.into() {
-	return None;
-    } else { 
-	for n in network.nodes.iter() {
-	    if n.layer == num_layer {
-		node_count += 1;
-	    }
-	}
-	return Some(node_count);
+        return None;
+    } else {
+        for n in network.nodes.iter() {
+            if n.layer == num_layer {
+                node_count += 1;
+            }
+        }
+        return Some(node_count);
     }
 }
 
@@ -184,14 +184,14 @@ impl Network {
         }
     }
 
-    pub fn get_layer(&self, layer_num: u64) -> Vec<&Node>  {
-	let mut res: Vec<&Node> = Vec::new();
-	for n in self.nodes.iter() {
-	    if layer_num == n.layer { 
-		res.push(n);
-	    }
-	}
-	return res;
+    pub fn get_layer(&self, layer_num: u64) -> Vec<&Node> {
+        let mut res: Vec<&Node> = Vec::new();
+        for n in self.nodes.iter() {
+            if layer_num == n.layer {
+                res.push(n);
+            }
+        }
+        return res;
     }
 
     #[allow(dead_code)]
@@ -460,8 +460,8 @@ impl Network {
 
     pub fn crossover(&self, rhs: &Network) -> Network {
         let mut child_network = Network::new(rhs.input_node_count, rhs.output_node_count, false);
-	child_network.nodes.clear();
-	child_network.edges.clear();
+        child_network.nodes.clear();
+        child_network.edges.clear();
         child_network.layer_count = self.layer_count;
         child_network.bias_node_id = self.bias_node_id;
 
@@ -542,14 +542,14 @@ mod tests {
         let mut output = network.feed_input(vec![0.3]);
         assert_eq!(network.layer_count, 2);
         assert_eq!(output.len(), 3);
-	assert_eq!(node_per_layer(&network, 0).unwrap(), 2);
+        assert_eq!(node_per_layer(&network, 0).unwrap(), 2);
 
         network.add_node(2, 1.0, 2.0, None);
         output = network.feed_input(vec![0.4]);
         assert_eq!(network.layer_count, 3);
         assert_eq!(output.len(), 3);
 
-	assert_eq!(node_per_layer(&network, 0).unwrap(), 2);
+        assert_eq!(node_per_layer(&network, 0).unwrap(), 2);
 
         println!("Output of graph");
         network.pretty_print();
@@ -561,7 +561,7 @@ mod tests {
 
         network.add_connection(0, 1, 0.5, None);
 
-	assert_eq!(node_per_layer(&network, 0).unwrap(), 2);
+        assert_eq!(node_per_layer(&network, 0).unwrap(), 2);
 
         let input_value = vec![1.0, 2.0];
         let mut output_values = network.feed_input(input_value);
@@ -575,7 +575,7 @@ mod tests {
         println!("Second evaulation");
         output_values = network.feed_input(vec![1.0]);
         assert_eq!(output_values.len(), 1);
-	assert_eq!(node_per_layer(&network, 0).unwrap(), 2);
+        assert_eq!(node_per_layer(&network, 0).unwrap(), 2);
         assert_eq!(output_values[0], 0.6224593312018546);
     }
 
@@ -605,7 +605,7 @@ mod tests {
             println!("Checking: {} -> {}", edge.from_node, edge.to_node);
             assert!(from_node.layer < to_node.layer);
         }
-	assert_eq!(node_per_layer(&network, 0).unwrap(), 5)
+        assert_eq!(node_per_layer(&network, 0).unwrap(), 5)
     }
 
     #[test]
@@ -709,56 +709,53 @@ mod tests {
 
     #[test]
     fn test_nodes_per_layer() {
-	let mut network = Network::new(2, 3, true);
-	// +1 for bias node.
-	assert_eq!(node_per_layer(&network, 0).unwrap(), 2+1);
-	assert_eq!(node_per_layer(&network, 1).unwrap(), 3);
+        let mut network = Network::new(2, 3, true);
+        // +1 for bias node.
+        assert_eq!(node_per_layer(&network, 0).unwrap(), 2 + 1);
+        assert_eq!(node_per_layer(&network, 1).unwrap(), 3);
 
-	network.add_node(2, 1.0, 3.0, None);
-	assert_eq!(node_per_layer(&network, 0).unwrap(), 2+1);
-	assert_eq!(node_per_layer(&network, 1).unwrap(), 1);
-	assert_eq!(node_per_layer(&network, 2).unwrap(), 3);
+        network.add_node(2, 1.0, 3.0, None);
+        assert_eq!(node_per_layer(&network, 0).unwrap(), 2 + 1);
+        assert_eq!(node_per_layer(&network, 1).unwrap(), 1);
+        assert_eq!(node_per_layer(&network, 2).unwrap(), 3);
 
-	network.add_node(0, 2.0, 2.0, None);
-	assert_eq!(node_per_layer(&network, 0).unwrap(), 2+1);
-	assert_eq!(node_per_layer(&network, 2).unwrap(), 3);
+        network.add_node(0, 2.0, 2.0, None);
+        assert_eq!(node_per_layer(&network, 0).unwrap(), 2 + 1);
+        assert_eq!(node_per_layer(&network, 2).unwrap(), 3);
     }
-
 
     #[test]
-    fn test_max_nodes_of_layers() {
-	
-    }
+    fn test_max_nodes_of_layers() {}
 
     #[test]
     fn test_crossover() {
-	let network_one = Network::new(2, 3, true);
-	let network_two = Network::new(2, 3, true);
+        let network_one = Network::new(2, 3, true);
+        let network_two = Network::new(2, 3, true);
 
-	assert_eq!(node_per_layer(&network_one, 0).unwrap(), 2+1);
-	assert_eq!(node_per_layer(&network_one, 1).unwrap(), 3);
+        assert_eq!(node_per_layer(&network_one, 0).unwrap(), 2 + 1);
+        assert_eq!(node_per_layer(&network_one, 1).unwrap(), 3);
 
-	assert_eq!(node_per_layer(&network_two, 0).unwrap(), 2+1);
-	assert_eq!(node_per_layer(&network_two, 1).unwrap(), 3);
-	
-	let network_three = network_one.crossover(&network_two);
+        assert_eq!(node_per_layer(&network_two, 0).unwrap(), 2 + 1);
+        assert_eq!(node_per_layer(&network_two, 1).unwrap(), 3);
 
-	assert_eq!(node_per_layer(&network_three, 0).unwrap(), 2+1);
-	assert_eq!(node_per_layer(&network_three, 1).unwrap(), 3);
+        let network_three = network_one.crossover(&network_two);
 
-	network_one.pretty_print();
+        assert_eq!(node_per_layer(&network_three, 0).unwrap(), 2 + 1);
+        assert_eq!(node_per_layer(&network_three, 1).unwrap(), 3);
+
+        network_one.pretty_print();
 
         network_three.pretty_print();
     }
 
     #[test]
     fn test_get_layer() {
-	let network_one = Network::new(2, 3, true);
+        let network_one = Network::new(2, 3, true);
 
-	let p = network_one.get_layer(0);
-	assert_eq!(p.len(), 3);
-	for i in p.iter() {
-	    assert_eq!(i.layer, 0);
-	}
+        let p = network_one.get_layer(0);
+        assert_eq!(p.len(), 3);
+        for i in p.iter() {
+            assert_eq!(i.layer, 0);
+        }
     }
 }
