@@ -44,15 +44,18 @@ pub struct GAParams {
 pub struct GAState<IndividualT> where IndividualT : IndividualTrait {
     params: GAParams,
     // fitness_func: Box<dyn Fn(&IndividualT) -> f32>,
-    on_start: fn(&mut Self) -> f32,
-    on_fitness: fn(&mut Self, &IndividualT) -> f32,
+    // on_start: fn(&mut Self, &mut Vec<IndividualT>) -> f32,
+    // on_fitness: fn(&mut Self, &IndividualT) -> f32,
+    on_start: fn(&mut Vec<IndividualT>) -> f32,
+    on_fitness: fn(&IndividualT) -> f32,
+
 }
 
-fn empty_start<T>(ga: &mut GAState<T>) -> f32 where T: IndividualTrait {
+fn empty_start<T>( indi: &mut Vec<T> ) -> f32 where T: IndividualTrait {
     0.0
 }
 
-fn empty_fitness<T>(ga: &mut GAState<T>, ind: &T) -> f32 where T: IndividualTrait {
+fn empty_fitness<T>( ind: &T) -> f32 where T: IndividualTrait {
     0.0
 }
 
@@ -81,19 +84,19 @@ fn on_fitness<T>(ga_state: &mut GAState<T>, individual: &T) -> f32 where T: Indi
 }
 
 
-pub fn run_ea<T>(gen_count: u16, pop_size: u16) -> ()
+pub fn run_ea<T>(gen_count: u16, pop_size: u16, 
+		 ga_state: &mut GAState::<T>) -> ()
 where T: IndividualTrait 
 {
     let mut individuals = Vec::<T>::new();
-    // startup & initialization
-    let mut ga_state = GAState::<T>::new(pop_size as usize);
 
-    (ga_state.on_start)(&mut ga_state);
+    // startup & initialization
+    (ga_state.on_start)(&mut individuals);
     // produce generation (each individual should provide #[default]
     // calculate fitness
     
     for individual in individuals.iter() {
-	(ga_state.on_fitness)(&mut ga_state, &individual);
+	(ga_state.on_fitness)(&individual);
     }
     // }
     // selection of parents
@@ -117,12 +120,24 @@ mod tests {
 	w4: f32,
 	w5: f32,
 	w6: f32,
+
+	x1: f32,
+	x2: f32,
+	x3: f32,
+	x4: f32,
+	x5: f32,
+	x6: f32,
     }
     
-    impl Default for test_individual {
+    impl IndividualTrait for test_individual {
 	fn default() -> Self {
 	    println!("Generating default individual");
-	    test_individual { w1: 0.0, w2: 0.0, w3 : 0.0, w4: 0.0, w5: 0.0, w6: 0.0 }
+	    test_individual { w1: 0.0, w2: 0.0, w3 : 0.0, w4: 0.0, w5: 0.0, w6: 0.0,
+			      x1: 0.0, x2: 0.0, x3 : 0.0, x4: 0.0, x5: 0.0, x6: 0.0 }
+	}
+
+	fn fitness(&self) -> f32 {
+	    self.w1 * self.x1 + self.w2 * self.x2 + self.w3 * self.x3 + self.w4 * self.x4 + self.w5 * self.x5 + self.w6 * self.x6
 	}
     }
 
