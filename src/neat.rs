@@ -228,7 +228,7 @@ impl ConnHistory {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::nn::{node_per_layer, Edge, Network};    
+    use crate::nn::{node_per_layer, Edge, Network};
 
     #[test]
     fn test_matches() {

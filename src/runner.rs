@@ -8,9 +8,7 @@ mod neat;
 mod nn;
 
 #[no_mangle]
-pub extern fn do_jerb(job_name: *const u8, job_name_leng: u64) -> () {
-
-}
+pub extern "C" fn do_jerb(job_name: *const u8, job_name_leng: u64) -> () {}
 
 fn main() -> () {
     let mut beanstalkd = Beanstalkc::new()
