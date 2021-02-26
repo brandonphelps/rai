@@ -144,6 +144,11 @@ pub struct InnovationHistory {
 }
 
 impl InnovationHistory {
+    pub fn new(input_count: usize, output_count: usize) -> Self {
+	InnovationHistory { global_inno_id: (input_count * output_count),
+			    conn_history: vec![] }
+    }
+
     pub fn get_inno_number(
         &mut self,
         network_inno_ids: &Vec<u64>,

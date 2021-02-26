@@ -1,6 +1,9 @@
 #![allow(clippy::unused_unit)]
 #![allow(dead_code)]
 
+use rand::prelude::*;
+use rand::seq::SliceRandom;
+
 pub trait Individual {
     // can this return just a numeric traited instance?
     // post calculated fitness.
@@ -25,14 +28,17 @@ pub trait Fitness {
     fn fitness(&self) -> f32;
 }
 
-pub trait IndividualTrait {
+pub trait IndividualTrait: Clone {
     fn fitness(&self) -> f32;
     fn default() -> Self;
+    fn crossover(&self, other: &Self) -> Self;
+    fn mutate(&self) -> Self;
 }
 
 /// @brief container class for the various parameters.
 pub struct GAParams {
     pub pop_size: usize,
+    
     /// Number of generations to run the simulation for.
     pub generation_count: usize,
     pub parent_selection_count: usize,
@@ -54,30 +60,68 @@ pub struct GAFunctors<IndividualT, Storage>
 where
     IndividualT: IndividualTrait,
 {
-    // fitness_func: Box<dyn Fn(&IndividualT) -> f32>,
     // on_start: fn(&mut Self, &mut Vec<IndividualT>) -> f32,
     // on_fitness: fn(&mut Self, &IndividualT) -> f32,
-    on_start: fn(&mut Vec<IndividualT>) -> f32,
-    on_fitness: fn(&IndividualT) -> f32,
+    on_start: fn(params: &GAParams, &mut Vec<IndividualT>),
+
+    // do we even need this at all? if IndividualT is met or constrained to contain
+    //  a fitness func then that is there. 
+    // do we need GAParams here?
+    on_fitness: fn(params: &GAParams, &IndividualT) -> f32,
     on_parents: fn(&mut Storage, parents: &Vec<&IndividualT>) -> f32,
+    on_crossover: fn(&mut Storage, parents: &Vec<&IndividualT>) -> Vec<IndividualT>,
+    on_mutation: fn(&mut Storage, newly_created_individuals: &Vec<&IndividualT>) -> f32,
+    // on_mutation: fn(&mut Storage, newly_created_individuals, offspring_mutation_size);
+    // on_generation: fn(&mut Storage);
+
+    // on_stop(last_pop_fitness);
 }
 
-fn empty_start<T>(_indi: &mut Vec<T>) -> f32
+fn empty_start<T>(params: &GAParams, indi: &mut Vec<T>)
 where
     T: IndividualTrait,
 {
-    0.0
+    for _i in 0..params.pop_size {
+	indi.push(T::default());
+    }
+
+    assert_eq!(indi.len(), params.pop_size);
 }
 
 
-fn empty_fitness<T>(_ind: &T) -> f32
+fn empty_fitness<T>(params: &GAParams, individual: &T) -> f32
 where
     T: IndividualTrait,
 {
-    0.0
+    individual.fitness()
 }
 
 fn empty_parents<T, S>(_storage: &mut S, _parents: &Vec<&T>) -> f32 {
+    0.0
+}
+
+fn empty_crossover<T, S>(_storage: &mut S, _parents: &Vec<&T>) -> Vec<T>
+where
+    T: IndividualTrait
+{
+    let mut new_generation = Vec::<T>::new();
+
+    let mut rng = rand::thread_rng();
+
+    if rng.gen::<f64>() < 0.25 {
+	let p = *_parents.choose(&mut rng).unwrap();
+	new_generation.push(p.clone());
+    }
+
+    let p_one = _parents.choose(&mut rng).unwrap();
+    let p_two = _parents.choose(&mut rng).unwrap();
+
+    new_generation.push(p_one.crossover(&p_two));
+
+    return new_generation;
+}
+
+fn empty_mutation<T, S>(_storage: &mut S, _new_individuals: &Vec<&T>) -> f32 {
     0.0
 }
 
@@ -90,8 +134,18 @@ where
             on_start: empty_start,
             on_fitness: empty_fitness,
             on_parents: empty_parents,
+	    on_crossover: empty_crossover,
+	    on_mutation: empty_mutation,
         }
     }
+}
+
+pub fn run_ea_simple<T>(ga_params: &GAParams,
+			on_start: impl Fn()) -> ()
+where
+    T: IndividualTrait
+{
+    
 }
 
 // todo: need some generic global storage for some EA systems.
@@ -106,14 +160,14 @@ where
     let mut individuals = Vec::<T>::new();
 
     // startup & initialization
-    (ga_functors.on_start)(&mut individuals);
+    (ga_functors.on_start)(&ga_params, &mut individuals);
     // produce generation (each individual should provide #[default]
     // calculate fitness
 
     for _current_gen in 0..ga_params.generation_count {
         let mut fitness_vec = Vec::<f32>::new();
         for individual in individuals.iter() {
-            let tmp = (ga_functors.on_fitness)(&individual);
+            let tmp = (ga_functors.on_fitness)(&ga_params, &individual);
             fitness_vec.push(tmp);
         }
 
@@ -128,10 +182,10 @@ where
         }
 
         (ga_functors.on_parents)(ga_storage, &parents);
+
+	(ga_functors.on_crossover)(ga_storage, &parents);
     }
     // }
-    // selection of parents
-    // on_parents ()
     // do cross over
     // on_crossover
     // do mutation
@@ -143,6 +197,7 @@ where
 mod tests {
     use super::*;
 
+    #[derive(Clone)]
     struct test_individual {
         w1: f32,
         w2: f32,
@@ -163,12 +218,14 @@ mod tests {
         fn default() -> Self {
             println!("Generating default individual");
             test_individual {
-                w1: 0.0,
-                w2: 0.0,
-                w3: 0.0,
-                w4: 0.0,
-                w5: 0.0,
-                w6: 0.0,
+                w1: 3.0,
+                w2: 1.0,
+                w3: 5.0,
+                w4: 5.0,
+                w5: 1.0,
+                w6: 3.0,
+
+		// todo: make these random.
                 x1: 0.0,
                 x2: 0.0,
                 x3: 0.0,
@@ -185,28 +242,36 @@ mod tests {
                 + self.w4 * self.x4
                 + self.w5 * self.x5
                 + self.w6 * self.x6
-        }
-    }
+	}
 
-    fn test_on_start<T>(pop: &mut Vec<T>) -> f32
-    where
-        T: IndividualTrait,
-    {
-        for i in 0..100 {
-            pop.push(T::default());
-        }
-        return 0.0;
-    }
+	fn mutate(&self) -> Self {
+	    let mut f = self.clone();
+	    f.x1 += 0.02;
+	    f.x2 -= 0.1;
+	    f.x3 += 0.20;
+	    f.x4 += 0.21;
+	    f.x5 += 0.30;
+	    f.x6 += 0.32;
+	    return f;
+	}
 
-    fn test_on_fitness<T>(individ: &T) -> f32
-    where
-        T: IndividualTrait,
-    {
-        return individ.fitness();
+	fn crossover(&self, other: &Self) -> Self {
+	    let mut f = self.clone();
+	    f.x1 = (other.x1 + self.x1 ) / 2.0;
+	    f.x2 = (other.x2 + self.x2 ) / 2.0;
+	    f.x3 = (other.x3 + self.x3 ) / 2.0;
+	    f.x3 = (other.x3 + self.x3 ) / 2.0;
+	    f.x5 = (other.x5 + self.x5 ) / 2.0;
+	    f.x6 = (other.x6 + self.x6 ) / 2.0;
+	    return f;
+	}
     }
 
     struct CustomStorage {
         pub gen_count: u32,
+
+	// initial value of weight two. 
+	pub init_w2: f32,
     }
 
     impl GAStorage for CustomStorage {}
@@ -229,12 +294,11 @@ mod tests {
             generation_count: 10,
             parent_selection_count: 2,
         };
-        let mut storage = CustomStorage { gen_count: 0 };
-        ga_functors.on_start = test_on_start;
-        ga_functors.on_fitness = test_on_fitness;
+        let mut storage = CustomStorage { gen_count: 0, init_w2: 3.0 };
         ga_functors.on_parents = test_on_parents;
         run_ea::<test_individual, CustomStorage>(&ga_params,
-						 &mut storage, &mut ga_functors);
+						 &mut storage,
+						 &mut ga_functors);
 
 	println!("Gen Count: {}", storage.gen_count);
 
