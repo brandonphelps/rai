@@ -22,6 +22,7 @@ mod evo_algo;
 mod hrm;
 mod neat;
 mod nn;
+mod asteroids_individual;
 
 use std::collections::HashMap;
 use std::time::{Duration, Instant};
