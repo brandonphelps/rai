@@ -114,7 +114,7 @@ fn run_ea(
     pop_count: u64,
     iter_count: u64,
     results_folder: String,
-    fitness_func: &impl Fn(&mut nn::Network),
+    fitness_func: &impl Fn(&nn::Network) -> f64,
 ) -> () {
     let mut average_history_per_iter: Vec<f64> = Vec::new();
 
@@ -129,7 +129,8 @@ fn run_ea(
     };
 
     // run the first one locally.
-    fitness_func(&mut individual);
+    let fitness_res = fitness_func(&individual);
+    individual.fitness = fitness_res;
 
     for _ in 0..pop_count + 1 {
         specific_pop.push(individual.clone());
@@ -137,7 +138,7 @@ fn run_ea(
 
     for generation in 0..iter_count {
         let gen_folder = format!("{}/{}", results_folder, generation);
-        fs::create_dir_all(gen_folder.clone());
+        fs::create_dir_all(gen_folder.clone()).expect("Failed to create results folder");
 
         println!("Generation: {}", generation);
 
@@ -153,12 +154,11 @@ fn run_ea(
         let mut offspring = Vec::new();
 
         // there is prob some vector function for this or something with a closure?
-        let mut average_fit = 0.0;
         let mut total_fitness = 0.0;
         for ind in specific_pop.iter() {
             total_fitness += ind.fitness();
         }
-        average_fit = total_fitness / (specific_pop.len() as f64);
+        let average_fit = total_fitness / (specific_pop.len() as f64);
 
         println!("Fitness ({}), ({})", total_fitness, average_fit);
 
@@ -167,8 +167,7 @@ fn run_ea(
         for spec in species.iter() {
             // add in the champ of the species in.
             offspring.push(spec.champion.unwrap().clone());
-            let mut spec_fitness = spec.total_fitness();
-
+            let spec_fitness = spec.total_fitness();
             let num_children = num_child_to_make(total_fitness, spec_fitness, pop_count);
 
             for _child_num in 0..num_children {

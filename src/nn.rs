@@ -55,6 +55,7 @@ impl Edge {
 pub struct Network {
     // first I nodes are input nodes
     // after which the output nodes are next.
+    // todo: determine which of these we can remove from public
     pub nodes: Vec<Node>,
     pub edges: Vec<Edge>,
 
@@ -62,7 +63,8 @@ pub struct Network {
     pub output_node_count: u32,
     pub layer_count: u32,
     pub bias_node_id: u64,
-    pub fitness: f64,
+    // can we remove this? networks don't need a fitness, EA items do however
+    pub fitness: f64, 
 }
 
 pub fn node_per_layer(network: &Network, num_layer: u64) -> Option<u64> {
