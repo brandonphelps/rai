@@ -24,12 +24,27 @@ mod nn;
 use rasteroids::asteroids;
 use rasteroids::collision;
 
-use crate::scheduler::Scheduler;
+use crate::scheduler::{Scheduler, LocalScheduler};
 
 use std::collections::HashMap;
 use std::time::Instant;
 
 use std::sync::atomic::{AtomicUsize, Ordering};
+
+
+
+
+/// Given the total fitness, species' fitness, and total pop, generate a total number of
+/// items
+// todo: move this. 
+fn num_child_to_make(total_fitness: f64, species_fitness: f64, total_population: u64) -> u64 {
+    println!(
+        "Total: ({}) Spec: ({}) Pop: ({})",
+        total_fitness, species_fitness, total_population
+    );
+    assert!(total_fitness >= species_fitness);
+    ((species_fitness / total_fitness) * total_population as f64) as u64
+}
 
 fn run_ea(
     input_count: u32,
@@ -103,10 +118,12 @@ fn run_ea(
 
         let start = Instant::now();
         {
-            let mut schedu = Scheduler::new("192.168.1.77", 11300);
+            //let mut schedu = Scheduler::new("192.168.1.77", 11300);
+	    let mut schedu = LocalScheduler::new();
             for off_p in offspring.iter_mut() {
                 // fitness_func(&mut new_child);
                 // evaluate_individual(&mut new_child, fitness_func);
+		println!("Scheduling job");
                 schedu.schedule_job(off_p, &"rasteroids".to_string());
             }
 
@@ -147,24 +164,7 @@ fn run_ea(
     let _top = &mut specific_pop[0];
 }
 
-fn server_runner() -> () {
-    let mut schedu = Scheduler::new("192.168.1.77", 11300);
-
-    let mut nn = nn::Network::new(16, 3, true);
-    let mut indivs: Vec<nn::Network> = Vec::new();
-    for i in 0..1000 {
-        indivs.push(nn::Network::new(16, 3, true));
-    }
-
-    for p in indivs.iter_mut() {
-        schedu.schedule_job(p, &"rasteroids".to_string());
-    }
-
-    println!("Waiting for results");
-    schedu.wait();
-    println!("Results: {}", indivs[0].fitness());
-}
-
+#[cfg(not(feature="gui"))]
 fn main() -> std::result::Result<(), String> {
     let population_count = 400;
     let max_iter_count = 10000;
@@ -213,17 +213,6 @@ fn main() -> std::result::Result<(), String> {
     Ok(())
 }
 
-/// Given the total fitness, species' fitness, and total pop, generate a total number of
-/// items
-// todo: move this. 
-fn num_child_to_make(total_fitness: f64, species_fitness: f64, total_population: u64) -> u64 {
-    println!(
-        "Total: ({}) Spec: ({}) Pop: ({})",
-        total_fitness, species_fitness, total_population
-    );
-    assert!(total_fitness >= species_fitness);
-    ((species_fitness / total_fitness) * total_population as f64) as u64
-}
 
 // todo look at this bench amrk thing https://stackoverflow.com/questions/60916194/how-to-sort-a-vector-in-descending-order-in-rust
 

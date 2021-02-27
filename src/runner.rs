@@ -7,20 +7,15 @@ mod distro;
 mod neat;
 mod nn;
 
-#[no_mangle]
-pub extern fn do_jerb(job_name: *const u8, job_name_leng: u64) -> () {
-
-}
-
 fn main() -> () {
     let mut beanstalkd = Beanstalkc::new()
         .host("192.168.1.77")
         .port(11300)
         .connect()
-        .unwrap();
+        .expect("Failed to connect to beanstalkd server");
 
     beanstalkd.watch("rasteroids").unwrap();
-    beanstalkd.use_tube("results");
+    beanstalkd.use_tube("results").expect("Failed to watch results tube");
     loop {
         let mut current_job = beanstalkd.reserve().unwrap();
 
@@ -38,7 +33,7 @@ fn main() -> () {
         // or maybe run the job touch in another thread?
         distro::EaFuncMap::do_func(&result.name, &mut result.individual);
 
-        current_job.delete();
+        current_job.delete().expect("Failed remove job");
 
         println!("Fitness of individual: {}", result.individual.fitness());
 

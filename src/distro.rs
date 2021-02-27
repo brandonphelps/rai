@@ -41,7 +41,7 @@ impl EaFuncMap {
     }
     
     #[allow(dead_code)]
-    pub fn do_func(func_name: &String, indi: &Network) -> () {
+    pub fn do_func(func_name: &String, indi: &mut Network) -> () {
         if func_name.as_str() == "rasteroids" {
             asteroids_fitness(indi);
         }

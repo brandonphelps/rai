@@ -41,6 +41,7 @@ gui = ["sdl2"]
 [[bin]]
 name = "scheduler"
 path = "src/main.rs"
+required-features = []
 
 
 [[bin]]
