@@ -1,6 +1,10 @@
 #![allow(unused_imports)]
 #![allow(dead_code)]
 #![allow(deprecated)]
+
+// dono why this is needed for the doc comamnd to work. 
+#![feature(intra_doc_pointers)]
+
 use prgrs::{Length, Prgrs};
 use rand::distributions::{Distribution, Normal};
 use rand::prelude::*;

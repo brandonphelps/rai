@@ -5,12 +5,9 @@ use std::fmt::Debug;
 use std::cmp::Reverse;
 use std::collections::HashMap;
 
-// can we get rid of star here? 
+// can we get rid of star here?
 use rand::prelude::*;
 use rand::seq::SliceRandom;
-
-
-
 
 // use crate::asteroids_individual;
 
@@ -328,12 +325,12 @@ fn select_parents<'a, Individual>(params: &GAParams,
     return parents;
 }
 
-struct IndiFit<Individual> {
+struct IndiFit<Individual> where Individual: Debug {
     sol: Individual,
     fitness: f64,
 }
 
-impl<Individual> IndiFit<Individual> {
+impl<Individual> IndiFit<Individual> where Individual: Debug{
     fn new(sol: Individual) -> Self {
 	Self { sol: sol, fitness: 0.0 }
     }
@@ -342,7 +339,7 @@ impl<Individual> IndiFit<Individual> {
 fn run_ea<Individual, Storage>(params: &GAParams,
 			       on_fitness: fn(&Individual) -> f64,
 			       on_crossover: fn(&GAParams, &Vec<&Individual>) -> Vec<Individual>,
-			       on_mutate: fn(&mut Storage, &Individual) -> Individual) -> ()
+			       on_mutate: fn(&GAParams, &mut Storage, &Individual) -> Individual) -> ()
 where
     Individual: Default + Debug,
     Storage: Default
@@ -361,8 +358,7 @@ where
 	indivi.fitness = on_fitness(&indivi.sol);
     }
 
-    for current_generation in 0..params.generation_count { 
-
+    for _current_generation in 0..params.generation_count { 
 	let mut individuals_fitness = Vec::<f64>::new();
 	let mut indivds = Vec::<&Individual>::new();
 	
@@ -376,20 +372,40 @@ where
 
 	let offspring = on_crossover(&params, &parents);
 	for child in offspring.iter() {
-	    let tmp_p = on_mutate(&mut storage, child);
-	    println!("Mutated child: {:#?}", tmp_p);
+	    let tmp_p = on_mutate(&params, &mut storage, child);
 	    individuals.push(IndiFit::new(tmp_p));
 	}
 
 	println!("Evaluating the fitness of all the things");
+
 	// do fitness calculation. 
 	for indivi in individuals.iter_mut() {
 	    indivi.fitness = on_fitness(&indivi.sol);
 	}
 
+	println!("Culling the population");
+	let mut total_fitness = 0.0;
+	for i in individuals.iter() {
+	    total_fitness += i.fitness;
+	}
+
+	let average_fitness = total_fitness / params.pop_size as f64;
+
+	println!("Average fitness: {}", average_fitness);
+
 	// cull population
 	individuals.sort_by_key(|indivi| Reverse((indivi.fitness * 1000.0) as i128));
 	individuals.truncate(params.pop_size as usize);
+    }
+    individuals.sort_by_key(|indivi| Reverse((indivi.fitness * 1000.0) as i128));
+    println!("Top indivi");
+    let mut j = 0;
+    for i in individuals.iter() {
+	println!("{:#?} -> {}", i.sol, i.fitness);
+	j += 1;
+	if j > 10 {
+	    break;
+	}
     }
 }
     
@@ -418,6 +434,8 @@ mod tests {
 
     impl Default for TestIndividual {
 	fn default() -> Self {
+	    let mut rng = rand::thread_rng();
+	    
 	    Self {
 		w1: 4.0,
 		w2: -2.0,
@@ -425,12 +443,12 @@ mod tests {
 		w4: 5.0,
 		w5: -11.0,
 		w6: -4.7,
-		x1: 0.0,
-		x2: 0.0,
-		x3: 0.0,
-		x4: 0.0,
-		x5: 0.0,
-		x6: 0.0
+		x1: rng.gen::<f32>(),
+		x2: rng.gen::<f32>(),
+		x3: rng.gen::<f32>(),
+		x4: rng.gen::<f32>(),
+		x5: rng.gen::<f32>(),
+		x6: rng.gen::<f32>()
 	    }
 	}
     }
@@ -464,12 +482,19 @@ mod tests {
 		 + individual.w4 * individual.x4
 		 + individual.w5 * individual.x5
 		 + individual.w6 * individual.x6) as f64;
-
-	println!("Fitness: {:#?}: {}", individual, p);
 	return p;
     }
 
-    fn ind_mutate(storage: &mut GStorage, indivi: &TestIndividual) -> TestIndividual {
+    fn ind_mutate(params: &GAParams, storage: &mut GStorage, indivi: &TestIndividual) -> TestIndividual {
+
+	let mut params = Vec::<f64>::new();
+
+	for i in 0..6 {
+	    let new_x = 0.0;
+
+	}
+
+
 	TestIndividual {
 	    w1: indivi.w1,
 	    w2: indivi.w2,
@@ -488,34 +513,89 @@ mod tests {
 
     fn ind_crossover(params: &GAParams, parents: &Vec<&TestIndividual>) -> Vec<TestIndividual> {
 	let mut new_offspring = Vec::<TestIndividual>::new();
-	println!("Cross over");
 	let mut rng = rand::thread_rng();
 
-	for _ in 0..params.offspring_count { 
-	    if rng.gen::<f64>() < 0.5 {
-		println!("Cloning parent"); 
-		let p = *parents.choose(&mut rng).unwrap();
-		new_offspring.push(p.clone());
-	    } else {
-		println!("Gen new offspring");
+	while new_offspring.len() < params.offspring_count { 
+	    // single point crossover
+	    if rng.gen::<f64>() < 0.25 {
+		println!("Single point cross over");
+		let mut params_x: [f32; 6] = [0.0; 6];
 		let indivi_one = *parents.choose(&mut rng).unwrap();
 		let indivi_two = *parents.choose(&mut rng).unwrap();
 
-		let p = TestIndividual {
+		let point_p: u32 = rng.gen_range(0, 7);
+		// parent 1.
+		if point_p > 0 {
+		    params_x[0] = indivi_one.x1;
+		} else {
+		    params_x[0] = indivi_two.x1;
+		}
+		if point_p > 1 {
+		    params_x[1] = indivi_one.x2;
+		} else {
+		    params_x[1] = indivi_two.x2;
+		}
+		if point_p > 2 {
+		    params_x[2] = indivi_one.x3;
+		} else {
+		    params_x[2] = indivi_two.x3;
+		}
+		if point_p > 3 {
+		    params_x[3] = indivi_one.x4;
+		} else {
+		    params_x[3] = indivi_two.x4;
+		}
+		if point_p > 4 {
+		    params_x[4] = indivi_one.x5;
+		} else {
+		    params_x[4] = indivi_two.x5;
+		}
+		if point_p > 5 {
+		    params_x[5] = indivi_one.x6;
+		} else {
+		    params_x[5] = indivi_two.x6;
+		}
+
+		new_offspring.push( TestIndividual {
 		    w1: indivi_one.w1,
 		    w2: indivi_one.w2,
 		    w3: indivi_one.w3,
 		    w4: indivi_one.w4,
 		    w5: indivi_one.w5,
 		    w6: indivi_one.w6,
-		    x1: (indivi_one.x1 +  indivi_two.x1) / 2.0,
-		    x2: (indivi_one.x2 +  indivi_two.x2) / 2.0,
-		    x3: (indivi_one.x3 +  indivi_two.x3) / 2.0,
-		    x4: (indivi_one.x4 +  indivi_two.x4) / 2.0,
-		    x5: (indivi_one.x5 +  indivi_two.x5) / 2.0,
-		    x6: (indivi_one.x6 +  indivi_two.x6) / 2.0,
-		};
-		new_offspring.push(p);
+		    x1: params_x[0],
+		    x2: params_x[1],
+		    x3: params_x[2],
+		    x4: params_x[3],
+		    x5: params_x[4],
+		    x6: params_x[5],
+		});
+
+	    } else {
+		
+		if rng.gen::<f64>() < 0.5 {
+		    let p = *parents.choose(&mut rng).unwrap();
+		    new_offspring.push(p.clone());
+		} else {
+		    let indivi_one = *parents.choose(&mut rng).unwrap();
+		    let indivi_two = *parents.choose(&mut rng).unwrap();
+
+		    let p = TestIndividual {
+			w1: indivi_one.w1,
+			w2: indivi_one.w2,
+			w3: indivi_one.w3,
+			w4: indivi_one.w4,
+			w5: indivi_one.w5,
+			w6: indivi_one.w6,
+			x1: (indivi_one.x1 +  indivi_two.x1) / 2.0,
+			x2: (indivi_one.x2 +  indivi_two.x2) / 2.0,
+			x3: (indivi_one.x3 +  indivi_two.x3) / 2.0,
+			x4: (indivi_one.x4 +  indivi_two.x4) / 2.0,
+			x5: (indivi_one.x5 +  indivi_two.x5) / 2.0,
+			x6: (indivi_one.x6 +  indivi_two.x6) / 2.0,
+		    };
+		    new_offspring.push(p);
+		}
 	    }
 	}
 	return new_offspring;
@@ -524,10 +604,10 @@ mod tests {
     #[test]
     fn test_playground() {
         let ga_params = GAParams {
-            pop_size: 100,
+            pop_size: 50,
 	    offspring_count: 100,
-            generation_count: 2,
-            parent_selection_count: 20,
+            generation_count: 100,
+            parent_selection_count: 7,
         };
 
 	fn fitness_func_p(x: &mut (u8, u8)) -> f32 {
