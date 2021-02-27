@@ -10,7 +10,7 @@ use std::env;
 use std::fs;
 use std::{thread, time};
 
-use beanstalkc::Beanstalkc;
+
 use serde::{Deserialize, Serialize};
 use serde_json::Result;
 
@@ -27,7 +27,7 @@ use rasteroids::collision;
 use crate::scheduler::Scheduler;
 
 use std::collections::HashMap;
-use std::time::{Duration, Instant};
+use std::time::Instant;
 
 use std::sync::atomic::{AtomicUsize, Ordering};
 

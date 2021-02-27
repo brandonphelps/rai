@@ -1,10 +1,12 @@
-// is this needed? 
-extern crate beanstalkd;
+/// Contains structs and methods for "enqueing" arbitrary fitness functions
+/// and waiting for results.
 
-use beanstalkd::Beanstalkd;
 
-mod neat;
-mod nn;
+use std::time::Duration;
+use beanstalkc::Beanstalkc;
+
+use crate::distro;
+use crate::nn::Network;
 
 // todo: allow for different schedule types / connectors etc. 
 // one main option should be have "remote workers" vs local running. 
@@ -33,7 +35,7 @@ impl<'a> Scheduler<'a> {
     /// @param: fitness_func_name name of fitness function to run.
     pub fn schedule_job(
         &mut self,
-        individual: &'a mut nn::Network,
+        individual: &'a mut Network,
         fitness_func_name: &String,
     ) -> () {
         self.job_queue.use_tube(&fitness_func_name);
@@ -86,3 +88,6 @@ impl<'a> Scheduler<'a> {
         }
     }
 }
+
+
+// todo: add in some unit tests. 
