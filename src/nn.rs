@@ -194,6 +194,60 @@ impl Network {
         return res;
     }
 
+    pub fn feed_input_non_mut(self, inputs: Vec<f64>) -> Vec<f64> {
+	let mut output = Vec::new();
+
+
+	// todo: should use list instead?
+	// maybe map? 
+	let mut node_input_sums = Vec::<f64>::new();
+	let mut node_output_sums = Vec::<f64>::new();
+	for i in 0..self.nodes.len() {
+	    node_input_sums.push(0.0);
+	    node_output_sums.push(0.0);
+	}
+
+	// set the inputs. 
+	for i in inputs.iter() {
+	    node_input_sums.push(*i);
+	}
+
+
+	for i in 0..inputs.len() {
+	    node_output_sums[i] = inputs[i];
+	}
+
+	// set bias to true.
+	node_output_sums[self.bias_node_id as usize] = 1.0;
+
+
+	for layer in 0..self.layer_count {
+	    for node_index in 0..self.nodes.len() {
+		if self.nodes[node_index].layer == layer as u64 {
+		    if layer != 0 {
+			node_output_sums[node_index] = sigmoid(node_input_sums[node_index]);
+		    }
+
+		    for edge in self.edges.iter() {
+			if edge.from_node as usize == node_index {
+			    if edge.enabled {
+				let tmp_p = edge.weight * node_output_sums[node_index];
+				node_input_sums[edge.to_node as usize] += tmp_p;
+			    }
+			}
+		    }
+		}
+	    }
+	}
+
+	for output_i in 0..self.output_node_count {
+	    let o_node = node_output_sums[(output_i + self.input_node_count) as usize];
+	    output.push(o_node);
+	}
+
+	return output;
+    }
+
     #[allow(dead_code)]
     pub fn feed_input(&mut self, inputs: Vec<f64>) -> Vec<f64> {
         let mut output = Vec::new();
@@ -668,6 +722,22 @@ mod tests {
         }
     }
 
+    macro_rules! network_test_non_mut {
+        ($($name:ident: $value:expr,)*) => {
+            $(
+                #[test]
+                fn $name() {
+                    let (network, input, expected) = $value;
+                    let output = network.feed_input_non_mut(input);
+                    network.pretty_print();
+                    assert_eq!(output.len(), 1);
+                    assert!(output[0] > expected[0]);
+                    assert!(output[0] < expected[1]);
+                }
+            )*
+        }
+    }
+
     network_test! {
         xor_one_one: (construct_xor_network(), vec![1.0, 1.0], vec![-0.1, 0.1]),
         xor_zero_zero: (construct_xor_network(), vec![0.0, 0.0], vec![-0.1, 0.1]),
@@ -680,6 +750,20 @@ mod tests {
         and_zero_zero: (construct_and_network(), vec![0.0, 0.0], vec![-0.1, 0.1]),
 
     }
+
+    network_test_non_mut! {
+        xor_one_one: (construct_xor_network(), vec![1.0, 1.0], vec![-0.1, 0.1]),
+        xor_zero_zero: (construct_xor_network(), vec![0.0, 0.0], vec![-0.1, 0.1]),
+        xor_one_zero: (construct_xor_network(), vec![1.0, 0.0], vec![0.9, 1.1]),
+        xor_zero_one: (construct_xor_network(), vec![0.0, 1.0], vec![0.9, 1.1]),
+
+        and_one_one: (construct_and_network(), vec![1.0, 1.0], vec![0.9, 1.1]),
+        and_one_zero: (construct_and_network(), vec![1.0, 0.0], vec![-0.1, 0.1]),
+        and_zero_one: (construct_and_network(), vec![0.0, 1.0], vec![-0.1, 0.1]),
+        and_zero_zero: (construct_and_network(), vec![0.0, 0.0], vec![-0.1, 0.1]),
+
+    }
+
 
     #[test]
     fn test_fully_connected() {
