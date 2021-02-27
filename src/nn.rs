@@ -194,7 +194,7 @@ impl Network {
         return res;
     }
 
-    pub fn feed_input_non_mut(self, inputs: Vec<f64>) -> Vec<f64> {
+    pub fn feed_input_non_mut(&self, inputs: Vec<f64>) -> Vec<f64> {
 	let mut output = Vec::new();
 
 
@@ -723,11 +723,13 @@ mod tests {
     }
 
     macro_rules! network_test_non_mut {
-        ($($name:ident: $value:expr,)*) => {
+        ($($name:ident: $network:expr, $mid:expr, $end:expr,)*) => {
             $(
                 #[test]
                 fn $name() {
-                    let (network, input, expected) = $value;
+		    let network = $network;
+		    let input = $mid;
+		    let expected = $end;
                     let output = network.feed_input_non_mut(input);
                     network.pretty_print();
                     assert_eq!(output.len(), 1);
@@ -751,18 +753,30 @@ mod tests {
 
     }
 
-    network_test_non_mut! {
-        xor_one_one: (construct_xor_network(), vec![1.0, 1.0], vec![-0.1, 0.1]),
-        xor_zero_zero: (construct_xor_network(), vec![0.0, 0.0], vec![-0.1, 0.1]),
-        xor_one_zero: (construct_xor_network(), vec![1.0, 0.0], vec![0.9, 1.1]),
-        xor_zero_one: (construct_xor_network(), vec![0.0, 1.0], vec![0.9, 1.1]),
-
-        and_one_one: (construct_and_network(), vec![1.0, 1.0], vec![0.9, 1.1]),
-        and_one_zero: (construct_and_network(), vec![1.0, 0.0], vec![-0.1, 0.1]),
-        and_zero_one: (construct_and_network(), vec![0.0, 1.0], vec![-0.1, 0.1]),
-        and_zero_zero: (construct_and_network(), vec![0.0, 0.0], vec![-0.1, 0.1]),
-
+    #[test]
+    fn xor_one_one_mut() {
+	let network = construct_xor_network();
+	let input = vec![1.0, 1.0];
+	let expected = vec![-0.1, 0.1];
+        let output = network.feed_input_non_mut(input);
+        network.pretty_print();
+        assert_eq!(output.len(), 1);
+        assert!(output[0] > expected[0]);
+        assert!(output[0] < expected[1]);
     }
+
+    #[test]
+    fn xor_zero_zero_mut() {
+	let network = construct_xor_network();
+	let input = vec![0.0, 0.0];
+	let expected = vec![-0.1, 0.1];
+        let output = network.feed_input_non_mut(input);
+        network.pretty_print();
+        assert_eq!(output.len(), 1);
+        assert!(output[0] > expected[0]);
+        assert!(output[0] < expected[1]);
+    }
+
 
 
     #[test]
