@@ -482,7 +482,13 @@ mod tests {
 		 + individual.w4 * individual.x4
 		 + individual.w5 * individual.x5
 		 + individual.w6 * individual.x6) as f64;
-	return p;
+	let fitness = (44.0 - p).abs();
+	if fitness == 0.0 {
+	    return 100000000000000.0;
+	}
+	else{
+	    return 1.0 / fitness;
+	}
     }
 
     fn ind_mutate(params: &GAParams, storage: &mut GStorage, indivi: &TestIndividual) -> TestIndividual {
@@ -518,7 +524,6 @@ mod tests {
 	while new_offspring.len() < params.offspring_count { 
 	    // single point crossover
 	    if rng.gen::<f64>() < 0.25 {
-		println!("Single point cross over");
 		let mut params_x: [f32; 6] = [0.0; 6];
 		let indivi_one = *parents.choose(&mut rng).unwrap();
 		let indivi_two = *parents.choose(&mut rng).unwrap();
@@ -604,10 +609,10 @@ mod tests {
     #[test]
     fn test_playground() {
         let ga_params = GAParams {
-            pop_size: 50,
-	    offspring_count: 100,
-            generation_count: 100,
-            parent_selection_count: 7,
+            pop_size: 10,
+	    offspring_count: 200,
+            generation_count: 10000,
+            parent_selection_count: 10,
         };
 
 	fn fitness_func_p(x: &mut (u8, u8)) -> f32 {
