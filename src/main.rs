@@ -29,6 +29,7 @@ use std::time::{Duration, Instant};
 use std::sync::atomic::{AtomicUsize, Ordering};
 
 // fmt cares about build ability or something
+// todo: move this.
 struct Scheduler<'a> {
     current_jobs: Vec<(u128, &'a mut nn::Network)>,
     job_queue: Beanstalkc,
@@ -292,6 +293,7 @@ fn main() -> std::result::Result<(), String> {
 
 /// Given the total fitness, species' fitness, and total pop, generate a total number of
 /// items
+// todo: move this. 
 fn num_child_to_make(total_fitness: f64, species_fitness: f64, total_population: u64) -> u64 {
     println!(
         "Total: ({}) Spec: ({}) Pop: ({})",

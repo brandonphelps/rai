@@ -1,3 +1,8 @@
+/// This module contains data structures and functions for defining a nerual network
+/// i've taken a very "real object" approach and modeled it like with realish option,
+/// likely they'll be reduced to remove the unneeded objects 
+
+
 // can't use this here ?
 use crate::neat::InnovationHistory;
 use rand::prelude::*;

@@ -140,6 +140,8 @@ pub fn asteroids_thinker(
     if output[1] <= 0.5 {
         game_input.shoot = true;
     }
+
+    // todo: change this so that the ship doesn't need to turn.  
     if output[0] <= 0.5 {
         game_input.rotation -= 0.39268;
     } else {

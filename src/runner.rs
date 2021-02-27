@@ -30,7 +30,6 @@ fn main() -> () {
             Ok(r) => r,
             Err(t) => {
                 println!("Got an err on str: {}", str::from_utf8(&job_str).unwrap());
-
                 panic!(t);
             }
         };
