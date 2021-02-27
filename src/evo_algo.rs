@@ -337,6 +337,7 @@ impl<Individual> IndiFit<Individual> where Individual: Debug{
 }
 
 fn run_ea<Individual, Storage>(params: &GAParams,
+			       fitness_name: String,
 			       on_fitness: fn(&Individual) -> f64,
 			       on_crossover: fn(&GAParams, &Vec<&Individual>) -> Vec<Individual>,
 			       on_mutate: fn(&GAParams, &mut Storage, &Individual) -> Individual) -> ()
@@ -376,23 +377,17 @@ where
 	    individuals.push(IndiFit::new(tmp_p));
 	}
 
-	println!("Evaluating the fitness of all the things");
-
 	// do fitness calculation. 
 	for indivi in individuals.iter_mut() {
 	    indivi.fitness = on_fitness(&indivi.sol);
 	}
 
-	println!("Culling the population");
 	let mut total_fitness = 0.0;
 	for i in individuals.iter() {
 	    total_fitness += i.fitness;
 	}
 
 	let average_fitness = total_fitness / params.pop_size as f64;
-
-	println!("Average fitness: {}", average_fitness);
-
 	// cull population
 	individuals.sort_by_key(|indivi| Reverse((indivi.fitness * 1000.0) as i128));
 	individuals.truncate(params.pop_size as usize);
@@ -455,25 +450,6 @@ mod tests {
 
     #[derive(Default)]
     struct GStorage { }
-
-    struct FitnessFunctor<FitnessArgs, FitnessReturnT> {
-	name: String,
-	functor: fn(&mut GStorage, individul: &mut TestIndividual) -> f64,
-	functor_a: fn(&mut FitnessArgs) -> FitnessReturnT,
-    }
-
-    fn empty_f(storage: &mut GStorage, individul: &mut TestIndividual) -> f64 {
-	0.0
-    }
-
-    
-    impl<FA, FT> FitnessFunctor<FA,FT> {
-	pub fn new(name: String, functor_b : fn(&mut FA)->FT ) -> Self {
-	    Self { name: name, functor: empty_f,
-		   functor_a: functor_b
-	    }
-	}
-    }
     
     fn ind_fitness(individual: &TestIndividual) -> f64 {
         let p = (individual.w1 * individual.x1
@@ -614,21 +590,13 @@ mod tests {
             generation_count: 10000,
             parent_selection_count: 10,
         };
-
-	fn fitness_func_p(x: &mut (u8, u8)) -> f32 {
-	    0.0
-	}
-
-	let p = FitnessFunctor::<(u8, u8), f32>::new(String::from("fitness_func"),
-						     fitness_func_p);
 	
 	run_ea::<TestIndividual, GStorage>(&ga_params,
+					   String::from("math_fit"),
 					   ind_fitness,
 					   ind_crossover,
 					   ind_mutate);
-
 	assert!(false);
-
     }
 }
 
