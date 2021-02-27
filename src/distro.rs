@@ -8,6 +8,8 @@ use crate::nn::Network;
 use std::thread;
 use std::time::{Duration, Instant};
 
+use std::collections::HashMap;
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct JobInfo {
     pub name: String,
@@ -22,21 +24,37 @@ pub struct JobResults {
 }
 
 #[allow(dead_code)]
-pub struct EaFuncMap {}
+pub struct EaFuncMap {
+    func_map: HashMap<String, fn(&Network) -> f64>,
+}
 
 #[cfg(not(feature = "gui"))]
 impl EaFuncMap {
+    pub fn new() -> Self {
+	let mut hash_map: HashMap<String, fn(&Network) -> f64> = HashMap::new();
+
+	hash_map.insert(String::from("rasteroids"), asteroids_fitness);
+
+	EaFuncMap {
+	    func_map: hash_map,
+	}
+    }
+    
     #[allow(dead_code)]
     pub fn do_func(func_name: &String, indi: &mut Network) -> () {
         if func_name.as_str() == "rasteroids" {
             asteroids_fitness(indi);
         }
     }
+
+    pub fn run_fitness(&self, func_name: &String, indi: &Network) -> f64 {
+	(self.func_map.get(func_name).unwrap())(indi)
+    }
 }
 
 // given a network, and a game state generate the next updates inputs. 
 pub fn asteroids_thinker(
-    player: &mut Network,
+    player: &Network,
     game_state: &asteroids::GameState,
 ) -> asteroids::GameInput {
     let mut vision_input: [f64; 8] = [100000.0; 8];
@@ -141,6 +159,8 @@ pub fn asteroids_thinker(
     if output[1] <= 0.5 {
         game_input.shoot = true;
     }
+
+    // todo: change this so that the ship doesn't need to turn.  
     if output[0] <= 0.5 {
         game_input.rotation -= 0.39268;
     } else {
@@ -151,8 +171,9 @@ pub fn asteroids_thinker(
 }
 
 #[cfg(not(feature = "gui"))]
-pub fn asteroids_fitness(player: &mut Network) -> () {
+pub fn asteroids_fitness(player: &Network) -> f64 {
     let mut asteroids_game = asteroids::game_init();
+    let mut fitness: f64 = 0.0;
 
     let mut duration = 0;
     let max_turns = 100_000;
@@ -165,23 +186,21 @@ pub fn asteroids_fitness(player: &mut Network) -> () {
             asteroids::game_update(&asteroids_game, (duration as f64) * 0.01, &game_input);
         let start = Instant::now();
 
+
         if asteroids_game.game_over {
             if asteroids_game.game_over_is_win {
-                player.fitness = asteroids_game.score as f64;
+                fitness = asteroids_game.score as f64;
             } else {
-                player.fitness = asteroids_game.score as f64;
-                player.fitness -= i as f64 * 0.01;
+                fitness = asteroids_game.score as f64;
+                fitness -= i as f64 * 0.01;
             }
             break;
         }
         thread::sleep(Duration::from_millis(10));
         duration = start.elapsed().as_millis();
     }
-    if player.fitness <= 0.0 {
-        player.fitness = 0.001;
+    if fitness <= 0.0 {
+        fitness = 0.001;
     }
-    println!(
-        "Player fitness {} Asteroid score {}",
-        player.fitness, asteroids_game.score
-    );
+    return fitness;
 }
