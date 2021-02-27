@@ -30,8 +30,21 @@ use std::collections::HashMap;
 use std::time::Instant;
 
 use std::sync::atomic::{AtomicUsize, Ordering};
+use std::any::Any;
+use std::fmt::Debug;
 
+fn log<T: Any + Debug>(value: &T) {
+    let value_any = value as &dyn Any;
 
+    match value_any.downcast_ref::<String>() {
+	Some(as_string) => {
+	    println!("String ({}): {}", as_string.len(), as_string);
+	}
+	None => {
+	    println!("{:?}", value);
+	}
+    }
+}
 
 
 /// Given the total fitness, species' fitness, and total pop, generate a total number of
@@ -170,6 +183,10 @@ fn main() -> std::result::Result<(), String> {
     let max_iter_count = 10000;
     let input_node_count = 8;
     let output_node_count = 3;
+
+    log(&population_count);
+
+    return Ok(());
 
     let _args: Vec<_> = env::args().collect();
 
