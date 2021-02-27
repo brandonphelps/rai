@@ -197,10 +197,10 @@ impl Network {
         return res;
     }
 
+    // todo: allow for out param to be the output sum, so that drawing the network
+    // can display activation levels. 
     pub fn feed_input(&self, inputs: Vec<f64>) -> Vec<f64> {
 	let mut output = Vec::new();
-
-
 	// todo: should use list instead?
 	// maybe map? 
 	let mut node_input_sums = Vec::<f64>::new();

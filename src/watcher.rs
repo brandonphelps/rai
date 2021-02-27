@@ -98,7 +98,7 @@ fn draw_network(network: &nn::Network, canvas: &mut Canvas<Window>, x_offset: u3
             let pos_x = (((row_x * tile_width) + 5 as u32 * row_x) + x_offset) as i32;
             let pos_y = (((col_y * tile_height) + 5 * col_y) + y_offset) as i32;
 
-            let op = input_layer[col_y as usize].output_sum;
+            let op = 0.0; //input_layer[col_y as usize].output_sum;
 
             // draw up the output values so that we can see
             // the brain "thinking", attempt to have blue be "activated"
