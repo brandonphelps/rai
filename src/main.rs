@@ -196,6 +196,7 @@ fn run_ea(
 
             schedu.wait();
         }
+
         let duration = start.elapsed();
         if duration.as_secs() != 0 {
             println!(
