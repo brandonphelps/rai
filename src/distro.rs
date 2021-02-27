@@ -34,6 +34,7 @@ impl EaFuncMap {
     }
 }
 
+// given a network, and a game state generate the next updates inputs. 
 pub fn asteroids_thinker(
     player: &mut Network,
     game_state: &asteroids::GameState,

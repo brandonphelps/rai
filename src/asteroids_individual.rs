@@ -1,7 +1,7 @@
 
+
 use crate::nn::Network;
 use crate::neat::InnovationHistory;
-
 use crate::distro::asteroids_fitness;
 
 // dono bout this. 
@@ -11,7 +11,7 @@ use crate::distro::asteroids_fitness;
 // }
 
 #[derive(Clone)]
-struct AsteroidsPlayer {
+pub struct AsteroidsPlayer {
 
     // thing of interest.
     brain: Network,
@@ -20,7 +20,6 @@ struct AsteroidsPlayer {
     fitness_func: fn(&mut Network) -> (),
     fitness_func_name: String,
 }
-
 
 impl AsteroidsPlayer {
     pub fn new() -> Self {
@@ -35,12 +34,17 @@ impl AsteroidsPlayer {
 	asteroids_fitness(&mut self.brain);
 	return self.brain.fitness;
     }
+
+    pub fn mutate(&self, inno: &mut InnovationHistory) -> Self {
+	Self::new()
+    }
 }
 
 
-struct AsteroidsStorage  {
+pub struct AsteroidsStorage  {
     inno_history: InnovationHistory,
 }
+
 
 impl AsteroidsStorage {
     pub fn new() -> Self {
