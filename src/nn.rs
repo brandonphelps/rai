@@ -14,16 +14,12 @@ fn matching_edge(parent2: &Network, inno_id: u64) -> Option<&Edge> {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Node {
-    pub input_sum: f64,
-    pub output_sum: f64,
-    pub layer: u64,
+    layer: u64,
 }
 
 impl Node {
     pub fn clone(&self) -> Node {
         Node {
-            input_sum: 0.0,
-            output_sum: 0.0,
             layer: self.layer,
         }
     }
@@ -194,7 +190,7 @@ impl Network {
         return res;
     }
 
-    pub fn feed_input_non_mut(&self, inputs: Vec<f64>) -> Vec<f64> {
+    pub fn feed_input(&self, inputs: Vec<f64>) -> Vec<f64> {
 	let mut output = Vec::new();
 
 
@@ -202,7 +198,7 @@ impl Network {
 	// maybe map? 
 	let mut node_input_sums = Vec::<f64>::new();
 	let mut node_output_sums = Vec::<f64>::new();
-	for i in 0..self.nodes.len() {
+	for _ in 0..self.nodes.len() {
 	    node_input_sums.push(0.0);
 	    node_output_sums.push(0.0);
 	}
@@ -211,7 +207,6 @@ impl Network {
 	for i in inputs.iter() {
 	    node_input_sums.push(*i);
 	}
-
 
 	for i in 0..inputs.len() {
 	    node_output_sums[i] = inputs[i];
@@ -248,62 +243,9 @@ impl Network {
 	return output;
     }
 
-    #[allow(dead_code)]
-    pub fn feed_input(&mut self, inputs: Vec<f64>) -> Vec<f64> {
-        let mut output = Vec::new();
-        for i in 0..inputs.len() {
-            self.nodes[i as usize].output_sum = inputs[i as usize];
-        }
-
-        // set bias to true
-        self.nodes[self.bias_node_id as usize].output_sum = 1.0;
-
-        // self.pretty_print();
-
-        for layer in 0..self.layer_count {
-            // println!("Feeding layer: {}", layer);
-            for node_index in 0..self.nodes.len() {
-                if self.nodes[node_index].layer == layer as u64 {
-                    // set the output sum of the node so it can be used as input for next layer
-                    if layer != 0 {
-                        // println!("output: {} of {} {}", sigmoid(self.nodes[node_index].input_sum), node_index, self.nodes[node_index].input_sum);
-                        self.nodes[node_index].output_sum =
-                            sigmoid(self.nodes[node_index].input_sum);
-                    }
-
-                    //
-                    for edge in self.edges.iter() {
-                        if edge.from_node as usize == node_index {
-                            if edge.enabled {
-                                let tmp_p = edge.weight * self.nodes[node_index].output_sum;
-
-                                self.nodes[edge.to_node as usize].input_sum += tmp_p;
-                                // println!("{} -> {}, ({}) = {}", edge.from_node, edge.to_node, tmp_p, self.nodes[edge.to_node as usize].input_sum);
-                            }
-                        }
-                    }
-                }
-            }
-            // self.pretty_print()
-        }
-
-        for output_i in 0..self.output_node_count {
-            let o_node = &self.nodes[(output_i + self.input_node_count) as usize];
-            output.push(o_node.output_sum);
-        }
-
-        // reset all the input sums for next feed
-        for node in self.nodes.iter_mut() {
-            node.input_sum = 0.0;
-        }
-
-        return output;
-    }
 
     pub fn new_node(&mut self, layer: u64) -> u64 {
         let m = Node {
-            input_sum: 0.0,
-            output_sum: 0.0,
             layer: layer,
         };
         self.nodes.push(m);
@@ -382,8 +324,6 @@ impl Network {
 
         // new node.
         let m = Node {
-            input_sum: 0.0,
-            output_sum: 0.0,
             layer: current_node_layer,
         };
         self.nodes.push(m);
@@ -722,24 +662,6 @@ mod tests {
         }
     }
 
-    macro_rules! network_test_non_mut {
-        ($($name:ident: $network:expr, $mid:expr, $end:expr,)*) => {
-            $(
-                #[test]
-                fn $name() {
-		    let network = $network;
-		    let input = $mid;
-		    let expected = $end;
-                    let output = network.feed_input_non_mut(input);
-                    network.pretty_print();
-                    assert_eq!(output.len(), 1);
-                    assert!(output[0] > expected[0]);
-                    assert!(output[0] < expected[1]);
-                }
-            )*
-        }
-    }
-
     network_test! {
         xor_one_one: (construct_xor_network(), vec![1.0, 1.0], vec![-0.1, 0.1]),
         xor_zero_zero: (construct_xor_network(), vec![0.0, 0.0], vec![-0.1, 0.1]),
@@ -752,32 +674,6 @@ mod tests {
         and_zero_zero: (construct_and_network(), vec![0.0, 0.0], vec![-0.1, 0.1]),
 
     }
-
-    #[test]
-    fn xor_one_one_mut() {
-	let network = construct_xor_network();
-	let input = vec![1.0, 1.0];
-	let expected = vec![-0.1, 0.1];
-        let output = network.feed_input_non_mut(input);
-        network.pretty_print();
-        assert_eq!(output.len(), 1);
-        assert!(output[0] > expected[0]);
-        assert!(output[0] < expected[1]);
-    }
-
-    #[test]
-    fn xor_zero_zero_mut() {
-	let network = construct_xor_network();
-	let input = vec![0.0, 0.0];
-	let expected = vec![-0.1, 0.1];
-        let output = network.feed_input_non_mut(input);
-        network.pretty_print();
-        assert_eq!(output.len(), 1);
-        assert!(output[0] > expected[0]);
-        assert!(output[0] < expected[1]);
-    }
-
-
 
     #[test]
     fn test_fully_connected() {
