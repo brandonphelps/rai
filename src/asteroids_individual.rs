@@ -17,7 +17,7 @@ pub struct AsteroidsPlayer {
     brain: Network,
     // whats the diff between dyn Fn(blah blah) and
     // fn9blah blah 
-    fitness_func: fn(&mut Network) -> (),
+    fitness_func: fn(&Network) -> f64,
     fitness_func_name: String,
 }
 
@@ -31,8 +31,7 @@ impl AsteroidsPlayer {
     }
 
     pub fn fitness(&mut self) -> f64 {
-	asteroids_fitness(&mut self.brain);
-	return self.brain.fitness;
+	asteroids_fitness(&self.brain)
     }
 
     pub fn mutate(&self, inno: &mut InnovationHistory) -> Self {
