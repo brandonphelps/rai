@@ -101,6 +101,10 @@ impl LocalScheduler {
 
 	LocalScheduler { func_map: func_map }
     }
+
+    pub fn custom_map(func_map: EaFuncMap) -> Self {
+	LocalScheduler { func_map: func_map }
+    }
     
     pub fn schedule_job(&mut self,
 			individual: &mut Network,

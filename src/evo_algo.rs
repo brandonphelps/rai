@@ -9,16 +9,13 @@ use std::collections::HashMap;
 use rand::prelude::*;
 use rand::seq::SliceRandom;
 
+use crate::scheduler::{LocalScheduler, Scheduler};
+use crate::distro::{EaFuncMap};
+
 // use crate::asteroids_individual;
 
 // use rand::prelude::*;
 // use rand::seq::SliceRandom;
-
-// pub trait Individual {
-//     fn fitness(&self) -> f64;
-//     fn print(&self) -> ();
-//     fn mutate(&mut self) -> Self;
-// }
 
 // pub trait Individual {
 //     // can this return just a numeric traited instance?
@@ -309,6 +306,7 @@ pub struct GAParams {
 // second shot
 
 
+
 // RANDOM parent selction
 fn select_parents<'a, Individual>(params: &GAParams,
 			      fitness: &Vec<f64>,
@@ -340,7 +338,8 @@ fn run_ea<Individual, Storage>(params: &GAParams,
 			       fitness_name: String,
 			       on_fitness: fn(&Individual) -> f64,
 			       on_crossover: fn(&GAParams, &Vec<&Individual>) -> Vec<Individual>,
-			       on_mutate: fn(&GAParams, &mut Storage, &Individual) -> Individual) -> ()
+			       on_mutate: fn(&GAParams, &mut Storage, &Individual) -> Individual,
+			       scheduler: &mut LocalScheduler) -> ()
 where
     Individual: Default + Debug,
     Storage: Default
@@ -447,6 +446,8 @@ mod tests {
 	    }
 	}
     }
+
+    
 
     #[derive(Default)]
     struct GStorage { }
@@ -591,11 +592,90 @@ mod tests {
             parent_selection_count: 10,
         };
 	
+	pub trait FitnessFunc {
+	    fn callme(&self) -> ();
+	}
+
+	let mut scheduler = LocalScheduler::new();
+
+	struct P<F> where F: FitnessFunc {
+	    m: HashMap::<String, F>,
+	}
+
+
+	struct PizzaIndividual {
+	    pizza_count: u8,
+	}
+
+	struct PizzaFitness {
+	    
+	}
+
+	struct TestFitness {
+
+	}
+
+	impl FitnessFunc for TestFitness {
+	    fn callme(&self) -> () {
+		println!("Fitness individua");
+	    }
+	}
+
+	impl FitnessFunc for PizzaFitness {
+	    fn callme(&self) -> () {
+		// return individual.pizza_count as f64 * 10.0;
+		println!("PIzza fitness");
+	    }
+	}
+
+	struct FuncMapper {
+	    funcs: HashMap::<String, Box<dyn FitnessFunc>>,
+	}
+
+	impl FuncMapper {
+	    pub fn new() -> Self {
+		FuncMapper { funcs: HashMap::new() } 
+	    }
+
+	    pub fn add_func(&mut self, name: String, f: Box<dyn FitnessFunc>) -> () {
+		self.funcs.insert(name, f);
+	    }
+
+	    pub fn call_func(&self, name: String) -> () {
+		self.funcs.get(&name).unwrap().callme();
+	    }
+
+	    pub fn get_func(&self, name: String) -> &Box<dyn FitnessFunc> {
+		self.funcs.get(&name).unwrap()
+	    }
+	}
+
+	pub trait Draw {
+	    fn draw(&self);
+	}
+
+	pub struct Screen {
+	    pub components: HashMap<String, Box<dyn FitnessFunc>>,
+	}
+
+	let mut m = FuncMapper::new();
+	m.add_func(String::from("mah_fit"), Box::<TestFitness>::new(TestFitness { }));
+	m.add_func(String::from("pizza_fit"), Box::<PizzaFitness>::new(PizzaFitness { }));
+
+	m.call_func(String::from("mah_fit"));
+	m.call_func(String::from("pizza_fit"));
+
+	let p = m.get_func(String::from("mah_fit"));
+	p.callme();
+
+	assert!(false);
+
 	run_ea::<TestIndividual, GStorage>(&ga_params,
 					   String::from("math_fit"),
 					   ind_fitness,
 					   ind_crossover,
-					   ind_mutate);
+					   ind_mutate,
+					   &mut scheduler);
 	assert!(false);
     }
 }
