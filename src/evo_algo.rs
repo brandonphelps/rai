@@ -27,23 +27,14 @@ use crate::distro::{EaFuncMap};
 //     // fn crossover(&self, other: Box<dyn Individual>) -> Box<dyn Individual>;
 // }
 
-// pub trait RandomDefault: Default {
-//     // empty
-// }
 
-// pub trait Fitness {
-//     fn fitness(&self) -> f32;
-// }
+pub trait FitnessFunc {
+    type Input;
+    
+    fn fitness_func(&self, indi: &Self::Input) -> f64;
+    fn fitness_name(&self) -> String;
+}
 
-// pub trait IndividualTrait: Clone {
-//     fn fitness(&self) -> f32;
-//     fn default() -> Self;
-// }
-
-// pub trait IndividualTraitExt: IndividualTrait {
-//     fn crossover(&self, other: &Self) -> Self;
-//     fn mutate(&self) -> Self;
-// }
 
 /// @brief container class for the various parameters.
 pub struct GAParams {
@@ -341,7 +332,7 @@ fn run_ea<Individual, Storage>(params: &GAParams,
 			       on_mutate: fn(&GAParams, &mut Storage, &Individual) -> Individual,
 			       scheduler: &mut LocalScheduler) -> ()
 where
-    Individual: Default + Debug,
+    Individual: Default + Debug + FitnessFunc,
     Storage: Default
 {
 
@@ -583,6 +574,7 @@ mod tests {
 	return new_offspring;
     }
 
+
     #[test]
     fn test_playground() {
         let ga_params = GAParams {
@@ -592,9 +584,6 @@ mod tests {
             parent_selection_count: 10,
         };
 	
-	pub trait FitnessFunc {
-	    fn callme(&self) -> ();
-	}
 
 	let mut scheduler = LocalScheduler::new();
 
@@ -607,24 +596,41 @@ mod tests {
 	    pizza_count: u8,
 	}
 
-	struct PizzaFitness {
-	    
-	}
+	struct PizzaFitness;
 
-	struct TestFitness {
+	impl FitnessFunc for PizzaFitness {
+	    type Input = PizzaIndividual;
 
-	}
+	    fn fitness_func(&self, pizza: &PizzaIndividual) -> f64 {
+		pizza.pizza_count as f64
+	    }
 
-	impl FitnessFunc for TestFitness {
-	    fn callme(&self) -> () {
-		println!("Fitness individua");
+	    fn fitness_name(&self) -> String {
+		String::from("pizza")
 	    }
 	}
 
-	impl FitnessFunc for PizzaFitness {
-	    fn callme(&self) -> () {
-		// return individual.pizza_count as f64 * 10.0;
-		println!("PIzza fitness");
+	struct TestFitness;
+
+	impl FitnessFunc for TestFitness {
+	    type Input = TestIndividual;
+	    fn fitness_func(&self, ind: &TestIndividual) -> f64 {
+		ind_fitness(&ind)
+	    }
+
+	    fn fitness_name(&self) -> String {
+		String::from("Math")
+	    }
+	}
+
+	impl FitnessFunc for PizzaIndividual {
+	    fn fitness_func(&self) -> f64 {
+		// more pizza is better!
+		self.pizza_count as f64
+	    }
+
+	    fn fitness_name(&self) -> String {
+		String::from("Pizza")
 	    }
 	}
 
@@ -641,8 +647,8 @@ mod tests {
 		self.funcs.insert(name, f);
 	    }
 
-	    pub fn call_func(&self, name: String) -> () {
-		self.funcs.get(&name).unwrap().callme();
+	    pub fn call_func(&self, name: String) -> f64 {
+		self.funcs.get(&name).unwrap().fitness_func()
 	    }
 
 	    pub fn get_func(&self, name: String) -> &Box<dyn FitnessFunc> {
@@ -658,15 +664,33 @@ mod tests {
 	    pub components: HashMap<String, Box<dyn FitnessFunc>>,
 	}
 
-	let mut m = FuncMapper::new();
-	m.add_func(String::from("mah_fit"), Box::<TestFitness>::new(TestFitness { }));
-	m.add_func(String::from("pizza_fit"), Box::<PizzaFitness>::new(PizzaFitness { }));
+	
 
+	let mut m = FuncMapper::new();
+	m.add_func(String::from("mah_fit"),
+		   Box::<TestFitness>::new(TestFitness { }));
+	m.add_func(String::from("pizza_fit"), Box::<PizzaFitness>::new(PizzaFitness { }));
 	m.call_func(String::from("mah_fit"));
 	m.call_func(String::from("pizza_fit"));
 
 	let p = m.get_func(String::from("mah_fit"));
-	p.callme();
+
+	println!("Calling: {}, {}", p.fitness_name(), p.fitness_func());
+
+	impl FitnessFunc for TestIndividual {
+	    fn fitness_func(&self) -> f64 {
+		ind_fitness(&self)
+	    }
+
+	    fn fitness_name(&self) -> String {
+		String::from("Test")
+	    }
+	}
+
+	// m.add_func(String::from("TestInd"),
+	// 	   Box::<TestIndividual>::new(TestIndividual { }));
+
+
 
 	assert!(false);
 
