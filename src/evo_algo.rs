@@ -1,16 +1,15 @@
 #![allow(clippy::unused_unit)]
 #![allow(dead_code)]
-use std::any::Any;
+
 use std::fmt::Debug;
 use std::cmp::Reverse;
-use std::collections::HashMap;
+
 
 // can we get rid of star here?
 use rand::prelude::*;
 use rand::seq::SliceRandom;
 
-use crate::scheduler::{LocalScheduler, Scheduler};
-use crate::distro::{EaFuncMap};
+use crate::scheduler::{LocalScheduler, SchedulerT};
 
 // use crate::asteroids_individual;
 
@@ -373,8 +372,6 @@ where
 	    indivi.fitness = on_fitness(&indivi.sol);
 	}
 
-	scheduler.wait();
-
 	let mut total_fitness = 0.0;
 	for i in individuals.iter() {
 	    total_fitness += i.fitness;
@@ -591,7 +588,7 @@ mod tests {
         };
 	
 
-	let mut scheduler = LocalScheduler::new();
+	let mut scheduler = LocalScheduler { };
 
 	assert!(false);
 

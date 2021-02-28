@@ -5,7 +5,7 @@
 use std::time::Duration;
 use beanstalkc::Beanstalkc;
 
-use crate::distro::{EaFuncMap, JobInfo, JobResults};
+use crate::distro::{JobInfo, JobResults};
 use crate::nn::Network;
 
 trait IndiFit<Individual> {
@@ -15,12 +15,13 @@ trait IndiFit<Individual> {
 }
 
 // todo: remove T and remain Scheduler to beanstalk Scheduler
-trait SchedulerT<'a, Individual> {
+pub trait SchedulerT<Individual> {
     /// blocking call to wait around untill all the jobs are finished. 
     fn wait(&mut self);
     /// Performs the act of enqueing or setting up w/e is needed for the individual
     /// to be evaluated. 
-    fn schedule_job(&mut self, indi: &'a mut Individual);
+    fn schedule_job(&mut self, indi: &Individual) -> u32;
+    fn get_results(&self) -> f64;
 }
 
 // todo: allow for different schedule types / connectors etc. 
@@ -106,34 +107,22 @@ impl<'a> Scheduler<'a> {
 
 pub struct LocalScheduler;
 
-impl<'a, IndivType> SchedulerT<'a, IndivType> for LocalScheduler
+impl<IndivType> SchedulerT<IndivType> for LocalScheduler
 where
     IndivType: IndiFit<IndivType>
 {
-    fn schedule_job(&mut self, individual: &'a mut IndivType) {
+    fn schedule_job(&mut self, individual: &IndivType) -> u32 {
 	individual.set_fitness(individual.fitness());
+    }
+
+    fn get_results(handle: u32) -> f64 {
+	// do nothing.
     }
 
     fn wait(&mut self) -> () {
 	// do nothing. 
     }
 }
-
-// impl<'a, Indi, FitnessFunc> SchedulerT<'a, Indi, FitnessFunc> for LocalScheduler
-// where
-//     Indi: IndiFit<Indi>,
-//     FitnessFunc: FitnessFunctor<Indi>,
-// {
-//     fn schedule_job(&mut self, individual: &'a mut Indi) {
-// 	// do the actual job?
-// 	individual.set_fitness(FitnessFunc::eval(individual.get_individual()));
-//     }
-
-//     fn wait(&mut self) -> () {
-// 	// does nothing.
-//     }
-// }
-
 
 #[cfg(test)]
 mod tests {
