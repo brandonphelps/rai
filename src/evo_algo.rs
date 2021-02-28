@@ -1,6 +1,6 @@
 #![allow(clippy::unused_unit)]
 #![allow(dead_code)]
-
+use std::any::Any;
 use std::fmt::Debug;
 use std::cmp::Reverse;
 use std::collections::HashMap;
@@ -623,19 +623,8 @@ mod tests {
 	    }
 	}
 
-	impl FitnessFunc for PizzaIndividual {
-	    fn fitness_func(&self) -> f64 {
-		// more pizza is better!
-		self.pizza_count as f64
-	    }
-
-	    fn fitness_name(&self) -> String {
-		String::from("Pizza")
-	    }
-	}
-
 	struct FuncMapper {
-	    funcs: HashMap::<String, Box<dyn FitnessFunc>>,
+	    funcs: HashMap::<String, Box<dyn Any>>,
 	}
 
 	impl FuncMapper {
@@ -643,16 +632,26 @@ mod tests {
 		FuncMapper { funcs: HashMap::new() } 
 	    }
 
-	    pub fn add_func(&mut self, name: String, f: Box<dyn FitnessFunc>) -> () {
+	    pub fn add_func(&mut self, name: String, f: Box<dyn Any>) -> () {
 		self.funcs.insert(name, f);
 	    }
 
-	    pub fn call_func(&self, name: String) -> f64 {
-		self.funcs.get(&name).unwrap().fitness_func()
-	    }
-
-	    pub fn get_func(&self, name: String) -> &Box<dyn FitnessFunc> {
+	    pub fn get_func(&self, name: String) -> &Box<dyn Any> {
 		self.funcs.get(&name).unwrap()
+	    }
+	}
+
+	trait SchedulerT<J> {
+	    fn name() -> String;
+	    fn schedule(&self, func_name: &String, ind: &J) -> ();
+	    fn wait(&self) -> ();
+	}
+
+	fn do_fitness_eval<T: FitnessFunc, S: SchedulerT, J >(func: &T, sch: &S, ind: J ) -> f64 {
+	    if S::name() == String::from("local") {
+		func.fitness_func(&ind)
+	    } else {
+		sch.schedule(func.fitness_name(), &ind);
 	    }
 	}
 
@@ -661,7 +660,7 @@ mod tests {
 	}
 
 	pub struct Screen {
-	    pub components: HashMap<String, Box<dyn FitnessFunc>>,
+	    pub components: HashMap<String, Box<dyn Any>>,
 	}
 
 	
@@ -670,12 +669,12 @@ mod tests {
 	m.add_func(String::from("mah_fit"),
 		   Box::<TestFitness>::new(TestFitness { }));
 	m.add_func(String::from("pizza_fit"), Box::<PizzaFitness>::new(PizzaFitness { }));
-	m.call_func(String::from("mah_fit"));
-	m.call_func(String::from("pizza_fit"));
 
-	let p = m.get_func(String::from("mah_fit"));
+	let p = m.get_func(String::from("pizza_fit"));
 
-	println!("Calling: {}, {}", p.fitness_name(), p.fitness_func());
+	let k = PizzaIndividual { pizza_count : 10};
+
+	println!("Calling: {}, {}", p.fitness_name(), p.fitness_func(&k));
 
 	impl FitnessFunc for TestIndividual {
 	    fn fitness_func(&self) -> f64 {
