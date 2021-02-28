@@ -332,7 +332,7 @@ fn run_ea<Individual, Storage>(params: &GAParams,
 			       on_mutate: fn(&GAParams, &mut Storage, &Individual) -> Individual,
 			       scheduler: &mut LocalScheduler) -> ()
 where
-    Individual: Default + Debug + FitnessFunc,
+    Individual: Default + Debug,
     Storage: Default
 {
 
@@ -367,17 +367,23 @@ where
 	    individuals.push(IndiFit::new(tmp_p));
 	}
 
+
 	// do fitness calculation. 
 	for indivi in individuals.iter_mut() {
 	    indivi.fitness = on_fitness(&indivi.sol);
 	}
+
+	scheduler.wait();
 
 	let mut total_fitness = 0.0;
 	for i in individuals.iter() {
 	    total_fitness += i.fitness;
 	}
 
+	// todo: build some sort of results type such that
+	// we don't print here. 
 	let average_fitness = total_fitness / params.pop_size as f64;
+	println!("Average fitness: {}", average_fitness);
 	// cull population
 	individuals.sort_by_key(|indivi| Reverse((indivi.fitness * 1000.0) as i128));
 	individuals.truncate(params.pop_size as usize);
@@ -586,110 +592,6 @@ mod tests {
 	
 
 	let mut scheduler = LocalScheduler::new();
-
-	struct P<F> where F: FitnessFunc {
-	    m: HashMap::<String, F>,
-	}
-
-
-	struct PizzaIndividual {
-	    pizza_count: u8,
-	}
-
-	struct PizzaFitness;
-
-	impl FitnessFunc for PizzaFitness {
-	    type Input = PizzaIndividual;
-
-	    fn fitness_func(&self, pizza: &PizzaIndividual) -> f64 {
-		pizza.pizza_count as f64
-	    }
-
-	    fn fitness_name(&self) -> String {
-		String::from("pizza")
-	    }
-	}
-
-	struct TestFitness;
-
-	impl FitnessFunc for TestFitness {
-	    type Input = TestIndividual;
-	    fn fitness_func(&self, ind: &TestIndividual) -> f64 {
-		ind_fitness(&ind)
-	    }
-
-	    fn fitness_name(&self) -> String {
-		String::from("Math")
-	    }
-	}
-
-	struct FuncMapper {
-	    funcs: HashMap::<String, Box<dyn Any>>,
-	}
-
-	impl FuncMapper {
-	    pub fn new() -> Self {
-		FuncMapper { funcs: HashMap::new() } 
-	    }
-
-	    pub fn add_func(&mut self, name: String, f: Box<dyn Any>) -> () {
-		self.funcs.insert(name, f);
-	    }
-
-	    pub fn get_func(&self, name: String) -> &Box<dyn Any> {
-		self.funcs.get(&name).unwrap()
-	    }
-	}
-
-	trait SchedulerT<J> {
-	    fn name() -> String;
-	    fn schedule(&self, func_name: &String, ind: &J) -> ();
-	    fn wait(&self) -> ();
-	}
-
-	fn do_fitness_eval<T: FitnessFunc, S: SchedulerT, J >(func: &T, sch: &S, ind: J ) -> f64 {
-	    if S::name() == String::from("local") {
-		func.fitness_func(&ind)
-	    } else {
-		sch.schedule(func.fitness_name(), &ind);
-	    }
-	}
-
-	pub trait Draw {
-	    fn draw(&self);
-	}
-
-	pub struct Screen {
-	    pub components: HashMap<String, Box<dyn Any>>,
-	}
-
-	
-
-	let mut m = FuncMapper::new();
-	m.add_func(String::from("mah_fit"),
-		   Box::<TestFitness>::new(TestFitness { }));
-	m.add_func(String::from("pizza_fit"), Box::<PizzaFitness>::new(PizzaFitness { }));
-
-	let p = m.get_func(String::from("pizza_fit"));
-
-	let k = PizzaIndividual { pizza_count : 10};
-
-	println!("Calling: {}, {}", p.fitness_name(), p.fitness_func(&k));
-
-	impl FitnessFunc for TestIndividual {
-	    fn fitness_func(&self) -> f64 {
-		ind_fitness(&self)
-	    }
-
-	    fn fitness_name(&self) -> String {
-		String::from("Test")
-	    }
-	}
-
-	// m.add_func(String::from("TestInd"),
-	// 	   Box::<TestIndividual>::new(TestIndividual { }));
-
-
 
 	assert!(false);
 

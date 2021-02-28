@@ -8,6 +8,20 @@ use beanstalkc::Beanstalkc;
 use crate::distro::{EaFuncMap, JobInfo, JobResults};
 use crate::nn::Network;
 
+trait IndiFit<Individual> {
+    fn set_fitness(&mut self, fitness: f64) -> ();
+    fn fitness(&self) -> f64;
+    fn name() -> String;
+}
+
+// todo: remove T and remain Scheduler to beanstalk Scheduler
+trait SchedulerT<'a, Individual> {
+    /// blocking call to wait around untill all the jobs are finished. 
+    fn wait(&mut self);
+    /// Performs the act of enqueing or setting up w/e is needed for the individual
+    /// to be evaluated. 
+    fn schedule_job(&mut self, indi: &'a mut Individual);
+}
 
 // todo: allow for different schedule types / connectors etc. 
 // one main option should be have "remote workers" vs local running. 
@@ -90,32 +104,77 @@ impl<'a> Scheduler<'a> {
     }
 }
 
-pub struct LocalScheduler {
-    func_map: EaFuncMap,
-}
+pub struct LocalScheduler<'a, IndivType>;
 
-impl LocalScheduler {
-
-    pub fn new() -> LocalScheduler {
-	let func_map = EaFuncMap::new();
-
-	LocalScheduler { func_map: func_map }
+impl<'a, IndivType> SchedulerT<'a, IndivType> for LocalScheduler<'a, IndivType>
+where
+    IndivType: IndiFit<IndivType>
+{
+    fn schedule_job(&mut self, individual: &'a mut IndivType) {
+	individual.set_fitness(individual.fitness());
     }
 
-    pub fn custom_map(func_map: EaFuncMap) -> Self {
-	LocalScheduler { func_map: func_map }
-    }
-    
-    pub fn schedule_job(&mut self,
-			individual: &mut Network,
-			fitness_func_name: &String) {
-	// do the actual job?
-	individual.fitness = self.func_map.run_fitness(fitness_func_name, individual);
-    }
-
-    pub fn wait(&mut self) -> () {
-	// do nothing i guess. 
+    fn wait(&mut self) -> () {
+	// do nothing. 
     }
 }
 
-// todo: add in some unit tests. 
+// impl<'a, Indi, FitnessFunc> SchedulerT<'a, Indi, FitnessFunc> for LocalScheduler
+// where
+//     Indi: IndiFit<Indi>,
+//     FitnessFunc: FitnessFunctor<Indi>,
+// {
+//     fn schedule_job(&mut self, individual: &'a mut Indi) {
+// 	// do the actual job?
+// 	individual.set_fitness(FitnessFunc::eval(individual.get_individual()));
+//     }
+
+//     fn wait(&mut self) -> () {
+// 	// does nothing.
+//     }
+// }
+
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+
+
+
+    #[test]
+    fn playground() {
+	struct MathMax {
+	    w1: f64,
+	    x1: f64,
+	}
+
+	struct MathMaxIndi {
+	    helper: MathMax,
+	    fitness: f64,
+	}
+
+	impl IndiFit<MathMaxIndi> for MathMaxIndi {
+	    fn fitness(&self) -> f64 {
+		return self.helper.w1 * self.helper.x1;
+	    }
+
+	    fn name() -> String {
+		String::from("MathMax")
+	    }
+
+	    fn set_fitness(&mut self, fit: f64) -> () {
+		self.fitness = fit;
+	    }
+	}
+
+	let mut schedul = LocalScheduler::<MathMaxIndi> { };
+
+	let mut p = MathMaxIndi { helper: MathMax { w1: 0.3,
+						    x1: 0.0 },
+				  fitness: 0.0};
+	schedul.schedule_job(&mut p);
+
+	schedul.wait();
+    }
+}
