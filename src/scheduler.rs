@@ -104,9 +104,9 @@ impl<'a> Scheduler<'a> {
     }
 }
 
-pub struct LocalScheduler<'a, IndivType>;
+pub struct LocalScheduler;
 
-impl<'a, IndivType> SchedulerT<'a, IndivType> for LocalScheduler<'a, IndivType>
+impl<'a, IndivType> SchedulerT<'a, IndivType> for LocalScheduler
 where
     IndivType: IndiFit<IndivType>
 {
@@ -139,7 +139,24 @@ where
 mod tests {
     use super::*;
 
+    // is it possible to pass in the scheduler? 
+    fn do_stuff<Individual>(params: u8)
+    where
+	Individual: IndiFit<Individual> + Default,
+    {
+	let mut scheduler = LocalScheduler { };
 
+	let mut holder = Vec::<Individual>::new();
+
+	for i in 0..params {
+	    holder.push(Individual::default());
+	}
+
+	for i in holder.iter_mut() { 
+	    scheduler.schedule_job(&mut i);
+	}
+	scheduler.wait();
+    }
 
 
     #[test]
@@ -168,7 +185,16 @@ mod tests {
 	    }
 	}
 
-	let mut schedul = LocalScheduler::<MathMaxIndi> { };
+	impl Default for MathMaxIndi {
+	    fn default() -> Self {
+		Self {
+		    helper: MathMax { w1: 4.0, x1: 0.0 },
+		    fitness: 0.0
+		}
+	    }
+	}
+
+	let mut schedul = LocalScheduler { };
 
 	let mut p = MathMaxIndi { helper: MathMax { w1: 0.3,
 						    x1: 0.0 },
@@ -176,5 +202,8 @@ mod tests {
 	schedul.schedule_job(&mut p);
 
 	schedul.wait();
+
+	do_stuff::<MathMaxIndi>(100);
+	
     }
 }
