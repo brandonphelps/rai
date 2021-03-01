@@ -236,9 +236,7 @@ fn main() -> std::result::Result<(), String> {
     Ok(())
 }
 
-
-// todo look at this bench amrk thing https://stackoverflow.com/questions/60916194/how-to-sort-a-vector-in-descending-order-in-rust
-
+// todo look at this bench mark thing https://stackoverflow.com/questions/60916194/how-to-sort-a-vector-in-descending-order-in-rust
 #[cfg(test)]
 mod tests {
     use super::*;
