@@ -14,6 +14,7 @@ use std::{thread, time};
 use serde::{Deserialize, Serialize};
 use serde_json::Result;
 
+mod lifetime;
 mod scheduler;
 mod distro;
 mod evo_algo;
