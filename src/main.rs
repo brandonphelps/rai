@@ -15,6 +15,7 @@ use serde::{Deserialize, Serialize};
 use serde_json::Result;
 
 mod lifetime;
+mod promise;
 mod scheduler;
 mod distro;
 mod evo_algo;

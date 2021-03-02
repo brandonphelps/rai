@@ -4,7 +4,7 @@ mod tests {
     fn playground() {
 
 	struct Closure<F, T> {
-	    data: &(u8, u16),
+	    data: (u8, u16),
 	    func: F,
 	    func_r: T
 	}
@@ -61,6 +61,6 @@ mod tests {
 	println!("{}", clo.call(1));
 	println!("{}", other.call(2));
 
-	assert!(false);
+	// assert!(false);
     }
 }

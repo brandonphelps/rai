@@ -28,6 +28,15 @@ mod tests {
 	    
 	}
 
+	impl Sched {
+	    pub fn do_me(&self, job: &JobResult<'_>) {
+		
+	    }
+
+	    pub fn wait(&self) -> () {
+	    }
+	}
+
 	struct JobResult<'a> {
 	    job_state: JobState,
 	    result: u8,
@@ -59,6 +68,7 @@ mod tests {
 		println!("Job state: {:#?}", self.job_state);
 		match self.job_state {
 		    JobState::InProgress() => {
+			self.sched_p.do_me(&self);
 			None
 		    },
 		    JobState::Done() => {
