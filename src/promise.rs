@@ -65,7 +65,6 @@ mod tests {
 	    }
 
 	    pub fn update(&mut self) {
-		println!("Update");
 		let mut rng = rand::thread_rng();
 		for i in self.jobs.iter_mut() {
 		    if rng.gen::<f64>() < 0.5 {
@@ -96,8 +95,9 @@ mod tests {
 
 	    pub fn wait(&mut self) {
 		// call update
-		let mut do_we_need_to_update = false;
-		while !do_we_need_to_update {
+		let mut do_we_need_to_update = true;
+		while do_we_need_to_update {
+		    do_we_need_to_update = false;
 		    for i in self.jobs.iter() {
 			match i.job_state {
 			    JobState::InProgress() => {
@@ -110,6 +110,7 @@ mod tests {
 
 
 		    if do_we_need_to_update {
+			println!("update call");
 			self.update();
 		    }
 		}
@@ -163,16 +164,18 @@ mod tests {
 	// let mut p = JobResult::new(&sched);
 
 	let job_one = sched.schedule_job(String::from("hello"));
+	let job_two = sched.schedule_job(String::from("Wakakakakaka"));
+
+	assert!(job_one.poll(&sched).is_none());
 
 	sched.wait();
+	// all futures must be completed. 
 
 	//assert_eq!(sched.get_result(job_one).unwrap(), 5);
 	assert_eq!(job_one.poll(&sched).unwrap(), 5);
+	assert_eq!(job_two.poll(&sched).unwrap(), 12);
 
 	assert!(false);
 
-	// assert!(p.is_done().is_none());
-	// p.set_result(3);
-	// assert!(p.is_done().is_some());
     }
 }
