@@ -26,9 +26,14 @@ mod tests {
 
 	struct JobResult {
 	    id: u8,
-	    job_state: JobState, 
+	    job_state: JobState,
+	    input: String,
+	    // length of string
+	    val: u8
 	}
 
+	struct 
+	
 	struct Sched {
 	    jobs: Vec::<JobResult>,
 	}
@@ -41,6 +46,8 @@ mod tests {
 	    pub fn schedule_job(&mut self, job_info: String) -> u8 {
 		let job_id = self.jobs.len() as u8;
 		self.jobs.push(JobResult { id : job_id,
+					   input: job_info,
+					   val: 0,
 					   job_state: JobState::InProgress() });
 		return job_id;
 	    }
@@ -54,11 +61,46 @@ mod tests {
 		return None;
 	    }
 
-	    pub fn update(&mut self)  {
+	    pub fn update(&mut self) {
+		println!("Update");
 		let mut rng = rand::thread_rng();
 		for i in self.jobs.iter_mut() {
 		    if rng.gen::<f64>() < 0.5 {
+			println!("Job moved to done");
+			i.val = i.input.len() as u8;
 			i.job_state = JobState::Done();
+		    } else {
+			println!("Job state no change");
+		    }
+		}
+	    }
+
+	    pub fn get_result(&self, job_id: u8) -> Option<u8> {
+		for i in self.jobs.iter() {
+		    if job_id == i.id {
+			return Some(i.val);
+		    }
+		}
+		return None
+	    }
+
+	    pub fn wait(&mut self) {
+		// call update
+		let mut do_we_need_to_update = false;
+		while !do_we_need_to_update {
+		    for i in self.jobs.iter() {
+			match i.job_state {
+			    JobState::InProgress() => {
+				do_we_need_to_update = true;
+				break;
+			    },
+			    _ => {},
+			}
+		    }
+
+
+		    if do_we_need_to_update {
+			self.update();
 		    }
 		}
 	    }
@@ -113,8 +155,14 @@ mod tests {
 	let job_one = sched.schedule_job(String::from("hello"));
 
 	assert!(sched.get_job_state(job_one).is_some());
-	sched.update();
 	assert!(sched.get_job_state(job_one).is_some());
+
+	sched.wait();
+
+	assert_eq!(sched.get_result(job_one).unwrap(), 5);
+
+	assert!(false);
+
 	// assert!(p.is_done().is_none());
 	// p.set_result(3);
 	// assert!(p.is_done().is_some());
