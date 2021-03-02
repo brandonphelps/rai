@@ -24,12 +24,12 @@ mod tests {
 	}
 
 
-	struct JobResult {
+	struct JobResult<Output> {
 	    id: usize,
 	    job_state: JobState,
 	    input: String,
 	    // length of string
-	    val: u8
+	    val: Output
 	}
 
 	struct JobFuture {
@@ -37,16 +37,17 @@ mod tests {
 	}
 	
 	impl JobFuture {
-	    pub fn poll(&self, scheduler: &Sched) -> Option<u8> {
+	    pub fn poll(&self, scheduler: &Sched) -> Option<f64> {
 		scheduler.get_result(self.id)
 	    }
 	}
 
 	struct Sched {
-	    jobs: Vec::<JobResult>,
+	    jobs: Vec::<JobResult<f64>>,
 	}
 
-	impl Sched {
+	impl Sched { 
+
 	    pub fn new() -> Self {
 		Self { jobs: vec![] }
 	    }
@@ -59,8 +60,9 @@ mod tests {
 		let job_id = self.jobs.len();
 		self.jobs.push(JobResult { id : job_id,
 					   input: job_info,
-					   val: 0,
-					   job_state: JobState::InProgress() });
+					   val: 0.0,
+					   job_state: JobState::InProgress()
+		});
 		return job_id;
 	    }
 
@@ -69,7 +71,7 @@ mod tests {
 		for i in self.jobs.iter_mut() {
 		    if rng.gen::<f64>() < 0.5 {
 			println!("Job moved to done");
-			i.val = i.input.len() as u8;
+			i.val = i.input.len() as f64;
 			i.job_state = JobState::Done();
 		    } else {
 			println!("Job state no change");
@@ -77,7 +79,7 @@ mod tests {
 		}
 	    }
 
-	    pub fn get_result(&self, job_id: usize) -> Option<u8> {
+	    pub fn get_result(&self, job_id: usize) -> Option<f64> {
 		for i in self.jobs.iter() {
 		    if job_id == i.id {
 			match i.job_state { 
@@ -117,47 +119,7 @@ mod tests {
 	    }
 	}
 
-	// struct JobResult<'a> {
-	//     job_state: JobState,
-	//     result: u8,
-	//     sched_p: &'a Sched
-	// }
-
-	// impl<'a> JobResult<'a> {
-	//     pub fn new(sched: &'a Sched) -> Self {
-	// 	Self { job_state: JobState::InProgress(),
-	// 	       result: 0,
-	// 	       sched_p: sched
-	// 	}
-	//     }
-
-	//     pub fn set_result(&mut self, res: u8) -> () {
-	// 	self.result = res;
-	// 	self.job_state = JobState::Done();
-	//     }
-
-	//     pub fn get_result(&self) -> u8 {
-	// 	self.result
-	//     }
-	// }
-
-	// impl<'a> Promise for JobResult<'a> {
-	//     type Output = JobResult<'a>;
-
-	//     fn is_done(&self) -> Option<&JobResult<'a> > {
-	// 	println!("Job state: {:#?}", self.job_state);
-	// 	match self.job_state {
-	// 	    JobState::InProgress() => {
-	// 		self.sched_p.do_me(&self);
-	// 		None
-	// 	    },
-	// 	    JobState::Done() => {
-	// 		Some(self)
-	// 	    }
-	// 	}
-	//     }
-	// }
-
+	
 	let mut rng = rand::thread_rng();
 	let mut sched = Sched::new();
 
@@ -172,8 +134,8 @@ mod tests {
 	// all futures must be completed. 
 
 	//assert_eq!(sched.get_result(job_one).unwrap(), 5);
-	assert_eq!(job_one.poll(&sched).unwrap(), 5);
-	assert_eq!(job_two.poll(&sched).unwrap(), 12);
+	assert_eq!(job_one.poll(&sched).unwrap(), 5.0);
+	assert_eq!(job_two.poll(&sched).unwrap(), 12.0);
 
 	assert!(false);
 
