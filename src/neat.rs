@@ -281,7 +281,7 @@ mod tests {
         species.individuals.push(&network_one);
         species.individuals.push(&network_two);
 
-        let mut inno_history = InnovationHistory {
+        let inno_history = InnovationHistory {
             global_inno_id: (3 * 2) as usize,
             conn_history: vec![],
         };

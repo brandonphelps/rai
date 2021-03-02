@@ -1,3 +1,5 @@
+#![allow(dead_code)]
+
 /// This module contains data structures and functions for defining a nerual network
 /// i've taken a very "real object" approach and modeled it like with realish option,
 /// likely they'll be reduced to remove the unneeded objects 
@@ -71,6 +73,7 @@ pub struct Network {
     // can we remove this? networks don't need a fitness, EA items do however
     pub fitness: f64, 
 }
+
 
 pub fn node_per_layer(network: &Network, num_layer: u64) -> Option<u64> {
     let mut node_count = 0;
@@ -582,7 +585,7 @@ mod tests {
 
     #[test]
     fn test_xor_network_one_one() {
-        let mut network = construct_xor_network();
+        let network = construct_xor_network();
         let mut output_values = network.feed_input(vec![1.0, 1.0]);
         println!("{:?}", output_values);
         assert_eq!(output_values.len(), 1);
@@ -658,7 +661,7 @@ mod tests {
             $(
                 #[test]
                 fn $name() {
-                    let (mut network, input, expected) = $value;
+                    let (network, input, expected) = $value;
                     let output = network.feed_input(input);
                     network.pretty_print();
                     assert_eq!(output.len(), 1);
