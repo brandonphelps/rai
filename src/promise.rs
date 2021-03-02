@@ -1,12 +1,32 @@
 
 use std::future::Future;
+use std::pin::Pin;
+use std::task::{Context, Poll};
+
+enum JobState {
+    InProgress(),
+    Done(),
+}
+
+pub struct JobResult<Output> {
+    id: usize,
+    job_state: JobState,
+    input: String,
+    // length of string
+    val: Output
+}
+
+
+pub struct Sched {
+    jobs: Vec::<JobResult<f64>>,
+}
 
 
 pub trait Promise {
     type Output;
 
     // returns a Filled out Option if done else None
-    fn is_done(&self) -> Option<&Self::Output>;
+    fn poll(&self, sched: &Sched) -> Option<Self::Output>;
 }
 
 
@@ -18,32 +38,28 @@ mod tests {
     #[test]
     fn playground() {
 	#[derive(Debug)]
-	enum JobState {
-	    InProgress(),
-	    Done(),
-	}
 
 
-	struct JobResult<Output> {
-	    id: usize,
-	    job_state: JobState,
-	    input: String,
-	    // length of string
-	    val: Output
-	}
 
 	struct JobFuture {
 	    id: usize,
-	}
-	
-	impl JobFuture {
-	    pub fn poll(&self, scheduler: &Sched) -> Option<f64> {
-		scheduler.get_result(self.id)
-	    }
+	    blah: f64
 	}
 
-	struct Sched {
-	    jobs: Vec::<JobResult<f64>>,
+	impl Future for JobFuture {
+	    type Output = f64;
+
+	    fn poll(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Self::Output> {
+		Poll::Ready(self.blah)
+	    }
+		
+	}
+
+	impl Promise for JobFuture {
+	    type Output = f64;
+	    fn poll(&self, scheduler: &Sched) -> Option<f64> {
+		scheduler.get_result(self.id)
+	    }
 	}
 
 	impl Sched { 
@@ -53,7 +69,7 @@ mod tests {
 	    }
 
 	    pub fn schedule_job(&mut self, job_info: String) -> JobFuture {
-		JobFuture { id: self.schedule_job_f(job_info) }
+		JobFuture { id: self.schedule_job_f(job_info), blah: 0.3 }
 	    }
 
 	    fn schedule_job_f(&mut self, job_info: String) -> usize {
@@ -78,7 +94,7 @@ mod tests {
 		    }
 		}
 	    }
-
+	    
 	    pub fn get_result(&self, job_id: usize) -> Option<f64> {
 		for i in self.jobs.iter() {
 		    if job_id == i.id {
@@ -120,7 +136,6 @@ mod tests {
 	}
 
 	
-	let mut rng = rand::thread_rng();
 	let mut sched = Sched::new();
 
 	// let mut p = JobResult::new(&sched);

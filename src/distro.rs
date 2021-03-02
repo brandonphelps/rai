@@ -1,3 +1,5 @@
+#![allow(dead_code)]
+
 // common utils amonst job doers and job creators
 
 use rasteroids::asteroids;

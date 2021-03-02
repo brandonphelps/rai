@@ -286,7 +286,7 @@ mod tests {
             conn_history: vec![],
         };
 
-        for i in 0..100 {
+        for _i in 0..100 {
             let offspring = species.generate_offspring(&inno_history);
             assert_eq!(node_per_layer(&offspring, 0).unwrap(), 4);
             assert_eq!(node_per_layer(&offspring, 1).unwrap(), 2);
