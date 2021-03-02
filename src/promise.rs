@@ -25,15 +25,23 @@ mod tests {
 
 
 	struct JobResult {
-	    id: u8,
+	    id: usize,
 	    job_state: JobState,
 	    input: String,
 	    // length of string
 	    val: u8
 	}
 
-	struct 
+	struct JobFuture {
+	    id: usize,
+	}
 	
+	impl JobFuture {
+	    pub fn poll(&self, scheduler: &Sched) -> Option<u8> {
+		scheduler.get_result(self.id)
+	    }
+	}
+
 	struct Sched {
 	    jobs: Vec::<JobResult>,
 	}
@@ -43,22 +51,17 @@ mod tests {
 		Self { jobs: vec![] }
 	    }
 
-	    pub fn schedule_job(&mut self, job_info: String) -> u8 {
-		let job_id = self.jobs.len() as u8;
+	    pub fn schedule_job(&mut self, job_info: String) -> JobFuture {
+		JobFuture { id: self.schedule_job_f(job_info) }
+	    }
+
+	    fn schedule_job_f(&mut self, job_info: String) -> usize {
+		let job_id = self.jobs.len();
 		self.jobs.push(JobResult { id : job_id,
 					   input: job_info,
 					   val: 0,
 					   job_state: JobState::InProgress() });
 		return job_id;
-	    }
-
-	    pub fn get_job_state(&self, job_id: u8) -> Option<&JobState> {
-		for i in self.jobs.iter() {
-		    if job_id == i.id {
-			return Some(&i.job_state);
-		    }
-		}
-		return None;
 	    }
 
 	    pub fn update(&mut self) {
@@ -75,10 +78,17 @@ mod tests {
 		}
 	    }
 
-	    pub fn get_result(&self, job_id: u8) -> Option<u8> {
+	    pub fn get_result(&self, job_id: usize) -> Option<u8> {
 		for i in self.jobs.iter() {
 		    if job_id == i.id {
-			return Some(i.val);
+			match i.job_state { 
+			    JobState::InProgress() => { 
+				return None
+			    },
+			    JobState::Done() => {
+				return Some(i.val);
+			    }
+			}
 		    }
 		}
 		return None
@@ -154,12 +164,10 @@ mod tests {
 
 	let job_one = sched.schedule_job(String::from("hello"));
 
-	assert!(sched.get_job_state(job_one).is_some());
-	assert!(sched.get_job_state(job_one).is_some());
-
 	sched.wait();
 
-	assert_eq!(sched.get_result(job_one).unwrap(), 5);
+	//assert_eq!(sched.get_result(job_one).unwrap(), 5);
+	assert_eq!(job_one.poll(&sched).unwrap(), 5);
 
 	assert!(false);
 
