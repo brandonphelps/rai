@@ -3,6 +3,7 @@ use std::future::Future;
 use std::pin::Pin;
 use std::task::{Context, Poll};
 
+
 enum JobState {
     InProgress(),
     Done(),
@@ -32,7 +33,7 @@ pub trait Promise {
     type Output;
 
     // returns a Filled out Option if done else None
-    fn poll(&self, sched: &Sched) -> Option<Self::Output>;
+    fn poll(&self, sched: &mut Sched) -> Poll<Self::Output>;
 }
 
 /// @brief a non async job process handler interface
@@ -67,8 +68,16 @@ mod tests {
 
 	impl Promise for JobFuture {
 	    type Output = f64;
-	    fn poll(&self, scheduler: &Sched) -> Option<f64> {
-		scheduler.get_result(self.id)
+	    fn poll(&self, scheduler: &mut Sched) -> Poll<f64> {
+		match scheduler.get_result(self.id) {
+		    Some(value) => {
+			Poll::Ready(value)
+		    },
+		    None => {
+			scheduler.update();
+			Poll::Pending
+		    }
+		}
 	    }
 	}
 
@@ -154,14 +163,19 @@ mod tests {
 	let job_one = sched.schedule_job(&String::from("hello"));
 	let job_two = sched.schedule_job(&String::from("Wakakakakaka"));
 
-	assert!(job_one.poll(&sched).is_none());
+	assert!(job_one.poll(&mut sched).is_pending());
 
 	sched.wait();
 	// all futures must be completed. 
 
 	//assert_eq!(sched.get_result(job_one).unwrap(), 5);
-	assert_eq!(job_one.poll(&sched).unwrap(), 5.0);
-	assert_eq!(job_two.poll(&sched).unwrap(), 12.0);
+	match job_one.poll(&mut sched) {
+	    Poll::Ready(res) => {
+		assert_eq!(res, 5.0);
+	    },
+	    _ => assert!(false)
+	}
+
 
 	assert!(false);
 
