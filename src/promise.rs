@@ -8,19 +8,25 @@ enum JobState {
     Done(),
 }
 
-pub struct JobResult<Output> {
+#[derive(Debug)]
+struct JobFuture {
+    id: usize,
+    blah: f64
+}
+
+// specifically not public
+struct JobResult<Input, Output> {
     id: usize,
     job_state: JobState,
-    input: String,
+    input: Input,
     // length of string
     val: Output
 }
 
 
 pub struct Sched {
-    jobs: Vec::<JobResult<f64>>,
+    jobs: Vec::<JobResult<String, f64>>,
 }
-
 
 pub trait Promise {
     type Output;
@@ -29,6 +35,17 @@ pub trait Promise {
     fn poll(&self, sched: &Sched) -> Option<Self::Output>;
 }
 
+/// @brief a non async job process handler interface
+/// is intended to for loading up jobs then waiting for them to complete
+pub trait Scheduler<InputType, PromiseP : Promise>  {
+    
+    /// @brief indicates to the schedule that processing should occur. 
+    fn schedule_job(&mut self, input: &InputType) -> PromiseP;
+
+    /// @brief ensures that all currently scheduled jobs are completed
+    /// blocking
+    fn wait(&mut self);
+}
 
 #[cfg(test)]
 mod tests {
@@ -37,14 +54,7 @@ mod tests {
 
     #[test]
     fn playground() {
-	#[derive(Debug)]
 
-
-
-	struct JobFuture {
-	    id: usize,
-	    blah: f64
-	}
 
 	impl Future for JobFuture {
 	    type Output = f64;
@@ -62,14 +72,9 @@ mod tests {
 	    }
 	}
 
-	impl Sched { 
-
+	impl Sched  {
 	    pub fn new() -> Self {
 		Self { jobs: vec![] }
-	    }
-
-	    pub fn schedule_job(&mut self, job_info: String) -> JobFuture {
-		JobFuture { id: self.schedule_job_f(job_info), blah: 0.3 }
 	    }
 
 	    fn schedule_job_f(&mut self, job_info: String) -> usize {
@@ -110,8 +115,14 @@ mod tests {
 		}
 		return None
 	    }
+	}
 
-	    pub fn wait(&mut self) {
+	impl Scheduler<String, JobFuture> for Sched { 
+	    fn schedule_job(&mut self, job_info: &String) -> JobFuture {
+		JobFuture { id: self.schedule_job_f(job_info.clone()), blah: 0.3 }
+	    }
+
+	    fn wait(&mut self) {
 		// call update
 		let mut do_we_need_to_update = true;
 		while do_we_need_to_update {
@@ -140,8 +151,8 @@ mod tests {
 
 	// let mut p = JobResult::new(&sched);
 
-	let job_one = sched.schedule_job(String::from("hello"));
-	let job_two = sched.schedule_job(String::from("Wakakakakaka"));
+	let job_one = sched.schedule_job(&String::from("hello"));
+	let job_two = sched.schedule_job(&String::from("Wakakakakaka"));
 
 	assert!(job_one.poll(&sched).is_none());
 
