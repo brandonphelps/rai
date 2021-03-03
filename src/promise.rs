@@ -1,4 +1,6 @@
 
+use rand::Rng;
+
 use std::future::Future;
 use std::pin::Pin;
 use std::task::{Context, Poll};
@@ -29,6 +31,49 @@ pub struct Sched {
     jobs: Vec::<JobResult<String, f64>>,
 }
 
+impl Sched {
+    pub fn new() -> Self {
+	Self { jobs: vec![] }
+    }
+
+    fn schedule_job_f(&mut self, job_info: String) -> usize {
+	let job_id = self.jobs.len();
+	self.jobs.push(JobResult { id : job_id,
+				   input: job_info,
+				   val: 0.0,
+				   job_state: JobState::InProgress()
+	});
+	return job_id;
+    }
+
+    pub fn update(&mut self) {
+	let mut rng = rand::thread_rng();
+	for i in self.jobs.iter_mut() {
+	    if rng.gen::<f64>() < 0.5 {
+		i.val = i.input.len() as f64;
+		i.job_state = JobState::Done();
+	    }
+	}
+    }
+    
+    pub fn get_result(&self, job_id: usize) -> Option<f64> {
+	for i in self.jobs.iter() {
+	    if job_id == i.id {
+		match i.job_state { 
+		    JobState::InProgress() => { 
+			return None
+		    },
+		    JobState::Done() => {
+			return Some(i.val);
+		    }
+		}
+	    }
+	}
+	return None
+    }
+}
+
+
 pub trait Promise {
     type Output;
 
@@ -48,6 +93,8 @@ pub trait Scheduler<InputType, PromiseP : Promise>  {
     fn wait(&mut self);
 }
 
+
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -55,8 +102,6 @@ mod tests {
 
     #[test]
     fn playground() {
-
-
 	impl Future for JobFuture {
 	    type Output = f64;
 
@@ -78,51 +123,6 @@ mod tests {
 			Poll::Pending
 		    }
 		}
-	    }
-	}
-
-	impl Sched  {
-	    pub fn new() -> Self {
-		Self { jobs: vec![] }
-	    }
-
-	    fn schedule_job_f(&mut self, job_info: String) -> usize {
-		let job_id = self.jobs.len();
-		self.jobs.push(JobResult { id : job_id,
-					   input: job_info,
-					   val: 0.0,
-					   job_state: JobState::InProgress()
-		});
-		return job_id;
-	    }
-
-	    pub fn update(&mut self) {
-		let mut rng = rand::thread_rng();
-		for i in self.jobs.iter_mut() {
-		    if rng.gen::<f64>() < 0.5 {
-			println!("Job moved to done");
-			i.val = i.input.len() as f64;
-			i.job_state = JobState::Done();
-		    } else {
-			println!("Job state no change");
-		    }
-		}
-	    }
-	    
-	    pub fn get_result(&self, job_id: usize) -> Option<f64> {
-		for i in self.jobs.iter() {
-		    if job_id == i.id {
-			match i.job_state { 
-			    JobState::InProgress() => { 
-				return None
-			    },
-			    JobState::Done() => {
-				return Some(i.val);
-			    }
-			}
-		    }
-		}
-		return None
 	    }
 	}
 
@@ -148,7 +148,6 @@ mod tests {
 
 
 		    if do_we_need_to_update {
-			println!("update call");
 			self.update();
 		    }
 		}
