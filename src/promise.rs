@@ -5,7 +5,7 @@ use rand::Rng;
 use std::pin::Pin;
 use std::task::{Context, Poll};
 
-trait Individual {
+trait Individual : Clone {
     fn fitness(&self) -> f64;
 }
 
@@ -37,39 +37,71 @@ impl MyFuture {
 
 
 struct EAFuture<T>  where T: Individual { 
-   input: T,
-   result: f64,
+    // can input be removed? 
+    input: T,
+    result: f64,
+    job_id: u32,
 }
 
 impl<T> EAFuture<T> where T: Individual {
     fn new(input: T) -> Self {
-	Self { input: input, result: 0.0 }
+	Self { input: input, result: 0.0, job_id: 0 }
+    }
+    
+    pub fn set_id(&mut self, id: u32) {
+	self.job_id = id;
+    }
+
+    pub fn get_id(&self) -> u32 {
+	self.job_id
     }
 }
 
 struct IndividualScheduler<T> where T: Individual
 {
-    blah: Vec<T>,
+    input: Vec<T>,
+    output: Vec<Option<f64>>,
 }
 
 impl<T> IndividualScheduler<T> where T: Individual {
 
-    pub fn do_handling(&self, f: &mut EAFuture<T>)  {
-	f.result = self.blah.len() as f64;
-    }
-
-    pub fn get_result(&self, f: &EAFuture<T>) -> Option<f64> {
-	let mut rng = rand::thread_rng();
-
-	if rng.gen::<f64>() < 0.8 {
-	    Some(self.blah.len() as f64)
-	} else {
-	    None
+    pub fn new() -> Self {
+	Self {
+	    input: vec![],
+	    output: vec![],
 	}
     }
 
-    pub fn update(&mut self) {
+    pub fn schedule_job(&mut self, job_info: T) -> EAFuture<T> {
 	
+	let mut f = EAFuture::new(job_info.clone());
+	f.set_id(self.input.len() as u32);
+	self.output.push(None);
+	self.input.push(job_info);
+	return f;
+    }
+   
+    pub fn do_handling(&self, f: &mut EAFuture<T>) {
+	f.result = self.output.len() as f64;
+    }
+
+    // should f be mut ? 
+    pub fn get_result(&self, f: &EAFuture<T>) -> Option<f64> {
+
+	if self.output.len() as u32 >= f.get_id() {
+	    return None;
+	}
+
+	return self.output[f.get_id() as usize];
+    }
+
+    pub fn update(&mut self) {
+	let mut rng = rand::thread_rng();
+	for (index, i) in self.input.iter().enumerate() {
+	    if rng.gen::<f64>() < 0.5 {
+		self.output[index] = Some(i.fitness());
+	    }
+	}
     }
 }
 
@@ -86,53 +118,6 @@ where
 	}
     }
 }
-
-impl<T> Future for EAFuture<T>
-where
-    T: Individual
-{
-    type Output = f64;
-
-    fn poll(&mut self, ctx: &Context) -> Poll<Self::Output> {
-	todo!();
-    }
-
-    fn poll_n(&mut self) -> Poll<Self::Output> {
-	self.result = self.input.fitness();
-	Poll::Ready(self.result)
-    }
-
-    fn poll_s<S: Individual>(&mut self, sched: &mut IndividualScheduler<S>) -> Poll<Self::Output> {
-
-	Poll::Ready(self.result)
-    }
-}
-
-// impl Future for MyFuture {
-//     type Output = u32;
-
-//     fn poll(&mut self, ctx: &Context) -> Poll<Self::Output> {
-//         match self.count {
-//             3 => Poll::Ready(3),
-//             _ => {
-//                 self.count += 1;
-//                 // ctx.waker().wake();
-//                 Poll::Pending
-//             }
-//         }
-//     }
-    
-//     fn poll_n(&mut self) -> Poll<Self::Output> {
-//         match self.count {
-//             3 => Poll::Ready(self.id + self.count),
-//             _ => {
-//                 self.count += 1;
-//                 println!("Pending: {}", self.id);
-//                 Poll::Pending
-//             }
-//         }
-//     }
-// }
 
 // scheduler.
 fn run_many<F>(mut f: Vec::<F>) -> Vec::<F::Output>
@@ -342,9 +327,17 @@ mod tests {
 	    }
 	}
 
-	let mut p = EAFuture::<String>::new(String::from("hello world"));
+	let mut sched = IndividualScheduler::<String>::new();
+	let mut p = sched.schedule_job(String::from("hello world"));
 
-
+	match p.poll_s(&mut sched) {
+	    Poll::Ready(value) => {
+		println!("Got a value");
+	    },
+	    Poll::Pending => {
+		println!("Still waiting");
+	    }
+	}
 
 	assert!(false);
 
