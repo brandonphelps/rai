@@ -146,9 +146,6 @@ where
     return results;
 }
 
-
-
-
 enum JobState {
     InProgress(),
     Done(),
@@ -167,53 +164,6 @@ struct JobResult<Input, Output> {
     input: Input,
     // length of string
     val: Output
-}
-
-
-pub struct Sched {
-    jobs: Vec::<JobResult<String, f64>>,
-}
-
-impl Sched {
-    pub fn new() -> Self {
-	Self { jobs: vec![] }
-    }
-
-    fn schedule_job_f(&mut self, job_info: String) -> usize {
-	let job_id = self.jobs.len();
-	self.jobs.push(JobResult { id : job_id,
-				   input: job_info,
-				   val: 0.0,
-				   job_state: JobState::InProgress()
-	});
-	return job_id;
-    }
-
-    pub fn update(&mut self) {
-	let mut rng = rand::thread_rng();
-	for i in self.jobs.iter_mut() {
-	    if rng.gen::<f64>() < 0.5 {
-		i.val = i.input.len() as f64;
-		i.job_state = JobState::Done();
-	    }
-	}
-    }
-    
-    pub fn get_result(&self, job_id: usize) -> Option<f64> {
-	for i in self.jobs.iter() {
-	    if job_id == i.id {
-		match i.job_state { 
-		    JobState::InProgress() => { 
-			return None
-		    },
-		    JobState::Done() => {
-			return Some(i.val);
-		    }
-		}
-	    }
-	}
-	return None
-    }
 }
 
 
@@ -339,6 +289,18 @@ mod tests {
 	    }
 	}
 
+	for i in 0..10 { 
+	    sched.update();
+
+	    match p.poll_s(&mut sched) {
+		Poll::Ready(value) => {
+		    println!("Got a value");
+		},
+		Poll::Pending => {
+		    println!("Still waiting");
+		}
+	    }
+	}
 	assert!(false);
 
     }
