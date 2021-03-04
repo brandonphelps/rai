@@ -101,6 +101,24 @@ impl<T> IndividualScheduler<T> where T: Individual {
 	    }
 	}
     }
+
+    /// @brief does blocking until all associated futures are completed. 
+    pub fn wait(&mut self) {
+	let mut do_we_need_to_update = true;
+	while do_we_need_to_update {
+	    do_we_need_to_update = false;
+	    for i in self.output.iter() {
+		if i.is_none() {
+		    do_we_need_to_update = true;
+		    break;
+		}
+	    }
+
+	    if do_we_need_to_update {
+		self.update();
+	    }
+	}
+    }
 }
 
 impl<T> IndividualFuture<T> for EAFuture<T>
@@ -183,28 +201,30 @@ mod tests {
 	let mut p = sched.schedule_job(String::from("hello world"));
 	let mut j = sched.schedule_job(String::from("hello wakakwaka"));
 
-	for i in 0..10 { 
-	    match p.poll_s(&mut sched) {
-		Poll::Ready(value) => {
-		    println!("Got a value: {}", value);
-		},
-		Poll::Pending => {
-		    println!("Still waiting");
-		}
+	sched.wait();
 
+	// all associated futures must be completed since we did a wait. 
+	match p.poll_s(&mut sched) {
+	    Poll::Ready(value) => {
+		println!("Got a value: {}", value);
+		assert!(true);
+	    },
+	    Poll::Pending => {
+		println!("Still waiting");
+		assert!(false);
 	    }
 
-	    match j.poll_s(&mut sched) {
-		Poll::Ready(value) => {
-		    println!("Got a value: {}", value);
-		},
-		Poll::Pending => {
-		    println!("Still waiting");
-		}
+	}	    
+	match j.poll_s(&mut sched) {
+	    Poll::Ready(value) => {
+		println!("Got a value: {}", value);
+		assert!(true);
+	    },
+	    Poll::Pending => {
+		println!("Still waiting");
+		assert!(false);
 	    }
-	    sched.update();
 	}
 	assert!(false);
-
     }
 }
