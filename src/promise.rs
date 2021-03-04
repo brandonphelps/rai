@@ -9,11 +9,6 @@ trait Individual : Clone {
     fn fitness(&self) -> f64;
 }
 
-trait IndividualFuture<T> where T: Individual {
-    type Output;
-    fn poll(&mut self, sched: &mut IndividualScheduler<T>) -> Poll<Self::Output>;
-}
-
 // todo: should this be generic'ed on the Output
 // and store the output here? 
 struct EAFuture { 
@@ -32,6 +27,15 @@ impl EAFuture {
 
     pub fn get_id(&self) -> u32 {
 	self.job_id
+    }
+
+    fn poll<T: Individual>(&mut self, sched: &mut IndividualScheduler<T>) -> Poll<f64> {
+	match sched.get_result(&self) {
+	    Some(t) => {
+		Poll::Ready(t)
+	    },
+	    None => { Poll::Pending },
+	}
     }
 }
 
@@ -95,21 +99,6 @@ impl<T> IndividualScheduler<T> where T: Individual {
     }
 }
 
-impl<T> IndividualFuture<T> for EAFuture
-where
-    T: Individual
-{
-    type Output = f64;
-
-    fn poll(&mut self, sched: &mut IndividualScheduler<T>) -> Poll<Self::Output> {
-	match sched.get_result(&self) {
-	    Some(t) => {
-		Poll::Ready(t)
-	    },
-	    None => { Poll::Pending },
-	}
-    }
-}
 
 enum JobState {
     InProgress(),
