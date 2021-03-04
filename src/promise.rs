@@ -73,7 +73,6 @@ impl<T> IndividualScheduler<T> where T: Individual {
     }
 
     pub fn schedule_job(&mut self, job_info: T) -> EAFuture<T> {
-	
 	let mut f = EAFuture::new(job_info.clone());
 	f.set_id(self.input.len() as u32);
 	self.output.push(None);
@@ -87,18 +86,17 @@ impl<T> IndividualScheduler<T> where T: Individual {
 
     // should f be mut ? 
     pub fn get_result(&self, f: &EAFuture<T>) -> Option<f64> {
-
-	if self.output.len() as u32 >= f.get_id() {
-	    return None;
+	if f.get_id() as usize >= self.output.len() {
+	    None
+	} else { 
+	    self.output[f.get_id() as usize]
 	}
-
-	return self.output[f.get_id() as usize];
     }
 
     pub fn update(&mut self) {
 	let mut rng = rand::thread_rng();
 	for (index, i) in self.input.iter().enumerate() {
-	    if rng.gen::<f64>() < 0.5 {
+	    if rng.gen::<f64>() < 0.3 {
 		self.output[index] = Some(i.fitness());
 	    }
 	}
@@ -113,7 +111,9 @@ where
 
     fn poll_s(&mut self, sched: &mut IndividualScheduler<T>) -> Poll<Self::Output> {
 	match sched.get_result(&self) {
-	    Some(t) => { Poll::Ready(t) },
+	    Some(t) => {
+		Poll::Ready(t)
+	    },
 	    None => { Poll::Pending },
 	}
     }
@@ -166,26 +166,6 @@ struct JobResult<Input, Output> {
     val: Output
 }
 
-
-pub trait Promise {
-    type Output;
-
-    // returns a Filled out Option if done else None
-    fn poll(&self, sched: &mut Sched) -> Poll<Self::Output>;
-}
-
-/// @brief a non async job process handler interface
-/// is intended to for loading up jobs then waiting for them to complete
-pub trait Scheduler<F: Promise>  {
-
-    /// @brief indicates to the schedule that processing should occur. 
-    fn schedule_job(&mut self, input: F) -> F::Output;
-
-    /// @brief ensures that all currently scheduled jobs are completed
-    /// blocking
-    fn wait(&mut self);
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -193,84 +173,6 @@ mod tests {
 
     #[test]
     fn playground() {
-	// impl Future for JobFuture {
-	//     type Output = f64;
-
-	//     fn poll(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Self::Output> {
-	// 	Poll::Ready(self.blah)
-	//     }
-		
-	// }
-
-	// impl Promise for JobFuture {
-	//     type Output = f64;
-	//     fn poll(&self, scheduler: &mut Sched) -> Poll<f64> {
-	// 	match scheduler.get_result(self.id) {
-	// 	    Some(value) => {
-	// 		Poll::Ready(value)
-	// 	    },
-	// 	    None => {
-	// 		scheduler.update();
-	// 		Poll::Pending
-	// 	    }
-	// 	}
-	//     }
-	// }
-
-	// impl Scheduler<JobFuture> for Sched { 
-	//     fn schedule_job(&mut self, job_info: JobFuture) -> JobFuture::Output {
-	// 	JobFuture { id: self.schedule_job_f(job_info.clone()), blah: 0.3 }
-	//     }
-
-	//     fn wait(&mut self) {
-	// 	// call update
-	// 	let mut do_we_need_to_update = true;
-	// 	while do_we_need_to_update {
-	// 	    do_we_need_to_update = false;
-	// 	    for i in self.jobs.iter() {
-	// 		match i.job_state {
-	// 		    JobState::InProgress() => {
-	// 			do_we_need_to_update = true;
-	// 			break;
-	// 		    },
-	// 		    _ => {},
-	// 		}
-	// 	    }
-
-	// 	    if do_we_need_to_update {
-	// 		self.update();
-	// 	    }
-	// 	}
-	//     }
-	// }
-
-	
-	// let mut sched = Sched::new();
-
-	// // let mut p = JobResult::new(&sched);
-
-	// let job_one = sched.schedule_job(&String::from("hello"));
-	// let job_two = sched.schedule_job(&String::from("Wakakakakaka"));
-
-	// assert!(job_one.poll(&mut sched).is_pending());
-
-	// sched.wait();
-	// // all futures must be completed. 
-
-	// //assert_eq!(sched.get_result(job_one).unwrap(), 5);
-	// match job_one.poll(&mut sched) {
-	//     Poll::Ready(res) => {
-	// 	assert_eq!(res, 5.0);
-	//     },
-	//     _ => assert!(false)
-	// }
-	
-	
-	// let my_future = MyFuture::new(1);
-	// let other = MyFuture::new(2);
-
-	// println!("Output: {:#?}", run_many(vec![my_future, other]));
-
 	impl Individual for String {
 	    fn fitness(&self) -> f64 {
 		self.len() as f64
@@ -279,27 +181,28 @@ mod tests {
 
 	let mut sched = IndividualScheduler::<String>::new();
 	let mut p = sched.schedule_job(String::from("hello world"));
-
-	match p.poll_s(&mut sched) {
-	    Poll::Ready(value) => {
-		println!("Got a value");
-	    },
-	    Poll::Pending => {
-		println!("Still waiting");
-	    }
-	}
+	let mut j = sched.schedule_job(String::from("hello wakakwaka"));
 
 	for i in 0..10 { 
-	    sched.update();
-
 	    match p.poll_s(&mut sched) {
 		Poll::Ready(value) => {
-		    println!("Got a value");
+		    println!("Got a value: {}", value);
+		},
+		Poll::Pending => {
+		    println!("Still waiting");
+		}
+
+	    }
+
+	    match j.poll_s(&mut sched) {
+		Poll::Ready(value) => {
+		    println!("Got a value: {}", value);
 		},
 		Poll::Pending => {
 		    println!("Still waiting");
 		}
 	    }
+	    sched.update();
 	}
 	assert!(false);
 
