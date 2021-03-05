@@ -4,6 +4,7 @@
 use std::fmt::Debug;
 use std::cmp::Reverse;
 
+use std::collections::HashMap;
 
 // can we get rid of star here?
 use rand::prelude::*;
@@ -11,7 +12,9 @@ use rand::seq::SliceRandom;
 
 #[allow(unused_imports)]
 use crate::promise::{LocalScheduler, Scheduler};
+use crate::individual::Individual;
 
+use std::task::{Poll};
 
 /// @brief container class for the various parameters.
 pub struct GAParams {
@@ -53,33 +56,33 @@ impl<Individual> IndiFit<Individual> where Individual: Debug{
     }
 }
 
-fn run_ea<Individual, Storage, Sched>(params: &GAParams,
-				      _fitness_name: String,
-				      on_fitness: fn(&Individual) -> f64,
-				      on_crossover: fn(&GAParams, &Vec<&Individual>) -> Vec<Individual>,
-				      on_mutate: fn(&GAParams, &mut Storage, &Individual) -> Individual,
-				      _scheduler: &mut Sched) -> ()
+fn run_ea<IndividualT, Storage, Sched>(params: &GAParams,
+				      on_crossover: fn(&GAParams, &Vec<&IndividualT>) -> Vec<IndividualT>,
+				      on_mutate: fn(&GAParams, &mut Storage, &IndividualT) -> IndividualT,
+				      scheduler: &mut Sched) -> ()
 where
-    Individual: Default + Debug,
-    Storage: Default
+    IndividualT: Default + Debug + Individual,
+    Storage: Default,
+    Sched: Scheduler<IndividualT>,
 {
 
     // key is the individual, the value is the fitness of said individual
-    let mut individuals = Vec::<IndiFit<Individual>>::new();
+    let mut individuals = Vec::<IndiFit<IndividualT>>::new();
     let mut storage = Storage::default();
 
     for _ in 0..params.pop_size { 
-	individuals.push(IndiFit::new(Individual::default()));
+	individuals.push(IndiFit::new(IndividualT::default()));
     }
 
     // do fitness calculation. 
     for indivi in individuals.iter_mut() {
-	indivi.fitness = on_fitness(&indivi.sol);
+	indivi.fitness = indivi.sol.fitness();
+	println!("Calculating fitness");
     }
 
     for _current_generation in 0..params.generation_count { 
 	let mut individuals_fitness = Vec::<f64>::new();
-	let mut indivds = Vec::<&Individual>::new();
+	let mut indivds = Vec::<&IndividualT>::new();
 	
 	for indiv in individuals.iter() {
 	    individuals_fitness.push(indiv.fitness);
@@ -95,10 +98,27 @@ where
 	    individuals.push(IndiFit::new(tmp_p));
 	}
 
+	{ 
+	    let mut results = HashMap::new();
+	    // do fitness calculation. 
+	    for (index, indivi) in individuals.iter().enumerate() {
+		println!("Scheduling items");
+		results.insert(index, scheduler.schedule_job(indivi.sol.clone()));
+	    }
 
-	// do fitness calculation. 
-	for indivi in individuals.iter_mut() {
-	    indivi.fitness = on_fitness(&indivi.sol);
+	    println!("Waiting for scheduler to finish");
+	    scheduler.wait();
+	    
+	    for pair in results.iter_mut() {
+
+		match pair.1.poll(scheduler) {
+		    Poll::Ready(fitness) => {
+			println!("Getting fitness: {}", fitness);
+			individuals[*pair.0 as usize].fitness = fitness;
+		    },
+		    Poll::Pending => { panic!("Failed to get fitness") }
+		}
+	    }
 	}
 
 	let mut total_fitness = 0.0;
@@ -132,7 +152,6 @@ where
 mod tests {
     use super::*;
 
-    use crate::individual::{Individual};
     #[derive(Clone, Debug)]
     struct TestIndividual {
         w1: f32,
@@ -176,25 +195,21 @@ mod tests {
     #[derive(Default)]
     struct GStorage { }
     
-    fn ind_fitness(individual: &TestIndividual) -> f64 {
-        let p = (individual.w1 * individual.x1
-		 + individual.w2 * individual.x2
-		 + individual.w3 * individual.x3
-		 + individual.w4 * individual.x4
-		 + individual.w5 * individual.x5
-		 + individual.w6 * individual.x6) as f64;
-	let fitness = (44.0 - p).abs();
-	if fitness == 0.0 {
-	    return 100000000000000.0;
-	}
-	else{
-	    return 1.0 / fitness;
-	}
-    }
-
     impl Individual for TestIndividual {
 	fn fitness(&self) -> f64 {
-	    ind_fitness(&self)
+	    let p = (self.w1 * self.x1
+		     + self.w2 * self.x2
+		     + self.w3 * self.x3
+		     + self.w4 * self.x4
+		     + self.w5 * self.x5
+		     + self.w6 * self.x6) as f64;
+	    let fitness = (44.0 - p).abs();
+	    if fitness == 0.0 {
+		return 100000000000000.0;
+	    }
+	    else{
+		return 1.0 / fitness;
+	    }
 	}
 
 	fn ea_name(&self) -> String {
@@ -210,7 +225,6 @@ mod tests {
 	    let new_x = 0.0;
 
 	}
-
 
 	TestIndividual {
 	    w1: indivi.w1,
@@ -322,22 +336,18 @@ mod tests {
     fn test_playground() {
         let ga_params = GAParams {
             pop_size: 10,
-	    offspring_count: 200,
-            generation_count: 10000,
+	    offspring_count: 50,
+            generation_count: 100,
             parent_selection_count: 10,
         };
 	
 
 	let mut scheduler = LocalScheduler::<TestIndividual>::new();
 
-	assert!(false);
-
 	run_ea::<TestIndividual, GStorage, LocalScheduler<TestIndividual>>(&ga_params,
-							   String::from("math_fit"),
-							   ind_fitness,
-							   ind_crossover,
-							   ind_mutate,
-							   &mut scheduler);
+									   ind_crossover,
+									   ind_mutate,
+									   &mut scheduler);
 	assert!(false);
     }
 }

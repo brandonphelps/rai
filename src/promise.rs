@@ -22,7 +22,7 @@ where
 // todo: should this be generic'ed on the Output
 // and store the output here? 
 pub struct EAFuture { 
-    result: f64,
+    pub result: f64,
     job_id: u32,
 }
 
@@ -35,7 +35,12 @@ impl EAFuture {
 	self.job_id
     }
 
-    pub fn poll<T: Individual>(&mut self, sched: &mut LocalScheduler<T>) -> Poll<f64> {
+    // todo: should self be constant? 
+    pub fn poll<T, S>(&mut self, sched: &mut S) -> Poll<f64>
+    where
+	T: Individual,
+	S: Scheduler<T>,
+    {
 	match sched.get_result(&self) {
 	    Some(t) => { Poll::Ready(t) },
 	    None => { Poll::Pending },
@@ -50,6 +55,7 @@ impl EAFuture {
 /// care must be taken for that th eEAfuture polls the scheduler it came from. 
 pub trait Scheduler<T> {
     fn schedule_job(&mut self, job_info: T) -> EAFuture;
+    fn get_result(&self, f: &EAFuture) -> Option<f64>;
     fn update(&mut self) -> ();
     fn wait(&mut self) -> ();
 }
@@ -69,26 +75,29 @@ impl<T> LocalScheduler<T> where T: Individual {
 	}
     }
 
-    // should f be mut ? 
-    pub fn get_result(&self, f: &EAFuture) -> Option<f64> {
-	if f.get_id() as usize >= self.output.len() {
-	    None
-	} else { 
-	    self.output[f.get_id() as usize]
-	}
-    }
+
 }
 
 impl<T> Scheduler<T> for LocalScheduler<T> where T: Individual {
 
     fn schedule_job(&mut self, job_info: T) -> EAFuture {
 	let f = EAFuture::new(self.output.len() as u32);
+	println!("Calculating fitness");
 	self.output.push(Some(job_info.fitness()));
 	return f;
     }
 
     fn update(&mut self) {
 	// no need for this. 
+    }
+
+    // should f be mut ? 
+    fn get_result(&self, f: &EAFuture) -> Option<f64> {
+	if f.get_id() as usize >= self.output.len() {
+	    None
+	} else { 
+	    self.output[f.get_id() as usize]
+	}
     }
 
     /// @brief does blocking until all associated futures are completed. 
@@ -171,6 +180,10 @@ where
 
     fn update(&mut self) -> () {
 
+    }
+
+    fn get_result(&self, f: &EAFuture) -> Option<f64> {
+	Some(0.0)
     }
 
     fn wait(&mut self) {
