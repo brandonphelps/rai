@@ -4,6 +4,8 @@ use crate::nn::Network;
 use crate::neat::InnovationHistory;
 use crate::distro::asteroids_fitness;
 
+use crate::individual::Individual;
+
 // dono bout this. 
 // trait FitnessFunctor {
 //     fn name(&self) -> String,
@@ -12,7 +14,6 @@ use crate::distro::asteroids_fitness;
 
 #[derive(Clone)]
 pub struct AsteroidsPlayer {
-
     // thing of interest.
     brain: Network,
     // whats the diff between dyn Fn(blah blah) and
@@ -30,20 +31,22 @@ impl AsteroidsPlayer {
 	} 
     }
 
-    pub fn fitness(&mut self) -> f64 {
-	asteroids_fitness(&self.brain)
-    }
 
     pub fn mutate(&self, _inno: &mut InnovationHistory) -> Self {
 	Self::new()
     }
 }
 
+impl Individual for AsteroidsPlayer { 
+
+    fn fitness(&mut self) -> f64 {
+	asteroids_fitness(&self.brain)
+    }
+}
 
 pub struct AsteroidsStorage  {
     inno_history: InnovationHistory,
 }
-
 
 impl AsteroidsStorage {
     pub fn new() -> Self {

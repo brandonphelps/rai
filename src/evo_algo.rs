@@ -179,7 +179,7 @@ mod tests {
 		w3: 3.5,
 		w4: 5.0,
 		w5: -11.0,
-		w6: -4.7,
+		w6: -1004.7,
 		x1: rng.gen::<f32>(),
 		x2: rng.gen::<f32>(),
 		x3: rng.gen::<f32>(),
@@ -330,7 +330,6 @@ mod tests {
 	}
 	return new_offspring;
     }
-
 
     #[test]
     fn test_playground() {
