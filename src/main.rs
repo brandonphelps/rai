@@ -26,7 +26,8 @@ mod nn;
 use rasteroids::asteroids;
 use rasteroids::collision;
 
-use crate::scheduler::{Scheduler, LocalScheduler};
+
+use crate::promise::{Scheduler, LocalScheduler};
 
 use std::collections::HashMap;
 use std::time::Instant;
@@ -47,6 +48,7 @@ fn log<T: Any + Debug>(value: &T) {
 	}
     }
 }
+
 
 
 /// Given the total fitness, species' fitness, and total pop, generate a total number of
@@ -133,17 +135,15 @@ fn run_ea(
 
         let start = Instant::now();
         {
-            //let mut schedu = Scheduler::new("192.168.1.77", 11300);
 	    let mut schedu = LocalScheduler::new();
-            for off_p in offspring.iter_mut() {
-                // fitness_func(&mut new_child);
-                // evaluate_individual(&mut new_child, fitness_func);
-		println!("Scheduling job");
-                schedu.schedule_job(off_p, &"rasteroids".to_string());
+	    let mut offspring_fitness = Vec::new();
+            for off_p in offspring.iter() {
+                offspring_fitness.push(schedu.schedule_job(off_p));
             }
-
             schedu.wait();
+
         }
+
         let duration = start.elapsed();
         if duration.as_secs() != 0 {
             println!(

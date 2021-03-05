@@ -9,6 +9,8 @@ use serde::{Deserialize, Serialize};
 use std::pin::Pin;
 use std::task::{Context, Poll};
 
+use crate::evo_algo::{Individual};
+
 #[derive(Serialize, Deserialize)]
 struct JobInfo<T>
 where
@@ -19,10 +21,6 @@ where
     job_id: u128,
 }
 
-trait Individual : Clone {
-    fn fitness(&self) -> f64;
-    fn ea_name(&self) -> String;
-}
 
 // todo: should this be generic'ed on the Output
 // and store the output here? 
@@ -53,14 +51,15 @@ impl EAFuture {
 /// when a schedule_job event occurs a handle (EAFturue) is passed to the user that
 /// will (after enough update) calls be able to retrieve its value via the poll method
 /// care must be taken for that th eEAfuture polls the scheduler it came from. 
-trait Scheduler<T> {
+pub trait Scheduler<T> {
     fn schedule_job(&mut self, job_info: T) -> EAFuture;
     fn update(&mut self) -> ();
     fn wait(&mut self) -> ();
 }
 
-struct LocalScheduler<T> where T: Individual
+pub struct LocalScheduler<T> where T: Individual
 {
+    // todo: remove this since we don't need to keep track of the input. 
     input: Vec<T>,
     output: Vec<Option<f64>>,
 }
@@ -86,9 +85,8 @@ impl<T> LocalScheduler<T> where T: Individual {
 impl<T> Scheduler<T> for LocalScheduler<T> where T: Individual {
 
     fn schedule_job(&mut self, job_info: T) -> EAFuture {
-	let mut f = EAFuture::new(self.input.len() as u32);
+	let mut f = EAFuture::new(self.output.len() as u32);
 	self.output.push(Some(job_info.fitness()));
-	self.input.push(job_info);
 	return f;
     }
 
@@ -119,10 +117,12 @@ struct BeanstalkScheduler<T>
 where
     T: Individual
 {
+    // todo: remove. 
+    input: Vec<T>,
     current_jobs: Vec<u128>,
     job_queue: Beanstalkc,
     next_job_id: u128,
-    output_values: Vec<T>,
+    output_values: Vec<Option<f64>>,
 }
 
 impl<T> BeanstalkScheduler<T> where T: Individual {
@@ -131,6 +131,7 @@ impl<T> BeanstalkScheduler<T> where T: Individual {
 	p.watch("results").expect("Failed to watch results queue");
 
 	Self {
+	    input: vec![],
 	    current_jobs: vec![],
 	    job_queue: p,
 	    next_job_id: 0,
@@ -176,30 +177,30 @@ where
     }
 
     fn wait(&mut self) {
-	while self.current_jobs.len() > {
+	while self.current_jobs.len() > 0 {
+	    let current_job = self.job_queue.reserve_with_timeout(Duration::from_secs(2));
+	    match current_job {
+		
+		Ok(mut job_info) => {
+		    job_info.delete().expect("Failed to delete job from queue");
+
+		    let mut i = 0;
+		    // let unpacked_result: JobResults = serde_json::from_slice(&job_info.body()).unwrap();
+		    // for (index, job_r) in self.current_jobs.iter().enumerate() {
+		    // 	if unpacked_result.job_id == job_r.0 {
+		    // 	    i = index;
+		    // 	}
+		    // }
+
+		    let mut queued_job = self.current_jobs.remove(i);
+		    
+			
+		},
+		Err(_) => (),
+	    }
 
 	}
     }
-}
-
-enum JobState {
-    InProgress(),
-    Done(),
-}
-
-#[derive(Debug)]
-struct JobFuture {
-    id: usize,
-    blah: f64
-}
-
-// specifically not public
-struct JobResult<Input, Output> {
-    id: usize,
-    job_state: JobState,
-    input: Input,
-    // length of string
-    val: Output
 }
 
 #[cfg(test)]

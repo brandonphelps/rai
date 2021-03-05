@@ -10,9 +10,6 @@ use crate::distro::{EaFuncMap, JobInfo, JobResults};
 use crate::nn::Network;
 
 
-
-
-
 // todo: allow for different schedule types / connectors etc. 
 // one main option should be have "remote workers" vs local running. 
 pub struct Scheduler<'a> {
@@ -91,30 +88,6 @@ impl<'a> Scheduler<'a> {
                 Err(_) => (),
             }
         }
-    }
-}
-
-pub struct LocalScheduler {
-    func_map: EaFuncMap,
-}
-
-impl LocalScheduler {
-
-    pub fn new() -> LocalScheduler {
-	let func_map = EaFuncMap::new();
-
-	LocalScheduler { func_map: func_map }
-    }
-    
-    pub fn schedule_job(&mut self,
-			individual: &mut Network,
-			fitness_func_name: &String) {
-	// do the actual job?
-	individual.fitness = self.func_map.run_fitness(fitness_func_name, individual);
-    }
-
-    pub fn wait(&mut self) -> () {
-	// do nothing i guess. 
     }
 }
 
