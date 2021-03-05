@@ -7,6 +7,7 @@ mod distro;
 mod neat;
 mod nn;
 
+
 fn main() -> () {
     let mut beanstalkd = Beanstalkc::new()
         .host("192.168.1.77")

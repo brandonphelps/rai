@@ -6,9 +6,24 @@ use std::future::Future;
 use std::time::Duration;
 use beanstalkc::Beanstalkc;
 
-use crate::distro::{EaFuncMap, JobInfo, JobResults};
+use crate::distro::{JobInfo, JobResults};
 use crate::nn::Network;
 
+trait IndiFit<Individual> {
+    fn set_fitness(&mut self, fitness: f64) -> ();
+    fn fitness(&self) -> f64;
+    fn name() -> String;
+}
+
+// todo: remove T and remain Scheduler to beanstalk Scheduler
+pub trait SchedulerT<Individual> {
+    /// blocking call to wait around untill all the jobs are finished. 
+    fn wait(&mut self);
+    /// Performs the act of enqueing or setting up w/e is needed for the individual
+    /// to be evaluated. 
+    fn schedule_job(&mut self, indi: &Individual) -> u32;
+    fn get_results(&self) -> f64;
+}
 
 // todo: allow for different schedule types / connectors etc. 
 // one main option should be have "remote workers" vs local running. 
@@ -91,4 +106,12 @@ impl<'a> Scheduler<'a> {
     }
 }
 
-// todo: add in some unit tests. 
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn playground() {
+	
+    }
+}

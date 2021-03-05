@@ -1,6 +1,10 @@
 #![allow(unused_imports)]
 #![allow(dead_code)]
 #![allow(deprecated)]
+
+// dono why this is needed for the doc comamnd to work. 
+#![feature(intra_doc_pointers)]
+
 use prgrs::{Length, Prgrs};
 use rand::distributions::{Distribution, Normal};
 use rand::prelude::*;
@@ -18,6 +22,7 @@ mod lifetime;
 mod promise;
 mod scheduler;
 mod distro;
+mod asteroids_individual;
 mod evo_algo;
 mod hrm;
 mod neat;
@@ -232,9 +237,7 @@ fn main() -> std::result::Result<(), String> {
     Ok(())
 }
 
-
-// todo look at this bench amrk thing https://stackoverflow.com/questions/60916194/how-to-sort-a-vector-in-descending-order-in-rust
-
+// todo look at this bench mark thing https://stackoverflow.com/questions/60916194/how-to-sort-a-vector-in-descending-order-in-rust
 #[cfg(test)]
 mod tests {
     use super::*;
