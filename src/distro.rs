@@ -1,7 +1,6 @@
 #![allow(dead_code)]
 
 // common utils amonst job doers and job creators
-
 use rasteroids::asteroids;
 use rasteroids::collision;
 use serde::{Deserialize, Serialize};

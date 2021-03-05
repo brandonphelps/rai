@@ -1,12 +1,27 @@
 
 use rand::Rng;
+use std::time::Duration;
+use beanstalkc::Beanstalkc;
+
+use serde::{Deserialize, Serialize};
 
 // use std::future::Future;
 use std::pin::Pin;
 use std::task::{Context, Poll};
 
+#[derive(Serialize, Deserialize)]
+struct JobInfo<T>
+where
+    T: Individual
+{
+    name: String,
+    individual: T,
+    job_id: u128,
+}
+
 trait Individual : Clone {
     fn fitness(&self) -> f64;
+    fn ea_name(&self) -> String;
 }
 
 // todo: should this be generic'ed on the Output
@@ -17,26 +32,31 @@ struct EAFuture {
 }
 
 impl EAFuture { 
-    fn new() -> Self {
-	Self { result: 0.0, job_id: 0 }
-    }
-    
-    pub fn set_id(&mut self, id: u32) {
-	self.job_id = id;
+    fn new(job_id: u32) -> Self {
+	Self { result: 0.0, job_id: job_id }
     }
 
     pub fn get_id(&self) -> u32 {
 	self.job_id
     }
 
-    fn poll<T: Individual>(&mut self, sched: &mut IndividualScheduler<T>) -> Poll<f64> {
+    pub fn poll<T: Individual>(&mut self, sched: &mut IndividualScheduler<T>) -> Poll<f64> {
 	match sched.get_result(&self) {
-	    Some(t) => {
-		Poll::Ready(t)
-	    },
+	    Some(t) => { Poll::Ready(t) },
 	    None => { Poll::Pending },
 	}
     }
+}
+
+/// a scheduler main goal is provide single thread asycn like behaviour.
+/// this occurs in a similar fasion to futures, however allows for maintaing state
+/// when a schedule_job event occurs a handle (EAFturue) is passed to the user that
+/// will (after enough update) calls be able to retrieve its value via the poll method
+/// care must be taken for that th eEAfuture polls the scheduler it came from. 
+trait Scheduler<T> {
+    fn schedule_job(&mut self, job_info: T) -> EAFuture;
+    fn update(&mut self) -> ();
+    fn wait(&mut self) -> ();
 }
 
 struct IndividualScheduler<T> where T: Individual
@@ -46,20 +66,11 @@ struct IndividualScheduler<T> where T: Individual
 }
 
 impl<T> IndividualScheduler<T> where T: Individual {
-
     pub fn new() -> Self {
 	Self {
 	    input: vec![],
 	    output: vec![],
 	}
-    }
-
-    pub fn schedule_job(&mut self, job_info: T) -> EAFuture {
-	let mut f = EAFuture::new();
-	f.set_id(self.input.len() as u32);
-	self.output.push(None);
-	self.input.push(job_info);
-	return f;
     }
 
     // should f be mut ? 
@@ -71,7 +82,19 @@ impl<T> IndividualScheduler<T> where T: Individual {
 	}
     }
 
-    pub fn update(&mut self) {
+}
+
+impl<T> Scheduler<T> for IndividualScheduler<T> where T: Individual {
+
+    fn schedule_job(&mut self, job_info: T) -> EAFuture {
+	let mut f = EAFuture::new(self.input.len() as u32);
+	self.output.push(None);
+	self.input.push(job_info);
+	return f;
+    }
+
+
+    fn update(&mut self) {
 	let mut rng = rand::thread_rng();
 	for (index, i) in self.input.iter().enumerate() {
 	    if rng.gen::<f64>() < 0.3 {
@@ -81,7 +104,7 @@ impl<T> IndividualScheduler<T> where T: Individual {
     }
 
     /// @brief does blocking until all associated futures are completed. 
-    pub fn wait(&mut self) {
+    fn wait(&mut self) {
 	let mut do_we_need_to_update = true;
 	while do_we_need_to_update {
 	    do_we_need_to_update = false;
@@ -99,6 +122,65 @@ impl<T> IndividualScheduler<T> where T: Individual {
     }
 }
 
+struct BeanstalkScheduler<T> where T: Individual {
+    current_jobs: Vec<(u128, T)>,
+    job_queue: Beanstalkc,
+    next_job_id: u128,
+}
+
+impl<T> BeanstalkScheduler<T> where T: Individual {
+    pub fn new(host: &str, port: u16) -> Self {
+	let mut p = Beanstalkc::new().host(host).port(port).connect().expect("Connection failed");
+	p.watch("results").expect("Failed to watch results queue");
+
+	Self {
+	    current_jobs: vec![],
+	    job_queue: p,
+	    next_job_id: 0,
+	}
+    }
+}
+
+impl<T> Scheduler<T> for BeanstalkScheduler<T>
+where
+    T: Individual + Serialize
+{
+    fn schedule_job(&mut self, job_info: T) -> EAFuture {
+	self.job_queue.use_tube(&job_info.ea_name()).expect("Failed to use tube");
+	let job_id = self.next_job_id + 1 as u128;
+	self.next_job_id += 1;
+
+	let job = JobInfo {
+	    name: job_info.ea_name().clone(),
+	    individual: job_info.clone(),
+	    job_id: job_id,
+	};
+
+	let job_str = serde_json::to_string(&job).unwrap();
+
+	match self.job_queue.put(
+	    job_str.as_bytes(),
+	    1,
+	    Duration::from_secs(0),
+	    Duration::from_secs(120),
+	) {
+	    Ok(_t) => { self.current_jobs.push((job_id, job_info.clone())) },
+	    Err(_) => {
+		println!("Failed to schedule Job");
+	    }
+	};
+
+	EAFuture::new(job_id as u32)
+    }
+
+    fn update(&mut self) -> () {
+
+    }
+
+    fn wait(&mut self) {
+
+    }
+}
 
 enum JobState {
     InProgress(),
@@ -130,6 +212,10 @@ mod tests {
 	impl Individual for String {
 	    fn fitness(&self) -> f64 {
 		self.len() as f64
+	    }
+
+	    fn ea_name(&self) -> String {
+		String::from("String")
 	    }
 	}
 
