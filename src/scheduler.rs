@@ -1,8 +1,6 @@
 /// Contains structs and methods for "enqueing" arbitrary fitness functions
 /// and waiting for results.
 
-use std::future::Future;
-
 use std::time::Duration;
 use beanstalkc::Beanstalkc;
 

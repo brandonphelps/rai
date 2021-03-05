@@ -1,5 +1,6 @@
 #![allow(dead_code)]
 
+
 use std::fmt::Debug;
 use std::cmp::Reverse;
 
@@ -8,7 +9,9 @@ use std::cmp::Reverse;
 use rand::prelude::*;
 use rand::seq::SliceRandom;
 
+#[allow(unused_imports)]
 use crate::promise::{LocalScheduler, Scheduler};
+
 
 /// @brief container class for the various parameters.
 pub struct GAParams {
@@ -25,7 +28,7 @@ pub struct GAParams {
 
 // RANDOM parent selction
 fn select_parents<'a, Individual>(params: &GAParams,
-				  fitness: &Vec<f64>,
+				  _fitness: &Vec<f64>,
 				  population: &'a Vec<&Individual>) -> Vec<&'a Individual> {
     let mut parents = Vec::<&'a Individual>::new();
 
@@ -50,12 +53,12 @@ impl<Individual> IndiFit<Individual> where Individual: Debug{
     }
 }
 
-fn run_ea<Individual, Storage>(params: &GAParams,
-			       fitness_name: String,
-			       on_fitness: fn(&Individual) -> f64,
-			       on_crossover: fn(&GAParams, &Vec<&Individual>) -> Vec<Individual>,
-			       on_mutate: fn(&GAParams, &mut Storage, &Individual) -> Individual,
-			       scheduler: &mut LocalScheduler) -> ()
+fn run_ea<Individual, Storage, Sched>(params: &GAParams,
+				      _fitness_name: String,
+				      on_fitness: fn(&Individual) -> f64,
+				      on_crossover: fn(&GAParams, &Vec<&Individual>) -> Vec<Individual>,
+				      on_mutate: fn(&GAParams, &mut Storage, &Individual) -> Individual,
+				      _scheduler: &mut Sched) -> ()
 where
     Individual: Default + Debug,
     Storage: Default
@@ -129,6 +132,7 @@ where
 mod tests {
     use super::*;
 
+    use crate::individual::{Individual};
     #[derive(Clone, Debug)]
     struct TestIndividual {
         w1: f32,
@@ -185,6 +189,16 @@ mod tests {
 	}
 	else{
 	    return 1.0 / fitness;
+	}
+    }
+
+    impl Individual for TestIndividual {
+	fn fitness(&self) -> f64 {
+	    ind_fitness(&self)
+	}
+
+	fn ea_name(&self) -> String {
+	    String::from("mathfit")
 	}
     }
 
@@ -314,16 +328,16 @@ mod tests {
         };
 	
 
-	let mut scheduler = LocalScheduler { };
+	let mut scheduler = LocalScheduler::<TestIndividual>::new();
 
 	assert!(false);
 
-	run_ea::<TestIndividual, GStorage>(&ga_params,
-					   String::from("math_fit"),
-					   ind_fitness,
-					   ind_crossover,
-					   ind_mutate,
-					   &mut scheduler);
+	run_ea::<TestIndividual, GStorage, LocalScheduler<TestIndividual>>(&ga_params,
+							   String::from("math_fit"),
+							   ind_fitness,
+							   ind_crossover,
+							   ind_mutate,
+							   &mut scheduler);
 	assert!(false);
     }
 }

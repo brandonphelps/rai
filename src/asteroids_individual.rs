@@ -34,7 +34,7 @@ impl AsteroidsPlayer {
 	asteroids_fitness(&self.brain)
     }
 
-    pub fn mutate(&self, inno: &mut InnovationHistory) -> Self {
+    pub fn mutate(&self, _inno: &mut InnovationHistory) -> Self {
 	Self::new()
     }
 }

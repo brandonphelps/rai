@@ -22,6 +22,8 @@ mod lifetime;
 mod promise;
 mod scheduler;
 mod distro;
+
+mod individual;
 mod asteroids_individual;
 mod evo_algo;
 mod hrm;
@@ -140,13 +142,12 @@ fn run_ea(
 
         let start = Instant::now();
         {
-	    let mut schedu = LocalScheduler::new();
-	    let mut offspring_fitness = Vec::new();
-            for off_p in offspring.iter() {
-                offspring_fitness.push(schedu.schedule_job(off_p));
-            }
-            schedu.wait();
-
+	    // let mut schedu = LocalScheduler::new();
+	    // let mut offspring_fitness = Vec::new();
+            // for off_p in offspring.iter() {
+            //     offspring_fitness.push(schedu.schedule_job(off_p));
+            // }
+            // schedu.wait();
         }
 
         let duration = start.elapsed();

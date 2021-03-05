@@ -1,15 +1,12 @@
 
-use rand::Rng;
 use std::time::Duration;
 use beanstalkc::Beanstalkc;
 
 use serde::{Deserialize, Serialize};
 
-// use std::future::Future;
-use std::pin::Pin;
-use std::task::{Context, Poll};
+use std::task::{Poll};
 
-use crate::evo_algo::{Individual};
+use crate::individual::{Individual};
 
 #[derive(Serialize, Deserialize)]
 struct JobInfo<T>
@@ -24,7 +21,7 @@ where
 
 // todo: should this be generic'ed on the Output
 // and store the output here? 
-struct EAFuture { 
+pub struct EAFuture { 
     result: f64,
     job_id: u32,
 }
@@ -85,7 +82,7 @@ impl<T> LocalScheduler<T> where T: Individual {
 impl<T> Scheduler<T> for LocalScheduler<T> where T: Individual {
 
     fn schedule_job(&mut self, job_info: T) -> EAFuture {
-	let mut f = EAFuture::new(self.output.len() as u32);
+	let f = EAFuture::new(self.output.len() as u32);
 	self.output.push(Some(job_info.fitness()));
 	return f;
     }
@@ -163,7 +160,7 @@ where
 	    Duration::from_secs(0),
 	    Duration::from_secs(120),
 	) {
-	    Ok(_t) => { self.current_jobs.push((job_id, job_info.clone())) },
+	    Ok(_t) => { self.current_jobs.push(job_id) },
 	    Err(_) => {
 		println!("Failed to schedule Job");
 	    }
@@ -192,7 +189,7 @@ where
 		    // 	}
 		    // }
 
-		    let mut queued_job = self.current_jobs.remove(i);
+		    let mut _queued_job = self.current_jobs.remove(i);
 		    
 			
 		},
@@ -205,7 +202,9 @@ where
 
 #[cfg(test)]
 mod tests {
+    #[allow(unused_imports)]
     use super::*;
+    #[allow(unused_imports)]
     use rand::prelude::*;
 
     #[test]
