@@ -40,7 +40,7 @@ impl EAFuture {
 	self.job_id
     }
 
-    pub fn poll<T: Individual>(&mut self, sched: &mut IndividualScheduler<T>) -> Poll<f64> {
+    pub fn poll<T: Individual>(&mut self, sched: &mut LocalScheduler<T>) -> Poll<f64> {
 	match sched.get_result(&self) {
 	    Some(t) => { Poll::Ready(t) },
 	    None => { Poll::Pending },
@@ -59,13 +59,13 @@ trait Scheduler<T> {
     fn wait(&mut self) -> ();
 }
 
-struct IndividualScheduler<T> where T: Individual
+struct LocalScheduler<T> where T: Individual
 {
     input: Vec<T>,
     output: Vec<Option<f64>>,
 }
 
-impl<T> IndividualScheduler<T> where T: Individual {
+impl<T> LocalScheduler<T> where T: Individual {
     pub fn new() -> Self {
 	Self {
 	    input: vec![],
@@ -81,26 +81,19 @@ impl<T> IndividualScheduler<T> where T: Individual {
 	    self.output[f.get_id() as usize]
 	}
     }
-
 }
 
-impl<T> Scheduler<T> for IndividualScheduler<T> where T: Individual {
+impl<T> Scheduler<T> for LocalScheduler<T> where T: Individual {
 
     fn schedule_job(&mut self, job_info: T) -> EAFuture {
 	let mut f = EAFuture::new(self.input.len() as u32);
-	self.output.push(None);
+	self.output.push(Some(job_info.fitness()));
 	self.input.push(job_info);
 	return f;
     }
 
-
     fn update(&mut self) {
-	let mut rng = rand::thread_rng();
-	for (index, i) in self.input.iter().enumerate() {
-	    if rng.gen::<f64>() < 0.3 {
-		self.output[index] = Some(i.fitness());
-	    }
-	}
+	// no need for this. 
     }
 
     /// @brief does blocking until all associated futures are completed. 
@@ -122,10 +115,14 @@ impl<T> Scheduler<T> for IndividualScheduler<T> where T: Individual {
     }
 }
 
-struct BeanstalkScheduler<T> where T: Individual {
-    current_jobs: Vec<(u128, T)>,
+struct BeanstalkScheduler<T>
+where
+    T: Individual
+{
+    current_jobs: Vec<u128>,
     job_queue: Beanstalkc,
     next_job_id: u128,
+    output_values: Vec<T>,
 }
 
 impl<T> BeanstalkScheduler<T> where T: Individual {
@@ -137,6 +134,7 @@ impl<T> BeanstalkScheduler<T> where T: Individual {
 	    current_jobs: vec![],
 	    job_queue: p,
 	    next_job_id: 0,
+	    output_values: vec![],
 	}
     }
 }
@@ -178,7 +176,9 @@ where
     }
 
     fn wait(&mut self) {
+	while self.current_jobs.len() > {
 
+	}
     }
 }
 
@@ -219,7 +219,7 @@ mod tests {
 	    }
 	}
 
-	let mut sched = IndividualScheduler::<String>::new();
+	let mut sched = LocalScheduler::<String>::new();
 	let mut p = sched.schedule_job(String::from("hello world"));
 	let mut j = sched.schedule_job(String::from("hello wakakwaka"));
 
