@@ -243,6 +243,10 @@ mod tests {
 	    fn crossover<S>(&self, other: &Self, storage: &mut S) -> Self {
 		self.clone()
 	    }
+
+	    fn mutate<S>(&self, stor: &mut S) -> Self {
+		self.clone()
+	    }
         }
 
         let mut sched = LocalScheduler::<String>::new();

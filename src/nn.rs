@@ -404,7 +404,6 @@ impl Network {
     }
 
     // todo: maybe this should be moved to non neaural entwork?
-    #[allow(dead_code)]
     pub fn mutate(&mut self, inno_history: &mut InnovationHistory) -> () {
         let mut rng = rand::thread_rng();
         // 80% chance to mutate edges node.

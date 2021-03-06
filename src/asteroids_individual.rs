@@ -195,13 +195,6 @@ impl AsteroidsPlayer {
         }
     }
 
-    pub fn mutate(&self, inno: &mut InnovationHistory) -> Self {
-        println!("New mutate");
-        let mut new_player = self.clone();
-        new_player.brain.mutate(inno);
-        return new_player;
-    }
-
 
 }
 
@@ -214,8 +207,15 @@ impl Individual for AsteroidsPlayer {
         String::from("rasteroids")
     }
 
-    fn crossover<InnovationHistory>(&self, other: &Self,
-				    _inno: &mut InnovationHistory) -> Self {
+    fn mutate<S>(&self, inno: &mut S) -> Self {
+        println!("New mutate");
+        let mut new_player = self.clone();
+    //new_player.brain.mutate(inno);
+        return new_player;
+    }
+
+    fn crossover<S>(&self, other: &Self,
+		    _inno: &mut S) -> Self {
         println!("cross over");
         Self::new()
     }

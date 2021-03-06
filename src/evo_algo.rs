@@ -96,8 +96,13 @@ where
     let mut results = Vec::<IndividualT>::new();
     let mut brains = Vec::<Network>::new();
 
-    for i in current_pop.iter() {
-        brains.push(i.get_brain());
+    println!("Getting fitness of population");
+    let mut total_pop_fitness = 0.0;
+    for (index, i) in current_pop.iter().enumerate() {
+	let mut network = i.get_brain();
+	network.fitness = pop_fitness[index];
+        brains.push(network);
+	total_pop_fitness += pop_fitness[index];
     }
 
     let mut species = neat::speciate(&brains);
@@ -107,26 +112,22 @@ where
 
     let mut offspring = Vec::new();
 
-    let mut total_fitness = 0.0;
-
-    println!("Getting fitness of population");
-    for ind in pop_fitness.iter() {
-        total_fitness += ind;
-    }
-
-    println!("Total fitness: {}", total_fitness);
+    println!("Total fitness: {}", total_pop_fitness);
 
     for spec in species.iter() {
         // add in the champion of the species.
         offspring.push(spec.champion.unwrap().clone());
 
         let spec_fitness = spec.total_fitness();
-        let num_children = num_child_to_make(total_fitness, spec_fitness, params.pop_size as u64);
+        let num_children = num_child_to_make(total_pop_fitness, spec_fitness,
+					     params.pop_size as u64);
+	println!("Total num children to make: {}", num_children);
 
         for _child_num in 0..num_children {
             let mut new_child = spec.generate_offspring(innovation_history).clone();
 
             // todo: why does &mut work here?
+	    println!("@@@Mutate@@@");
             new_child.mutate(innovation_history);
             offspring.push(new_child);
         }
@@ -151,16 +152,15 @@ where
     while results.len() < params.offspring_count {
         let indivi_one = *parents.choose(&mut rng).unwrap();
         let indivi_two = *parents.choose(&mut rng).unwrap();
-        results.push(indivi_one.crossover::<Option<f64>>(indivi_two, &mut None));
+	let new_child = indivi_one.crossover::<Option<f64>>(indivi_two, &mut None);
+        results.push(new_child.mutate(_s));
     }
-
     return results;
 }
 
 fn run_ea<IndividualT, Storage, Sched>(
     params: &GAParams,
     storage: &mut Storage,
-    on_mutate: fn(&GAParams, &mut Storage, &IndividualT) -> IndividualT,
     generate_offspring_func: fn(&GAParams, &mut Storage,
 				&Vec<f64>, &Vec<&IndividualT>) -> Vec<IndividualT>,
     scheduler: &mut Sched,
@@ -195,12 +195,9 @@ where
 						&individuals_fitness, &indivds);
 
 	println!("@@Finished generating offspring@@");
-	println!("@@Mutating offspring@@");
         for child in offspring.iter() {
-            let tmp_p = on_mutate(&params, storage, child);
-            individuals.push(IndiFit::new(tmp_p));
+            individuals.push(IndiFit::new(child.clone()));
         }
-	println!("@@Finished mutation@@");
 
 	println!("@@Doing fitness evaluations@@");
         {
@@ -325,6 +322,28 @@ mod tests {
             String::from("mathfit")
         }
 
+	fn mutate<S>(&self, stor: &mut S) -> Self {
+            for i in 0..6 {
+		let new_x = 0.0;
+            }
+
+            TestIndividual {
+		w1: self.w1,
+		w2: self.w2,
+		w3: self.w3,
+		w4: self.w4,
+		w5: self.w5,
+		w6: self.w6,
+		x1: self.x1 + 0.2,
+		x2: self.x2 + 0.3,
+		x3: self.x3 + 0.2,
+		x4: self.x4 + 0.1,
+		x5: self.x5 + 0.1,
+		x6: self.x6 + 0.2,
+            }
+	}
+
+
 	fn crossover<S>(&self, other: &Self, stor: &mut S) -> Self {
             let mut rng = rand::thread_rng();
             if rng.gen::<f64>() < 0.5 {
@@ -395,39 +414,6 @@ mod tests {
         }
     }
 
-    fn asteroids_mut(
-        _params: &GAParams,
-        storage: &mut neat::InnovationHistory,
-        indivi: &AsteroidsPlayer,
-    ) -> AsteroidsPlayer {
-        indivi.clone()
-    }
-
-    fn ind_mutate(
-        _params: &GAParams,
-        storage: &mut GStorage,
-        indivi: &TestIndividual,
-    ) -> TestIndividual {
-        for i in 0..6 {
-            let new_x = 0.0;
-        }
-
-        TestIndividual {
-            w1: indivi.w1,
-            w2: indivi.w2,
-            w3: indivi.w3,
-            w4: indivi.w4,
-            w5: indivi.w5,
-            w6: indivi.w6,
-            x1: indivi.x1 + 0.2,
-            x2: indivi.x2 + 0.3,
-            x3: indivi.x3 + 0.2,
-            x4: indivi.x4 + 0.1,
-            x5: indivi.x5 + 0.1,
-            x6: indivi.x6 + 0.2,
-        }
-    }
-
     #[test]
     fn test_playground() {
         let ga_params = GAParams {
@@ -447,7 +433,6 @@ mod tests {
         run_ea::<TestIndividual, GStorage, LocalScheduler<TestIndividual>>(
             &ga_params,
             &mut r_s,
-            ind_mutate,
 	    generic_offspring_gen,
             &mut scheduler,
         );
@@ -464,7 +449,6 @@ mod tests {
 		 LocalScheduler<AsteroidsPlayer>>(
             &ga_params,
             &mut innovation_history,
-            asteroids_mut,
 	    species_crossover,
             &mut a_scheduler,
         );
