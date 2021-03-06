@@ -8,6 +8,7 @@ use rasteroids::collision;
 
 use crate::nn::Network;
 use crate::neat::InnovationHistory;
+use crate::individual::Individual;
 
 // given a network, and a game state generate the next updates inputs. 
 pub fn asteroids_thinker(
@@ -164,18 +165,12 @@ pub fn asteroids_fitness(player: &Network) -> f64 {
 }
 
 
-use crate::individual::Individual;
 
-// dono bout this. 
-// trait FitnessFunctor {
-//     fn name(&self) -> String,
-//     fn functor(&self) -> impl Fn(),
-// }
 
 #[derive(Debug, Clone)]
 pub struct AsteroidsPlayer {
     // thing of interest.
-    brain: Network,
+    pub brain: Network,
 }
 
 impl AsteroidsPlayer {
@@ -184,7 +179,15 @@ impl AsteroidsPlayer {
 	Self { brain: Network::new(8, 3, true) } 
     }
 
-    pub fn mutate(&self, _inno: &mut InnovationHistory) -> Self {
+    pub fn mutate(&self, inno: &mut InnovationHistory) -> Self {
+	println!("New mutate");
+	let mut new_player = self.clone();
+	new_player.brain.mutate(inno);
+	return new_player;
+    }
+
+    pub fn crossover(&self, other: &Self, _inno: &mut InnovationHistory) -> Self {
+	println!("cross over");
 	Self::new()
     }
 }
@@ -192,6 +195,7 @@ impl AsteroidsPlayer {
 impl Individual for AsteroidsPlayer { 
 
     fn fitness(&self) -> f64 {
+	println!("Asteroids fitness");
 	asteroids_fitness(&self.brain)
     }
 
@@ -199,6 +203,13 @@ impl Individual for AsteroidsPlayer {
 	String::from("rasteroids")
     }
 }
+
+impl Default for AsteroidsPlayer {
+    fn default() -> Self {
+	Self { brain: Network::new(8, 3, true) } 
+    }
+}
+
 
 pub struct AsteroidsStorage  {
     inno_history: InnovationHistory,

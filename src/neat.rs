@@ -12,6 +12,7 @@ pub struct Species<'a> {
     individuals: Vec<&'a Network>,
 }
 
+
 /// Given a vector of individuals, return a vector of species, where the individuals
 /// are divided into species based on how similar they are.
 pub fn speciate(population: &Vec<Network>) -> Vec<Species> {

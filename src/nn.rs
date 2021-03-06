@@ -412,6 +412,7 @@ impl Network {
         return self.edges.len() - 1;
     }
 
+    // todo: maybe this should be moved to non neaural entwork? 
     #[allow(dead_code)]
     pub fn mutate(&mut self, inno_history: &mut InnovationHistory) -> () {
         let mut rng = rand::thread_rng();
@@ -606,7 +607,6 @@ mod tests {
         for edge in network.edges.iter() {
             let from_node = &network.nodes[edge.from_node as usize];
             let to_node = &network.nodes[edge.to_node as usize];
-            println!("Checking: {} -> {}", edge.from_node, edge.to_node);
             assert!(from_node.layer < to_node.layer);
         }
         assert_eq!(node_per_layer(&network, 0).unwrap(), 5)
@@ -628,7 +628,6 @@ mod tests {
             for edge in network.edges.iter() {
                 let from_node = &network.nodes[edge.from_node as usize];
                 let to_node = &network.nodes[edge.to_node as usize];
-                println!("Checking: {} -> {}", edge.from_node, edge.to_node);
                 assert!(from_node.layer < to_node.layer);
             }
         }
@@ -650,7 +649,6 @@ mod tests {
             for edge in network.edges.iter() {
                 let from_node = &network.nodes[edge.from_node as usize];
                 let to_node = &network.nodes[edge.to_node as usize];
-                println!("Checking: {} -> {}", edge.from_node, edge.to_node);
                 assert!(from_node.layer < to_node.layer);
             }
         }
