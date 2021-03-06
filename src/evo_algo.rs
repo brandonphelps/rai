@@ -420,14 +420,14 @@ mod tests {
             parent_selection_count: 10,
         };
 
-        let mut scheduler = LocalScheduler::<TestIndividual>::new();
-        let mut a_scheduler = LocalScheduler::<AsteroidsPlayer>::new();
+        let mut scheduler = LocalScheduler::new();
+        let mut a_scheduler = LocalScheduler::new();
 
         let mut innovation_history = neat::InnovationHistory::new(8, 3);
 
         let mut r_s = GStorage {};
 
-        run_ea::<TestIndividual, GStorage, LocalScheduler<TestIndividual>>(
+        run_ea::<TestIndividual, GStorage, LocalScheduler>(
             &ga_params,
             &mut r_s,
 	    generic_offspring_gen,
@@ -447,7 +447,7 @@ mod tests {
         println!("Asteroids");
         run_ea::<AsteroidsPlayer,
 		 neat::InnovationHistory,
-		 LocalScheduler<AsteroidsPlayer>>(
+		 LocalScheduler>(
             &ga_params,
             &mut innovation_history,
 	    species_crossover,

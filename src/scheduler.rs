@@ -30,6 +30,7 @@ where
 /// when a schedule_job event occurs a handle (EAFturue) is passed to the user that
 /// will (after enough update) calls be able to retrieve its value via the poll method
 /// care must be taken for that th eEAfuture polls the scheduler it came from.
+// can't we remove T from here? its not like we are storing anything
 pub trait Scheduler<T> {
     fn schedule_job(&mut self, job_info: T) -> EAFuture;
     fn get_result(&self, f: &EAFuture) -> Option<f64>;
@@ -37,28 +38,21 @@ pub trait Scheduler<T> {
     fn wait(&mut self) -> ();
 }
 
-pub struct LocalScheduler<T>
-where
-    T: Individual,
+pub struct LocalScheduler
 {
-    // todo: remove this since we don't need to keep track of the input.
-    input: Vec<T>,
     output: Vec<Option<f64>>,
 }
 
-impl<T> LocalScheduler<T>
-where
-    T: Individual,
+impl LocalScheduler
 {
     pub fn new() -> Self {
         Self {
-            input: vec![],
             output: vec![],
         }
     }
 }
 
-impl<T> Scheduler<T> for LocalScheduler<T>
+impl<T> Scheduler<T> for LocalScheduler
 where
     T: Individual,
 {
@@ -91,10 +85,6 @@ where
                     do_we_need_to_update = true;
                     break;
                 }
-            }
-
-            if do_we_need_to_update {
-                self.update();
             }
         }
     }
@@ -224,7 +214,7 @@ mod tests {
 	    }
         }
 
-        let mut sched = LocalScheduler::<String>::new();
+        let mut sched = LocalScheduler::new();
         let mut p = sched.schedule_job(String::from("hello world"));
         let mut j = sched.schedule_job(String::from("hello wakakwaka"));
 
