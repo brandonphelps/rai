@@ -239,6 +239,10 @@ mod tests {
             fn ea_name(&self) -> String {
                 String::from("String")
             }
+
+	    fn crossover<S>(&self, other: &Self, storage: &mut S) -> Self {
+		self.clone()
+	    }
         }
 
         let mut sched = LocalScheduler::<String>::new();

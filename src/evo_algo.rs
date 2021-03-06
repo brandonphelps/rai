@@ -87,6 +87,7 @@ trait ExtractBrain {
 fn species_crossover<IndividualT>(
     params: &GAParams,
     innovation_history: &mut neat::InnovationHistory,
+    pop_fitness: &Vec<f64>,
     current_pop: &Vec<&IndividualT>,
 ) -> Vec<IndividualT>
 where
@@ -109,10 +110,10 @@ where
     let mut total_fitness = 0.0;
 
     println!("Getting fitness of population");
-    // todo: don't re calculate fitness.
-    for ind in current_pop.iter() {
-        total_fitness += ind.fitness();
+    for ind in pop_fitness.iter() {
+        total_fitness += ind;
     }
+
     println!("Total fitness: {}", total_fitness);
 
     for spec in species.iter() {
@@ -133,13 +134,23 @@ where
     return results;
 }
 
-fn generic_offspring_gen<IndividualT>(
+fn generic_offspring_gen<IndividualT, S>(
     params: &GAParams,
-    current_pop: &Vec<IndividualT>,
-) -> Vec<IndividualT> {
+    _s: &mut S,
+    pop_fitness: &Vec<f64>,
+    parents: &Vec<&IndividualT>,
+) -> Vec<IndividualT>
+where
+    IndividualT: Individual,
+{
     let mut results = Vec::<IndividualT>::new();
+    let mut rng = rand::thread_rng();
 
-    while results.len() < params.offspring_count {}
+    while results.len() < params.offspring_count {
+        let indivi_one = *parents.choose(&mut rng).unwrap();
+        let indivi_two = *parents.choose(&mut rng).unwrap();
+        results.push(indivi_one.crossover::<Option<f64>>(indivi_two, &mut None));
+    }
 
     return results;
 }
@@ -147,9 +158,9 @@ fn generic_offspring_gen<IndividualT>(
 fn run_ea<IndividualT, Storage, Sched>(
     params: &GAParams,
     storage: &mut Storage,
-    on_crossover: fn(&GAParams, &mut Storage, &Vec<&IndividualT>) -> Vec<IndividualT>,
     on_mutate: fn(&GAParams, &mut Storage, &IndividualT) -> IndividualT,
-    generate_offspring_func: fn(&GAParms, &mut Storage, &Vec<&IndividualT>) -> Vec<IndividualT>,
+    generate_offspring_func: fn(&GAParams, &mut Storage,
+				&Vec<f64>, &Vec<&IndividualT>) -> Vec<IndividualT>,
     scheduler: &mut Sched,
 ) -> ()
 where
@@ -177,7 +188,8 @@ where
             indivds.push(&indiv.sol);
         }
 
-        let offspring = generate_offspring_func(&params, storage, &indivds);
+        let offspring = generate_offspring_func(&params, storage,
+						&individuals_fitness, &indivds);
 
         for child in offspring.iter() {
             let tmp_p = on_mutate(&params, storage, child);
@@ -254,7 +266,54 @@ mod tests {
     }
 
     impl TestIndividual {
-        pub fn crossover(&self, other: &Self) -> Self {
+
+    }
+
+    impl Default for TestIndividual {
+        fn default() -> Self {
+            let mut rng = rand::thread_rng();
+
+            Self {
+                w1: 4.0,
+                w2: -2.0,
+                w3: 3.5,
+                w4: 5.0,
+                w5: -11.0,
+                w6: -4.7,
+                x1: rng.gen::<f32>(),
+                x2: rng.gen::<f32>(),
+                x3: rng.gen::<f32>(),
+                x4: rng.gen::<f32>(),
+                x5: rng.gen::<f32>(),
+                x6: rng.gen::<f32>(),
+            }
+        }
+    }
+
+    #[derive(Default)]
+    struct GStorage {}
+
+    impl Individual for TestIndividual {
+        fn fitness(&self) -> f64 {
+            let p = (self.w1 * self.x1
+                + self.w2 * self.x2
+                + self.w3 * self.x3
+                + self.w4 * self.x4
+                + self.w5 * self.x5
+                + self.w6 * self.x6) as f64;
+            let fitness = (44.0 - p).abs();
+            if fitness == 0.0 {
+                return 100000000000000.0;
+            } else {
+                return 1.0 / fitness;
+            }
+        }
+
+        fn ea_name(&self) -> String {
+            String::from("mathfit")
+        }
+
+	fn crossover<S>(&self, other: &Self, stor: &mut S) -> Self {
             let mut rng = rand::thread_rng();
             if rng.gen::<f64>() < 0.5 {
                 let mut params_x: [f32; 6] = [0.0; 6];
@@ -324,51 +383,6 @@ mod tests {
         }
     }
 
-    impl Default for TestIndividual {
-        fn default() -> Self {
-            let mut rng = rand::thread_rng();
-
-            Self {
-                w1: 4.0,
-                w2: -2.0,
-                w3: 3.5,
-                w4: 5.0,
-                w5: -11.0,
-                w6: -4.7,
-                x1: rng.gen::<f32>(),
-                x2: rng.gen::<f32>(),
-                x3: rng.gen::<f32>(),
-                x4: rng.gen::<f32>(),
-                x5: rng.gen::<f32>(),
-                x6: rng.gen::<f32>(),
-            }
-        }
-    }
-
-    #[derive(Default)]
-    struct GStorage {}
-
-    impl Individual for TestIndividual {
-        fn fitness(&self) -> f64 {
-            let p = (self.w1 * self.x1
-                + self.w2 * self.x2
-                + self.w3 * self.x3
-                + self.w4 * self.x4
-                + self.w5 * self.x5
-                + self.w6 * self.x6) as f64;
-            let fitness = (44.0 - p).abs();
-            if fitness == 0.0 {
-                return 100000000000000.0;
-            } else {
-                return 1.0 / fitness;
-            }
-        }
-
-        fn ea_name(&self) -> String {
-            String::from("mathfit")
-        }
-    }
-
     fn asteroids_mut(
         _params: &GAParams,
         storage: &mut neat::InnovationHistory,
@@ -420,9 +434,6 @@ mod tests {
 
         while new_offspring.len() < params.offspring_count {
             // single point crossover
-            let indivi_one = parents.choose(&mut rng).unwrap();
-            let indivi_two = parents.choose(&mut rng).unwrap();
-            new_offspring.push(indivi_one.crossover(indivi_two));
         }
         return new_offspring;
     }
@@ -446,8 +457,8 @@ mod tests {
         run_ea::<TestIndividual, GStorage, LocalScheduler<TestIndividual>>(
             &ga_params,
             &mut r_s,
-            ind_crossover,
             ind_mutate,
+	    generic_offspring_gen,
             &mut scheduler,
         );
 
@@ -458,11 +469,13 @@ mod tests {
         }
 
         println!("Asteroids");
-        run_ea::<AsteroidsPlayer, neat::InnovationHistory, LocalScheduler<AsteroidsPlayer>>(
+        run_ea::<AsteroidsPlayer,
+		 neat::InnovationHistory,
+		 LocalScheduler<AsteroidsPlayer>>(
             &ga_params,
             &mut innovation_history,
-            species_crossover,
             asteroids_mut,
+	    species_crossover,
             &mut a_scheduler,
         );
 

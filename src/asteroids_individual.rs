@@ -183,10 +183,7 @@ impl AsteroidsPlayer {
         return new_player;
     }
 
-    pub fn crossover(&self, other: &Self, _inno: &mut InnovationHistory) -> Self {
-        println!("cross over");
-        Self::new()
-    }
+
 }
 
 impl Individual for AsteroidsPlayer {
@@ -197,6 +194,12 @@ impl Individual for AsteroidsPlayer {
 
     fn ea_name(&self) -> String {
         String::from("rasteroids")
+    }
+
+    fn crossover<InnovationHistory>(&self, other: &Self,
+				    _inno: &mut InnovationHistory) -> Self {
+        println!("cross over");
+        Self::new()
     }
 }
 
