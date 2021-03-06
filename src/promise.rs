@@ -88,7 +88,6 @@ where
 {
     fn schedule_job(&mut self, job_info: T) -> EAFuture {
         let f = EAFuture::new(self.output.len() as u32);
-        println!("Calculating fitness");
         self.output.push(Some(job_info.fitness()));
         return f;
     }

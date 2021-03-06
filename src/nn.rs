@@ -408,7 +408,9 @@ impl Network {
         let mut rng = rand::thread_rng();
         // 80% chance to mutate edges node.
         if rng.gen::<f64>() < 0.8 {
+	    println!("Random edge nodes");
             for edge_index in 0..self.edges.len() {
+
                 self.mutate_edge(edge_index);
             }
         }
@@ -417,6 +419,7 @@ impl Network {
         if rng.gen::<f64>() < 0.05 && !self.is_fully_connected() {
             let mut node_one = self.random_node();
             let mut node_two = self.random_node();
+	    println!("new connection");
 
             while self.are_connected(node_one, node_two)
                 || self.nodes[node_one].layer == self.nodes[node_two].layer
@@ -429,6 +432,7 @@ impl Network {
 
         // 3% add new node.
         if rng.gen::<f64>() < 0.03 {
+	    println!("new node");
             let edge = self.random_non_bias_edge();
             self.add_node(
                 edge as usize,

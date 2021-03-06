@@ -132,7 +132,6 @@ impl<'a> Species<'a> {
 
         let p_one = &self.individuals.choose(&mut rng).unwrap();
         let p_two = &self.individuals.choose(&mut rng).unwrap();
-        // todo: put mutation call here?
         return p_one.crossover(&p_two);
     }
 }

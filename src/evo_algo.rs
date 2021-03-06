@@ -81,9 +81,9 @@ where
 
 trait ExtractBrain {
     fn get_brain(&self) -> Network;
+    fn set_brain(&mut self, brain: Network);
 }
 
-// Storage == neat::InnovationHistory
 fn species_crossover<IndividualT>(
     params: &GAParams,
     innovation_history: &mut neat::InnovationHistory,
@@ -91,13 +91,12 @@ fn species_crossover<IndividualT>(
     current_pop: &Vec<&IndividualT>,
 ) -> Vec<IndividualT>
 where
-    IndividualT: Individual + ExtractBrain,
+    IndividualT: Individual + ExtractBrain + Default,
 {
     let mut results = Vec::<IndividualT>::new();
     let mut brains = Vec::<Network>::new();
-
-    println!("Getting fitness of population");
     let mut total_pop_fitness = 0.0;
+
     for (index, i) in current_pop.iter().enumerate() {
 	let mut network = i.get_brain();
 	network.fitness = pop_fitness[index];
@@ -108,12 +107,7 @@ where
     let mut species = neat::speciate(&brains);
 
     let species_count = species.len();
-    println!("num species: {}", species_count);
-
     let mut offspring = Vec::new();
-
-    println!("Total fitness: {}", total_pop_fitness);
-
     for spec in species.iter() {
         // add in the champion of the species.
         offspring.push(spec.champion.unwrap().clone());
@@ -121,17 +115,21 @@ where
         let spec_fitness = spec.total_fitness();
         let num_children = num_child_to_make(total_pop_fitness, spec_fitness,
 					     params.pop_size as u64);
-	println!("Total num children to make: {}", num_children);
-
         for _child_num in 0..num_children {
             let mut new_child = spec.generate_offspring(innovation_history).clone();
 
             // todo: why does &mut work here?
-	    println!("@@@Mutate@@@");
             new_child.mutate(innovation_history);
             offspring.push(new_child);
         }
     }
+
+    for i in offspring.iter() {
+	let mut new_child = IndividualT::default();
+	new_child.set_brain(i.clone());
+	results.push(new_child);
+    }
+
     return results;
 }
 
@@ -178,7 +176,6 @@ where
     // do fitness calculation.
     for indivi in individuals.iter_mut() {
         indivi.fitness = indivi.sol.fitness();
-        println!("Calculating fitness");
     }
 
     for _current_generation in 0..params.generation_count {
@@ -417,9 +414,9 @@ mod tests {
     #[test]
     fn test_playground() {
         let ga_params = GAParams {
-            pop_size: 10,
+            pop_size: 400,
             offspring_count: 10,
-            generation_count: 10,
+            generation_count: 100,
             parent_selection_count: 10,
         };
 
@@ -441,6 +438,10 @@ mod tests {
             fn get_brain(&self) -> Network {
                 self.brain.clone()
             }
+
+	    fn set_brain(&mut self, network: Network) {
+		self.brain = network;
+	    }
         }
 
         println!("Asteroids");

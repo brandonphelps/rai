@@ -146,8 +146,6 @@ pub fn asteroids_fitness(player: &Network) -> f64 {
     
     CALL_COUNT.fetch_add(1, Ordering::SeqCst);
 
-    println!("Asteroids fitness called: {}", CALL_COUNT.load(Ordering::SeqCst));
-
     let mut asteroids_game = asteroids::game_init();
     let mut fitness: f64 = 0.0;
 
@@ -168,13 +166,12 @@ pub fn asteroids_fitness(player: &Network) -> f64 {
             } else {
                 fitness = asteroids_game.score as f64;
                 fitness -= i as f64 * 0.01;
-            }
+            }  
             break;
         }
-        thread::sleep(Duration::from_millis(10));
-        duration = start.elapsed().as_millis();
+        //thread::sleep(Duration::from_millis(10));
+        duration = 1; // start.elapsed().as_millis();
     }
-    println!("Fitness: {}", fitness);
     if fitness <= 0.0 {
         fitness = 0.001;
     }
@@ -194,8 +191,6 @@ impl AsteroidsPlayer {
             brain: Network::new(8, 3, true),
         }
     }
-
-
 }
 
 impl Individual for AsteroidsPlayer {
@@ -208,7 +203,6 @@ impl Individual for AsteroidsPlayer {
     }
 
     fn mutate<S>(&self, inno: &mut S) -> Self {
-        println!("New mutate");
         let mut new_player = self.clone();
     //new_player.brain.mutate(inno);
         return new_player;
