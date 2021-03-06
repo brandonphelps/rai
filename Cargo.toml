@@ -21,6 +21,7 @@ serde= { version = "*", features = ["derive"]}
 serde_json = "*"
 beanstalkc = { version = "*" } 
 hsl = { version = "0.1.1" } 
+lazy_static = { version = "1.4.0" } 
 
 [dependencies.rasteroids]
 git = "https://github.com/brandonphelps/rasteroids.git"

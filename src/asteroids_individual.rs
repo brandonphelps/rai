@@ -10,6 +10,19 @@ use crate::individual::Individual;
 use crate::neat::InnovationHistory;
 use crate::nn::Network;
 
+// use lazy_static::lazy_static;
+// use std::sync::Mutex;
+
+// lazy_static! { 
+//     static ref fitness_counter: Mutex<u32> = Mutex::new(0);
+// }
+
+use std::sync::atomic::{AtomicUsize, Ordering};
+
+// temporary for debugging. 
+static CALL_COUNT: AtomicUsize = AtomicUsize::new(0);
+
+
 // given a network, and a game state generate the next updates inputs.
 pub fn asteroids_thinker(
     player: &Network,
@@ -130,6 +143,11 @@ pub fn asteroids_thinker(
 
 #[cfg(not(feature = "gui"))]
 pub fn asteroids_fitness(player: &Network) -> f64 {
+    
+    CALL_COUNT.fetch_add(1, Ordering::SeqCst);
+
+    println!("Asteroids fitness called: {}", CALL_COUNT.load(Ordering::SeqCst));
+
     let mut asteroids_game = asteroids::game_init();
     let mut fitness: f64 = 0.0;
 
@@ -188,7 +206,6 @@ impl AsteroidsPlayer {
 
 impl Individual for AsteroidsPlayer {
     fn fitness(&self) -> f64 {
-        println!("Asteroids fitness");
         asteroids_fitness(&self.brain)
     }
 

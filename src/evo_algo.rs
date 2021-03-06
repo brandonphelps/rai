@@ -138,13 +138,15 @@ fn generic_offspring_gen<IndividualT, S>(
     params: &GAParams,
     _s: &mut S,
     pop_fitness: &Vec<f64>,
-    parents: &Vec<&IndividualT>,
+    current_pop: &Vec<&IndividualT>,
 ) -> Vec<IndividualT>
 where
     IndividualT: Individual,
 {
     let mut results = Vec::<IndividualT>::new();
     let mut rng = rand::thread_rng();
+
+    let parents = select_parents(&params, &pop_fitness, &current_pop);
 
     while results.len() < params.offspring_count {
         let indivi_one = *parents.choose(&mut rng).unwrap();
@@ -188,14 +190,19 @@ where
             indivds.push(&indiv.sol);
         }
 
+	println!("@@Generating offspring!@@");
         let offspring = generate_offspring_func(&params, storage,
 						&individuals_fitness, &indivds);
 
+	println!("@@Finished generating offspring@@");
+	println!("@@Mutating offspring@@");
         for child in offspring.iter() {
             let tmp_p = on_mutate(&params, storage, child);
             individuals.push(IndiFit::new(tmp_p));
         }
+	println!("@@Finished mutation@@");
 
+	println!("@@Doing fitness evaluations@@");
         {
             let mut results = HashMap::new();
             // do fitness calculation.
@@ -228,10 +235,15 @@ where
         // we don't print here.
         let average_fitness = total_fitness / params.pop_size as f64;
         println!("Average fitness: {}", average_fitness);
+
+	println!("Culling population");
         // cull population
         individuals.sort_by_key(|indivi| Reverse((indivi.fitness * 1000.0) as i128));
         individuals.truncate(params.pop_size as usize);
     }
+
+
+
     individuals.sort_by_key(|indivi| Reverse((indivi.fitness * 1000.0) as i128));
     println!("Top indivi");
     let mut j = 0;
