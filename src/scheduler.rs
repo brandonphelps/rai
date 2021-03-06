@@ -17,8 +17,6 @@ use crate::promise::EAFuture;
 
 #[derive(Serialize, Deserialize)]
 struct JobInfo<T>
-where
-    T: Individual,
 {
     name: String,
     individual: T,
@@ -42,7 +40,6 @@ where
     T: Individual,
 {
     // todo: remove this since we don't need to keep track of the input.
-    input: Vec<T>,
     output: Vec<Option<f64>>,
 }
 
@@ -52,7 +49,6 @@ where
 {
     pub fn new() -> Self {
         Self {
-            input: vec![],
             output: vec![],
         }
     }
