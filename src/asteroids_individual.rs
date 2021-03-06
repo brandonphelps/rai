@@ -174,6 +174,7 @@ pub fn asteroids_fitness(player: &Network) -> f64 {
         thread::sleep(Duration::from_millis(10));
         duration = start.elapsed().as_millis();
     }
+    println!("Fitness: {}", fitness);
     if fitness <= 0.0 {
         fitness = 0.001;
     }

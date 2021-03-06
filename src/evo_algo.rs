@@ -428,28 +428,6 @@ mod tests {
         }
     }
 
-    // todo: rename
-    fn ind_crossover(
-        params: &GAParams,
-        storage: &mut GStorage,
-        individs: &Vec<&TestIndividual>,
-    ) -> Vec<TestIndividual> {
-        let mut individuals_fitness = Vec::<f64>::new();
-        for indiv in individs.iter() {
-            individuals_fitness.push(indiv.fitness());
-        }
-
-        let parents = select_parents(&params, &individuals_fitness, &individs);
-
-        let mut new_offspring = Vec::<TestIndividual>::new();
-        let mut rng = rand::thread_rng();
-
-        while new_offspring.len() < params.offspring_count {
-            // single point crossover
-        }
-        return new_offspring;
-    }
-
     #[test]
     fn test_playground() {
         let ga_params = GAParams {
