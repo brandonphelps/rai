@@ -168,10 +168,8 @@ where
 	// generate algorithm.
 	// default select parents -> 
 
-	let parents = select_parents(&params, &individuals_fitness,
-				     &indivds);
 
-	let offspring = on_crossover(&params, storage, &parents);
+	let offspring = on_crossover(&params, storage, &individs);
 
 	for child in offspring.iter() {
 	    let tmp_p = on_mutate(&params, storage, child);
@@ -394,7 +392,11 @@ mod tests {
     }
 
     fn ind_crossover(params: &GAParams, storage: &mut GStorage,
-		     parents: &Vec<&TestIndividual>) -> Vec<TestIndividual> {
+		     individs: &Vec<&TestIndividual>) -> Vec<TestIndividual> {
+
+	let parents = select_parents(&params, &individuals_fitness,
+				     &indivds);
+
 	let mut new_offspring = Vec::<TestIndividual>::new();
 	let mut rng = rand::thread_rng();
 
