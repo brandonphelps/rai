@@ -1,16 +1,16 @@
 #![allow(dead_code)]
 
-use std::time::{Duration, Instant};
 use std::thread;
+use std::time::{Duration, Instant};
 
 use rasteroids::asteroids;
 use rasteroids::collision;
 
-use crate::nn::Network;
-use crate::neat::InnovationHistory;
 use crate::individual::Individual;
+use crate::neat::InnovationHistory;
+use crate::nn::Network;
 
-// given a network, and a game state generate the next updates inputs. 
+// given a network, and a game state generate the next updates inputs.
 pub fn asteroids_thinker(
     player: &Network,
     game_state: &asteroids::GameState,
@@ -118,7 +118,7 @@ pub fn asteroids_thinker(
         game_input.shoot = true;
     }
 
-    // todo: change this so that the ship doesn't need to turn.  
+    // todo: change this so that the ship doesn't need to turn.
     if output[0] <= 0.5 {
         game_input.rotation -= 0.39268;
     } else {
@@ -127,7 +127,6 @@ pub fn asteroids_thinker(
 
     return game_input;
 }
-
 
 #[cfg(not(feature = "gui"))]
 pub fn asteroids_fitness(player: &Network) -> f64 {
@@ -144,7 +143,6 @@ pub fn asteroids_fitness(player: &Network) -> f64 {
         asteroids_game =
             asteroids::game_update(&asteroids_game, (duration as f64) * 0.01, &game_input);
         let start = Instant::now();
-
 
         if asteroids_game.game_over {
             if asteroids_game.game_over_is_win {
@@ -164,9 +162,6 @@ pub fn asteroids_fitness(player: &Network) -> f64 {
     return fitness;
 }
 
-
-
-
 #[derive(Debug, Clone)]
 pub struct AsteroidsPlayer {
     // thing of interest.
@@ -175,50 +170,52 @@ pub struct AsteroidsPlayer {
 
 impl AsteroidsPlayer {
     pub fn new() -> Self {
-	// note 8, 3 (input, output) must align with innovation history below. 
-	Self { brain: Network::new(8, 3, true) } 
+        // note 8, 3 (input, output) must align with innovation history below.
+        Self {
+            brain: Network::new(8, 3, true),
+        }
     }
 
     pub fn mutate(&self, inno: &mut InnovationHistory) -> Self {
-	println!("New mutate");
-	let mut new_player = self.clone();
-	new_player.brain.mutate(inno);
-	return new_player;
+        println!("New mutate");
+        let mut new_player = self.clone();
+        new_player.brain.mutate(inno);
+        return new_player;
     }
 
     pub fn crossover(&self, other: &Self, _inno: &mut InnovationHistory) -> Self {
-	println!("cross over");
-	Self::new()
+        println!("cross over");
+        Self::new()
     }
 }
 
-impl Individual for AsteroidsPlayer { 
-
+impl Individual for AsteroidsPlayer {
     fn fitness(&self) -> f64 {
-	println!("Asteroids fitness");
-	asteroids_fitness(&self.brain)
+        println!("Asteroids fitness");
+        asteroids_fitness(&self.brain)
     }
 
     fn ea_name(&self) -> String {
-	String::from("rasteroids")
+        String::from("rasteroids")
     }
 }
 
 impl Default for AsteroidsPlayer {
     fn default() -> Self {
-	Self { brain: Network::new(8, 3, true) } 
+        Self {
+            brain: Network::new(8, 3, true),
+        }
     }
 }
 
-
-pub struct AsteroidsStorage  {
+pub struct AsteroidsStorage {
     inno_history: InnovationHistory,
 }
 
 impl AsteroidsStorage {
     pub fn new() -> Self {
-	Self { inno_history :
-	       InnovationHistory::new(8, 3) }
+        Self {
+            inno_history: InnovationHistory::new(8, 3),
+        }
     }
 }
-

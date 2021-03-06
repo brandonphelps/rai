@@ -1,8 +1,7 @@
 #![allow(unused_imports)]
 #![allow(dead_code)]
 #![allow(deprecated)]
-
-// dono why this is needed for the doc comamnd to work. 
+// dono why this is needed for the doc comamnd to work.
 #![feature(intra_doc_pointers)]
 
 use prgrs::{Length, Prgrs};
@@ -14,50 +13,47 @@ use std::env;
 use std::fs;
 use std::{thread, time};
 
-
 use serde::{Deserialize, Serialize};
 use serde_json::Result;
 
 mod asteroids_individual;
 
+mod distro;
 mod lifetime;
 mod promise;
 mod scheduler;
-mod distro;
 
-mod individual;
 mod evo_algo;
 mod hrm;
+mod individual;
 mod neat;
 mod nn;
 
-use crate::promise::{Scheduler, LocalScheduler};
+use crate::promise::{LocalScheduler, Scheduler};
 
 use std::collections::HashMap;
 use std::time::Instant;
 
-use std::sync::atomic::{AtomicUsize, Ordering};
 use std::any::Any;
 use std::fmt::Debug;
+use std::sync::atomic::{AtomicUsize, Ordering};
 
 fn log<T: Any + Debug>(value: &T) {
     let value_any = value as &dyn Any;
 
     match value_any.downcast_ref::<String>() {
-	Some(as_string) => {
-	    println!("String ({}): {}", as_string.len(), as_string);
-	}
-	None => {
-	    println!("{:?}", value);
-	}
+        Some(as_string) => {
+            println!("String ({}): {}", as_string.len(), as_string);
+        }
+        None => {
+            println!("{:?}", value);
+        }
     }
 }
 
-
-
 /// Given the total fitness, species' fitness, and total pop, generate a total number of
 /// items
-// todo: move this. 
+// todo: move this.
 fn num_child_to_make(total_fitness: f64, species_fitness: f64, total_population: u64) -> u64 {
     println!(
         "Total: ({}) Spec: ({}) Pop: ({})",
@@ -139,8 +135,8 @@ fn run_ea(
 
         let start = Instant::now();
         {
-	    // let mut schedu = LocalScheduler::new();
-	    // let mut offspring_fitness = Vec::new();
+            // let mut schedu = LocalScheduler::new();
+            // let mut offspring_fitness = Vec::new();
             // for off_p in offspring.iter() {
             //     offspring_fitness.push(schedu.schedule_job(off_p));
             // }
@@ -182,7 +178,7 @@ fn run_ea(
     let _top = &mut specific_pop[0];
 }
 
-#[cfg(not(feature="gui"))]
+#[cfg(not(feature = "gui"))]
 fn main() -> std::result::Result<(), String> {
     let population_count = 400;
     let max_iter_count = 10000;

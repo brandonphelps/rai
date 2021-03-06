@@ -29,15 +29,13 @@ pub struct EaFuncMap {
 #[cfg(not(feature = "gui"))]
 impl EaFuncMap {
     pub fn new() -> Self {
-	let mut hash_map: HashMap<String, fn(&Network) -> f64> = HashMap::new();
+        let mut hash_map: HashMap<String, fn(&Network) -> f64> = HashMap::new();
 
-	hash_map.insert(String::from("rasteroids"), asteroids_fitness);
+        hash_map.insert(String::from("rasteroids"), asteroids_fitness);
 
-	EaFuncMap {
-	    func_map: hash_map,
-	}
+        EaFuncMap { func_map: hash_map }
     }
-    
+
     #[allow(dead_code)]
     pub fn do_func(func_name: &String, indi: &mut Network) -> () {
         if func_name.as_str() == "rasteroids" {
@@ -46,7 +44,6 @@ impl EaFuncMap {
     }
 
     pub fn run_fitness(&self, func_name: &String, indi: &Network) -> f64 {
-	(self.func_map.get(func_name).unwrap())(indi)
+        (self.func_map.get(func_name).unwrap())(indi)
     }
 }
-

@@ -2,9 +2,7 @@
 
 /// This module contains data structures and functions for defining a nerual network
 /// i've taken a very "real object" approach and modeled it like with realish option,
-/// likely they'll be reduced to remove the unneeded objects 
-
-
+/// likely they'll be reduced to remove the unneeded objects
 // can't use this here ?
 use crate::neat::InnovationHistory;
 use rand::prelude::*;
@@ -26,9 +24,7 @@ pub struct Node {
 
 impl Node {
     pub fn clone(&self) -> Node {
-        Node {
-            layer: self.layer,
-        }
+        Node { layer: self.layer }
     }
 }
 
@@ -71,9 +67,8 @@ pub struct Network {
     pub layer_count: u32,
     pub bias_node_id: u64,
     // can we remove this? networks don't need a fitness, EA items do however
-    pub fitness: f64, 
+    pub fitness: f64,
 }
-
 
 pub fn node_per_layer(network: &Network, num_layer: u64) -> Option<u64> {
     let mut node_count = 0;
@@ -201,63 +196,59 @@ impl Network {
     }
 
     // todo: allow for out param to be the output sum, so that drawing the network
-    // can display activation levels. 
+    // can display activation levels.
     pub fn feed_input(&self, inputs: Vec<f64>) -> Vec<f64> {
-	let mut output = Vec::new();
-	// todo: should use list instead?
-	// maybe map? 
-	let mut node_input_sums = Vec::<f64>::new();
-	let mut node_output_sums = Vec::<f64>::new();
-	for _ in 0..self.nodes.len() {
-	    node_input_sums.push(0.0);
-	    node_output_sums.push(0.0);
-	}
+        let mut output = Vec::new();
+        // todo: should use list instead?
+        // maybe map?
+        let mut node_input_sums = Vec::<f64>::new();
+        let mut node_output_sums = Vec::<f64>::new();
+        for _ in 0..self.nodes.len() {
+            node_input_sums.push(0.0);
+            node_output_sums.push(0.0);
+        }
 
-	// set the inputs. 
-	for i in inputs.iter() {
-	    node_input_sums.push(*i);
-	}
+        // set the inputs.
+        for i in inputs.iter() {
+            node_input_sums.push(*i);
+        }
 
-	for i in 0..inputs.len() {
-	    node_output_sums[i] = inputs[i];
-	}
+        for i in 0..inputs.len() {
+            node_output_sums[i] = inputs[i];
+        }
 
-	// set bias to true.
-	node_output_sums[self.bias_node_id as usize] = 1.0;
+        // set bias to true.
+        node_output_sums[self.bias_node_id as usize] = 1.0;
 
+        for layer in 0..self.layer_count {
+            for node_index in 0..self.nodes.len() {
+                if self.nodes[node_index].layer == layer as u64 {
+                    if layer != 0 {
+                        node_output_sums[node_index] = sigmoid(node_input_sums[node_index]);
+                    }
 
-	for layer in 0..self.layer_count {
-	    for node_index in 0..self.nodes.len() {
-		if self.nodes[node_index].layer == layer as u64 {
-		    if layer != 0 {
-			node_output_sums[node_index] = sigmoid(node_input_sums[node_index]);
-		    }
+                    for edge in self.edges.iter() {
+                        if edge.from_node as usize == node_index {
+                            if edge.enabled {
+                                let tmp_p = edge.weight * node_output_sums[node_index];
+                                node_input_sums[edge.to_node as usize] += tmp_p;
+                            }
+                        }
+                    }
+                }
+            }
+        }
 
-		    for edge in self.edges.iter() {
-			if edge.from_node as usize == node_index {
-			    if edge.enabled {
-				let tmp_p = edge.weight * node_output_sums[node_index];
-				node_input_sums[edge.to_node as usize] += tmp_p;
-			    }
-			}
-		    }
-		}
-	    }
-	}
+        for output_i in 0..self.output_node_count {
+            let o_node = node_output_sums[(output_i + self.input_node_count) as usize];
+            output.push(o_node);
+        }
 
-	for output_i in 0..self.output_node_count {
-	    let o_node = node_output_sums[(output_i + self.input_node_count) as usize];
-	    output.push(o_node);
-	}
-
-	return output;
+        return output;
     }
 
-
     pub fn new_node(&mut self, layer: u64) -> u64 {
-        let m = Node {
-            layer: layer,
-        };
+        let m = Node { layer: layer };
         self.nodes.push(m);
         return (self.nodes.len() - 1) as u64;
     }
@@ -412,7 +403,7 @@ impl Network {
         return self.edges.len() - 1;
     }
 
-    // todo: maybe this should be moved to non neaural entwork? 
+    // todo: maybe this should be moved to non neaural entwork?
     #[allow(dead_code)]
     pub fn mutate(&mut self, inno_history: &mut InnovationHistory) -> () {
         let mut rng = rand::thread_rng();

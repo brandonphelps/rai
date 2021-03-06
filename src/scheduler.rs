@@ -1,8 +1,7 @@
+use beanstalkc::Beanstalkc;
 /// Contains structs and methods for "enqueing" arbitrary fitness functions
 /// and waiting for results.
-
 use std::time::Duration;
-use beanstalkc::Beanstalkc;
 
 use crate::distro::{JobInfo, JobResults};
 use crate::nn::Network;
@@ -15,16 +14,16 @@ trait IndiFit<Individual> {
 
 // todo: remove T and remain Scheduler to beanstalk Scheduler
 pub trait SchedulerT<Individual> {
-    /// blocking call to wait around untill all the jobs are finished. 
+    /// blocking call to wait around untill all the jobs are finished.
     fn wait(&mut self);
     /// Performs the act of enqueing or setting up w/e is needed for the individual
-    /// to be evaluated. 
+    /// to be evaluated.
     fn schedule_job(&mut self, indi: &Individual) -> u32;
     fn get_results(&self) -> f64;
 }
 
-// todo: allow for different schedule types / connectors etc. 
-// one main option should be have "remote workers" vs local running. 
+// todo: allow for different schedule types / connectors etc.
+// one main option should be have "remote workers" vs local running.
 pub struct Scheduler<'a> {
     current_jobs: Vec<(u128, &'a mut Network)>,
     job_queue: Beanstalkc,
@@ -48,12 +47,10 @@ impl<'a> Scheduler<'a> {
     }
 
     /// @param: fitness_func_name name of fitness function to run.
-    pub fn schedule_job(
-        &mut self,
-        individual: &'a mut Network,
-        fitness_func_name: &String,
-    ) -> () {
-        self.job_queue.use_tube(&fitness_func_name).expect("Failed to use tube");
+    pub fn schedule_job(&mut self, individual: &'a mut Network, fitness_func_name: &String) -> () {
+        self.job_queue
+            .use_tube(&fitness_func_name)
+            .expect("Failed to use tube");
         let job_id = self.next_job_id + 1 as u128;
         self.next_job_id += 1;
 
@@ -109,7 +106,5 @@ mod tests {
     use super::*;
 
     #[test]
-    fn playground() {
-	
-    }
+    fn playground() {}
 }
