@@ -11,7 +11,7 @@ use rand::seq::SliceRandom;
 
 use crate::individual::Individual;
 #[allow(unused_imports)]
-use crate::promise::{LocalScheduler, Scheduler};
+use crate::scheduler::{LocalScheduler, Scheduler};
 
 use crate::asteroids_individual::AsteroidsPlayer;
 use crate::neat;
@@ -456,4 +456,19 @@ mod tests {
 
         assert!(false);
     }
+
+    #[test]
+    fn test_child_num_people() {
+        let total_fitness = 100.0;
+        let total_pop = 100;
+
+        assert_eq!(num_child_to_make(total_fitness, 100.0, total_pop), 100);
+
+        // if a species has half the total pop then it should contribute to half the population.
+        assert_eq!(num_child_to_make(total_fitness, 50.0, total_pop), 50);
+
+        assert_eq!(num_child_to_make(total_fitness, 2.0, total_pop), 2);
+        assert_eq!(num_child_to_make(total_fitness, 50.0, 200), 100);
+    }
+
 }
