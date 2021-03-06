@@ -7,6 +7,7 @@ mod distro;
 mod neat;
 mod nn;
 
+
 fn main() -> () {
     let mut beanstalkd = Beanstalkc::new()
         .host("192.168.1.77")
@@ -25,7 +26,7 @@ fn main() -> () {
             Ok(r) => r,
             Err(t) => {
                 println!("Got an err on str: {}", str::from_utf8(&job_str).unwrap());
-                panic!(t);
+                panic!("{}", t);
             }
         };
 

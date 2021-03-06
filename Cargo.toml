@@ -21,6 +21,7 @@ serde= { version = "*", features = ["derive"]}
 serde_json = "*"
 beanstalkc = { version = "*" } 
 hsl = { version = "0.1.1" } 
+lazy_static = { version = "1.4.0" } 
 
 [dependencies.rasteroids]
 git = "https://github.com/brandonphelps/rasteroids.git"
@@ -44,17 +45,17 @@ path = "src/main.rs"
 required-features = []
 
 
-[[bin]]
-name = "watcher"
-path = "src/watcher.rs"
-required-features = ["gui", "rasteroids/gui"]
+# [[bin]]
+# name = "watcher"
+# path = "src/watcher.rs"
+# required-features = ["gui", "rasteroids/gui"]
 
 
-[[bin]]
-name = "runner"
-path = "src/runner.rs"
+# [[bin]]
+# name = "runner"
+# path = "src/runner.rs"
 
-[[bin]]
-name = "game_of_life"
-path = "src/game_of_life.rs"
-required-features = ["gui"]
+# [[bin]]
+# name = "game_of_life"
+# path = "src/game_of_life.rs"
+# required-features = ["gui"]

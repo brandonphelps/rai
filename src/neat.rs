@@ -132,7 +132,6 @@ impl<'a> Species<'a> {
 
         let p_one = &self.individuals.choose(&mut rng).unwrap();
         let p_two = &self.individuals.choose(&mut rng).unwrap();
-        // todo: put mutation call here?
         return p_one.crossover(&p_two);
     }
 }
@@ -144,6 +143,13 @@ pub struct InnovationHistory {
 }
 
 impl InnovationHistory {
+    pub fn new(input_count: usize, output_count: usize) -> Self {
+        InnovationHistory {
+            global_inno_id: (input_count * output_count),
+            conn_history: vec![],
+        }
+    }
+
     pub fn get_inno_number(
         &mut self,
         network_inno_ids: &Vec<u64>,
@@ -228,7 +234,7 @@ impl ConnHistory {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::nn::{node_per_layer, Edge, Network};    
+    use crate::nn::{node_per_layer, Edge, Network};
 
     #[test]
     fn test_matches() {
@@ -281,12 +287,12 @@ mod tests {
         species.individuals.push(&network_one);
         species.individuals.push(&network_two);
 
-        let mut inno_history = InnovationHistory {
+        let inno_history = InnovationHistory {
             global_inno_id: (3 * 2) as usize,
             conn_history: vec![],
         };
 
-        for i in 0..100 {
+        for _i in 0..100 {
             let offspring = species.generate_offspring(&inno_history);
             assert_eq!(node_per_layer(&offspring, 0).unwrap(), 4);
             assert_eq!(node_per_layer(&offspring, 1).unwrap(), 2);
