@@ -14,6 +14,8 @@ use rand::seq::SliceRandom;
 use crate::promise::{LocalScheduler, Scheduler};
 use crate::individual::Individual;
 
+use crate::asteroids_individual::AsteroidsPlayer;
+
 use std::task::{Poll};
 
 /// @brief container class for the various parameters.
@@ -217,9 +219,7 @@ mod tests {
 	}
     }
 
-    fn ind_mutate(params: &GAParams, storage: &mut GStorage, indivi: &TestIndividual) -> TestIndividual {
-
-	let mut params = Vec::<f64>::new();
+    fn ind_mutate(_params: &GAParams, storage: &mut GStorage, indivi: &TestIndividual) -> TestIndividual {
 
 	for i in 0..6 {
 	    let new_x = 0.0;

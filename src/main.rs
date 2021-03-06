@@ -18,21 +18,18 @@ use std::{thread, time};
 use serde::{Deserialize, Serialize};
 use serde_json::Result;
 
+mod asteroids_individual;
+
 mod lifetime;
 mod promise;
 mod scheduler;
 mod distro;
 
 mod individual;
-mod asteroids_individual;
 mod evo_algo;
 mod hrm;
 mod neat;
 mod nn;
-
-use rasteroids::asteroids;
-use rasteroids::collision;
-
 
 use crate::promise::{Scheduler, LocalScheduler};
 
@@ -226,14 +223,13 @@ fn main() -> std::result::Result<(), String> {
         _ => (),
     }
 
-    run_ea(
-        input_node_count,
-        output_node_count,
-        population_count,
-        max_iter_count,
-        results_folder,
-        &distro::asteroids_fitness,
-    );
+    // run_ea(
+    //     input_node_count,
+    //     output_node_count,
+    //     population_count,
+    //     max_iter_count,
+    //     results_folder,
+    // );
 
     Ok(())
 }

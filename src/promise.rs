@@ -182,7 +182,7 @@ where
 
     }
 
-    fn get_result(&self, f: &EAFuture) -> Option<f64> {
+    fn get_result(&self, _f: &EAFuture) -> Option<f64> {
 	Some(0.0)
     }
 
@@ -194,7 +194,7 @@ where
 		Ok(mut job_info) => {
 		    job_info.delete().expect("Failed to delete job from queue");
 
-		    let mut i = 0;
+		    let i = 0;
 		    // let unpacked_result: JobResults = serde_json::from_slice(&job_info.body()).unwrap();
 		    // for (index, job_r) in self.current_jobs.iter().enumerate() {
 		    // 	if unpacked_result.job_id == job_r.0 {
