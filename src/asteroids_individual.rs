@@ -1,7 +1,8 @@
 #![allow(dead_code)]
 
-use std::thread;
-use std::time::{Duration, Instant};
+use std::time::{Instant};
+use serde::{Deserialize, Serialize};
+
 
 use rasteroids::asteroids;
 use rasteroids::collision;
@@ -178,7 +179,7 @@ pub fn asteroids_fitness(player: &Network) -> f64 {
     return fitness;
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Deserialize, Serialize)]
 pub struct AsteroidsPlayer {
     // thing of interest.
     pub brain: Network,

@@ -13,17 +13,8 @@ use crate::individual::Individual;
 
 use crate::promise::EAFuture;
 
+use crate::distro::{JobInfo, JobResults};
 
-
-#[derive(Serialize, Deserialize)]
-struct JobInfo<T>
-where
-    T: Individual,
-{
-    name: String,
-    individual: T,
-    job_id: u128,
-}
 
 /// a scheduler main goal is provide single thread asycn like behaviour.
 /// this occurs in a similar fasion to futures, however allows for maintaing state
@@ -35,6 +26,7 @@ pub trait Scheduler<T> {
     fn get_result(&self, f: &EAFuture) -> Option<f64>;
     fn update(&mut self) -> ();
     fn wait(&mut self) -> ();
+    fn clear(&mut self) -> ();
 }
 
 pub struct LocalScheduler<T>
@@ -42,7 +34,7 @@ where
     T: Individual,
 {
     // todo: remove this since we don't need to keep track of the input.
-    input: Vec<T>,
+    input: Vec::<T>,
     output: Vec<Option<f64>>,
 }
 
@@ -52,7 +44,7 @@ where
 {
     pub fn new() -> Self {
         Self {
-            input: vec![],
+	    input: vec![],
             output: vec![],
         }
     }
@@ -81,6 +73,10 @@ where
         }
     }
 
+    fn clear(&mut self) {
+
+    }
+
     /// @brief does blocking until all associated futures are completed.
     fn wait(&mut self) {
         let mut do_we_need_to_update = true;
@@ -100,12 +96,13 @@ where
     }
 }
 
-struct BeanstalkScheduler<T>
+pub struct BeanstalkScheduler<T>
 where
     T: Individual,
 {
     // todo: remove.
     input: Vec<T>,
+    // todo: replace u128 with JobId(u128)
     current_jobs: Vec<u128>,
     job_queue: Beanstalkc,
     next_job_id: u128,
@@ -132,6 +129,8 @@ where
             output_values: vec![],
         }
     }
+
+    
 }
 
 impl<T> Scheduler<T> for BeanstalkScheduler<T>
@@ -142,8 +141,9 @@ where
         self.job_queue
             .use_tube(&job_info.ea_name())
             .expect("Failed to use tube");
-        let job_id = self.next_job_id + 1 as u128;
-        self.next_job_id += 1;
+
+        let job_id = self.next_job_id  as u128;
+	println!("Scheduling job: {}", job_id);
 
         let job = JobInfo {
             name: job_info.ea_name().clone(),
@@ -159,7 +159,11 @@ where
             Duration::from_secs(0),
             Duration::from_secs(120),
         ) {
-            Ok(_t) => self.current_jobs.push(job_id),
+            Ok(_t) =>{
+		self.current_jobs.push(job_id);
+		self.output_values.push(None);
+		self.next_job_id += 1;
+	    },
             Err(_) => {
                 println!("Failed to schedule Job");
             }
@@ -170,30 +174,53 @@ where
 
     fn update(&mut self) -> () {}
 
-    fn get_result(&self, _f: &EAFuture) -> Option<f64> {
-        Some(0.0)
+    fn get_result(&self, f: &EAFuture) -> Option<f64> {
+	println!("Job ID: {}, total value: {}", f.get_id(), self.output_values.len());
+        if f.get_id() as usize >= self.output_values.len() {
+	    None
+	} else {
+	    self.output_values[f.get_id() as usize]
+	}
+    }
+
+    fn clear(&mut self) {
+	self.next_job_id = 0;
+	self.output_values.clear();
+	self.current_jobs.clear();
     }
 
     fn wait(&mut self) {
-        while self.current_jobs.len() > 0 {
-            let current_job = self.job_queue.reserve_with_timeout(Duration::from_secs(2));
+
+	let mut need_check_for_updates = true;
+
+	while need_check_for_updates {
+	    need_check_for_updates = false;
+
+	    let current_job = self.job_queue.reserve_with_timeout(Duration::from_secs(2));
             match current_job {
-                Ok(mut job_info) => {
-                    job_info.delete().expect("Failed to delete job from queue");
+		Ok(mut job_info) => {
+		    job_info.delete().expect("Failed to delete job from queue");
 
-                    let i = 0;
-                    // let unpacked_result: JobResults = serde_json::from_slice(&job_info.body()).unwrap();
-                    // for (index, job_r) in self.current_jobs.iter().enumerate() {
-                    // 	if unpacked_result.job_id == job_r.0 {
-                    // 	    i = index;
-                    // 	}
-                    // }
+		    let unpacked_result: JobResults =
+			serde_json::from_slice(&job_info.body()).unwrap();
 
-                    let mut _queued_job = self.current_jobs.remove(i);
-                }
-                Err(_) => (),
-            }
-        }
+		    for (index, job_r) in self.current_jobs.iter().enumerate() {
+			if unpacked_result.job_id == *job_r {
+			    println!("Obtained fitness from worker: {}", unpacked_result.fitness);
+			    self.output_values[index] = Some(unpacked_result.fitness);
+			}
+		    }
+		},
+		Err(_) => { }
+	    }
+
+
+	    for i in self.output_values.iter() {
+		if i.is_none() {
+		    need_check_for_updates = true;
+		}
+	    }
+	}
     }
 }
 

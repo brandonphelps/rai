@@ -8,14 +8,16 @@ use std::collections::HashMap;
 
 use crate::asteroids_individual::asteroids_fitness;
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct JobInfo {
+#[derive(Serialize, Deserialize)]
+pub struct JobInfo<T>
+{
     pub name: String,
-    pub individual: Network,
+    pub individual: T,
     pub job_id: u128,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+// todo: should be generic on output type (fitness)
+#[derive(Serialize, Deserialize)]
 pub struct JobResults {
     pub job_id: u128,
     pub fitness: f64,
