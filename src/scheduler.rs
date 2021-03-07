@@ -231,7 +231,7 @@ mod tests {
     #[allow(unused_imports)]
     use rand::prelude::*;
 
-    #[test]
+    // #[test]
     fn playground() {
         impl Individual for String {
             fn fitness(&self) -> f64 {

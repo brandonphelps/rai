@@ -402,7 +402,10 @@ impl Network {
         self.edges.push(edge);
         return self.edges.len() - 1;
     }
+} 
 
+// Network Neat EA functions
+impl Network {
     // todo: maybe this should be moved to non neaural entwork?
     pub fn mutate(&mut self, inno_history: &mut InnovationHistory) -> () {
         let mut rng = rand::thread_rng();
@@ -492,6 +495,9 @@ impl Network {
         for node in self.nodes.iter() {
             child_network.nodes.push(node.clone());
         }
+
+	
+
         return child_network;
     }
 }

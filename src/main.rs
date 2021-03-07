@@ -175,13 +175,13 @@ mod tests {
 
         assert_eq!(
             0,
-            neat::Species::get_excess_disjoint(&network.edges, &network_two.edges)
+            neat::get_excess_disjoint(&network.edges, &network_two.edges)
         );
 
         let network_three = nn::Network::new(num_inputs, num_outputs, false);
         assert_eq!(
             ((num_inputs + 1) * num_outputs) as usize,
-            neat::Species::get_excess_disjoint(&network.edges, &network_three.edges)
+            neat::get_excess_disjoint(&network.edges, &network_three.edges)
         );
 
         assert_eq!(
@@ -212,7 +212,7 @@ mod tests {
 
         assert_eq!(
             0,
-            neat::Species::get_excess_disjoint(&network.edges, &network_two.edges)
+            neat::get_excess_disjoint(&network.edges, &network_two.edges)
         );
         assert_eq!(
             0.0,
@@ -222,18 +222,18 @@ mod tests {
         let network_three = nn::Network::new(num_inputs, num_outputs, false);
         assert_eq!(
             ((num_inputs + 1) * num_outputs) as usize,
-            neat::Species::get_excess_disjoint(&network.edges, &network_three.edges)
+            neat::get_excess_disjoint(&network.edges, &network_three.edges)
         );
 
         network_two.add_node(0, 0.2, 0.4, Some(&mut innovation_history));
         assert_eq!(
             2,
-            neat::Species::get_excess_disjoint(&network.edges, &network_two.edges)
+            neat::get_excess_disjoint(&network.edges, &network_two.edges)
         );
         network_two.add_node(5, 0.2, 0.4, Some(&mut innovation_history));
         assert_eq!(
             4,
-            neat::Species::get_excess_disjoint(&network.edges, &network_two.edges)
+            neat::get_excess_disjoint(&network.edges, &network_two.edges)
         );
 
         println!("Network one");
