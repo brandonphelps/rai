@@ -452,6 +452,13 @@ impl Network {
                 Some(inno_history),
             );
         }
+
+	
+	if !has_unique_elements(self.get_inno_ids()) { 
+	    println!("mutate {:#?}", self);
+	    assert!(has_unique_elements(self.get_inno_ids()));
+	}
+
     }
 
     fn mutate_edge(&mut self, edge: usize) -> () {
@@ -505,7 +512,7 @@ impl Network {
         }
 	
 	if !has_unique_elements(self.get_inno_ids()) { 
-	    println!("{:#?}", self);
+	    println!("crossover {:#?}", self);
 	    assert!(has_unique_elements(self.get_inno_ids()));
 	}
 
