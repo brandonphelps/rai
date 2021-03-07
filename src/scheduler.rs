@@ -13,21 +13,8 @@ use crate::individual::Individual;
 
 use crate::promise::EAFuture;
 
+use crate::distro::{JobInfo, JobResults};
 
-
-#[derive(Serialize, Deserialize)]
-struct JobInfo<T>
-{
-    name: String,
-    individual: T,
-    job_id: u128,
-}
-
-#[derive(Serialize, Deserialize)]
-struct JobResults {
-    job_id: u128,
-    fitness: f64,
-}
 
 /// a scheduler main goal is provide single thread asycn like behaviour.
 /// this occurs in a similar fasion to futures, however allows for maintaing state
