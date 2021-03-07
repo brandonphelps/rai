@@ -13,7 +13,7 @@ use crate::individual::Individual;
 #[allow(unused_imports)]
 use crate::scheduler::{LocalScheduler, Scheduler};
 
-use crate::asteroids_individual::AsteroidsPlayer;
+
 use crate::neat;
 use crate::nn::Network;
 
@@ -79,12 +79,13 @@ where
     }
 }
 
-trait ExtractBrain {
+pub trait ExtractBrain {
     fn get_brain(&self) -> Network;
     fn set_brain(&mut self, brain: Network);
 }
 
-fn species_crossover<IndividualT>(
+
+pub fn species_crossover<IndividualT>(
     params: &GAParams,
     innovation_history: &mut neat::InnovationHistory,
     pop_fitness: &Vec<f64>,
@@ -156,7 +157,7 @@ where
     return results;
 }
 
-fn run_ea<IndividualT, Storage, Sched>(
+pub fn run_ea<IndividualT, Storage, Sched>(
     params: &GAParams,
     storage: &mut Storage,
     generate_offspring_func: fn(&GAParams, &mut Storage,
@@ -175,6 +176,7 @@ where
 
     // do fitness calculation.
     for indivi in individuals.iter_mut() {
+	println!("Initial fitness");
         indivi.fitness = indivi.sol.fitness();
     }
 
@@ -253,6 +255,8 @@ where
 #[cfg(test)]
 mod tests {
     use super::*;
+    
+    use crate::asteroids_individual::AsteroidsPlayer;
 
     #[derive(Clone, Debug)]
     struct TestIndividual {
@@ -421,39 +425,13 @@ mod tests {
         };
 
         let mut scheduler = LocalScheduler::<TestIndividual>::new();
-        let mut a_scheduler = LocalScheduler::<AsteroidsPlayer>::new();
-
-        let mut innovation_history = neat::InnovationHistory::new(8, 3);
-
         let mut r_s = GStorage {};
-
         run_ea::<TestIndividual, GStorage, LocalScheduler<TestIndividual>>(
             &ga_params,
             &mut r_s,
 	    generic_offspring_gen,
             &mut scheduler,
         );
-
-        impl ExtractBrain for AsteroidsPlayer {
-            fn get_brain(&self) -> Network {
-                self.brain.clone()
-            }
-
-	    fn set_brain(&mut self, network: Network) {
-		self.brain = network;
-	    }
-        }
-
-        println!("Asteroids");
-        run_ea::<AsteroidsPlayer,
-		 neat::InnovationHistory,
-		 LocalScheduler<AsteroidsPlayer>>(
-            &ga_params,
-            &mut innovation_history,
-	    species_crossover,
-            &mut a_scheduler,
-        );
-
         assert!(false);
     }
 

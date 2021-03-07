@@ -36,6 +36,11 @@ use std::any::Any;
 use std::fmt::Debug;
 use std::sync::atomic::{AtomicUsize, Ordering};
 
+use crate::evo_algo::{run_ea, species_crossover, ExtractBrain, GAParams};
+use crate::nn::Network;
+use crate::asteroids_individual::{AsteroidsPlayer};
+use crate::scheduler::{BeanstalkScheduler};
+
 fn log<T: Any + Debug>(value: &T) {
     let value_any = value as &dyn Any;
 
@@ -49,121 +54,6 @@ fn log<T: Any + Debug>(value: &T) {
     }
 }
 
-// fn run_ea(
-//     input_count: u32,
-//     output_count: u32,
-//     pop_count: u64,
-//     iter_count: u64,
-//     results_folder: String,
-//     fitness_func: &impl Fn(&nn::Network) -> f64,
-// ) -> () {
-//     let mut average_history_per_iter: Vec<f64> = Vec::new();
-
-//     // initializeation.
-//     // population holder.
-//     let mut specific_pop: Vec<nn::Network> = Vec::new();
-//     let mut individual = nn::Network::new(input_count, output_count, true);
-//     // fitness evaluation
-//     let mut innovation_history = neat::InnovationHistory {
-//         global_inno_id: (input_count * output_count) as usize,
-//         conn_history: vec![],
-//     };
-
-//     // run the first one locally.
-//     let fitness_res = fitness_func(&individual);
-//     individual.fitness = fitness_res;
-
-//     for _ in 0..pop_count + 1 {
-//         specific_pop.push(individual.clone());
-//     }
-
-//     for generation in 0..iter_count {
-//         let gen_folder = format!("{}/{}", results_folder, generation);
-//         fs::create_dir_all(gen_folder.clone()).expect("Failed to create results folder");
-
-//         println!("Generation: {}", generation);
-
-//         // move to speciate function
-//         // specization. divide the population into different species.
-//         // why can't this forloop be outside this forloop? something
-//         // about the specific_pop updating is mutable borrow after an immutable barrow on something?
-
-//         let mut species = neat::speciate(&specific_pop);
-//         let species_count = species.len();
-//         println!("Species count: {}", species_count);
-
-//         let mut offspring = Vec::new();
-
-//         // there is prob some vector function for this or something with a closure?
-//         let mut total_fitness = 0.0;
-//         for ind in specific_pop.iter() {
-//             total_fitness += ind.fitness();
-//         }
-//         let average_fit = total_fitness / (specific_pop.len() as f64);
-
-//         println!("Fitness ({}), ({})", total_fitness, average_fit);
-
-//         // generate offsprint from each of the species.
-//         // the number of offspring depends on the average fitness of the species.
-//         for spec in species.iter() {
-//             // add in the champ of the species in.
-//             offspring.push(spec.champion.unwrap().clone());
-//             let spec_fitness = spec.total_fitness();
-//             let num_children = num_child_to_make(total_fitness, spec_fitness, pop_count);
-
-//             for _child_num in 0..num_children {
-//                 let mut new_child = spec.generate_offspring(&innovation_history).clone();
-//                 new_child.mutate(&mut innovation_history);
-//                 // assert_eq!(node_per_layer(new_child.
-//                 offspring.push(new_child);
-//             }
-//         }
-
-//         let start = Instant::now();
-//         {
-//             // let mut schedu = LocalScheduler::new();
-//             // let mut offspring_fitness = Vec::new();
-//             // for off_p in offspring.iter() {
-//             //     offspring_fitness.push(schedu.schedule_job(off_p));
-//             // }
-//             // schedu.wait();
-//         }
-
-//         let duration = start.elapsed();
-//         if duration.as_secs() != 0 {
-//             println!(
-//                 "Fitness per second: {}",
-//                 offspring.len() as f64 / duration.as_secs() as f64
-//             );
-//         }
-
-//         species.clear();
-
-//         for (index, ind) in specific_pop.iter().enumerate() {
-//             let j = serde_json::to_string(&ind).unwrap();
-//             std::fs::write(format!("{}/{}", gen_folder, index), j).expect("Unable to write");
-//         }
-
-//         specific_pop.append(&mut offspring);
-
-//         // // cull population
-//         specific_pop.sort_by_key(|indiv| Reverse((indiv.fitness() * 1000.0) as i128));
-//         specific_pop.truncate(pop_count as usize);
-
-//         assert!(specific_pop.len() == pop_count as usize);
-//         println!(
-//             "Species({}) average fitness {} number of innovations: {}",
-//             species_count,
-//             average_fit,
-//             innovation_history.conn_history.len()
-//         );
-//         average_history_per_iter.push(average_fit / (specific_pop.len() as f64));
-//     }
-
-//     specific_pop.sort_by_key(|indiv| Reverse((indiv.fitness() * 1000.0) as i128));
-//     let _top = &mut specific_pop[0];
-// }
-
 #[cfg(not(feature = "gui"))]
 fn main() -> std::result::Result<(), String> {
     let population_count = 400;
@@ -173,6 +63,36 @@ fn main() -> std::result::Result<(), String> {
 
     // log(&population_count);
 
+    let ga_params = GAParams {
+        pop_size: 400,
+        offspring_count: 10,
+        generation_count: 100,
+        parent_selection_count: 10,
+    };
+
+    let mut a_scheduler = BeanstalkScheduler::<AsteroidsPlayer>::new("192.168.0.4", 11300);
+
+    let mut innovation_history = neat::InnovationHistory::new(8, 3);
+
+    impl ExtractBrain for AsteroidsPlayer {
+        fn get_brain(&self) -> Network {
+            self.brain.clone()
+        }
+
+	fn set_brain(&mut self, network: Network) {
+	    self.brain = network;
+	}
+    }
+
+    println!("Asteroids");
+    run_ea::<AsteroidsPlayer,
+	     neat::InnovationHistory,
+	     BeanstalkScheduler<AsteroidsPlayer>>(
+        &ga_params,
+        &mut innovation_history,
+	species_crossover,
+        &mut a_scheduler,
+    );
     return Ok(());
 
     // let _args: Vec<_> = env::args().collect();

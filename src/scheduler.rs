@@ -26,6 +26,7 @@ pub trait Scheduler<T> {
     fn get_result(&self, f: &EAFuture) -> Option<f64>;
     fn update(&mut self) -> ();
     fn wait(&mut self) -> ();
+    fn clear(&mut self) -> ();
 }
 
 pub struct LocalScheduler<T>
@@ -72,6 +73,10 @@ where
         }
     }
 
+    fn clear(&mut self) {
+
+    }
+
     /// @brief does blocking until all associated futures are completed.
     fn wait(&mut self) {
         let mut do_we_need_to_update = true;
@@ -91,7 +96,7 @@ where
     }
 }
 
-struct BeanstalkScheduler<T>
+pub struct BeanstalkScheduler<T>
 where
     T: Individual,
 {
@@ -124,6 +129,8 @@ where
             output_values: vec![],
         }
     }
+
+    
 }
 
 impl<T> Scheduler<T> for BeanstalkScheduler<T>
@@ -134,7 +141,9 @@ where
         self.job_queue
             .use_tube(&job_info.ea_name())
             .expect("Failed to use tube");
+
         let job_id = self.next_job_id + 1 as u128;
+	println!("Scheduling job: {}", job_id);
         self.next_job_id += 1;
 
         let job = JobInfo {
@@ -151,7 +160,10 @@ where
             Duration::from_secs(0),
             Duration::from_secs(120),
         ) {
-            Ok(_t) => self.current_jobs.push(job_id),
+            Ok(_t) =>{
+		self.current_jobs.push(job_id);
+		self.output_values.push(None);
+	    },
             Err(_) => {
                 println!("Failed to schedule Job");
             }
@@ -162,8 +174,19 @@ where
 
     fn update(&mut self) -> () {}
 
-    fn get_result(&self, _f: &EAFuture) -> Option<f64> {
-        Some(0.0)
+    fn get_result(&self, f: &EAFuture) -> Option<f64> {
+	println!("Job ID: {}, total value: {}", f.get_id(), self.output_values.len());
+        if f.get_id() as usize >= self.output_values.len() {
+	    None
+	} else {
+	    self.output_values[f.get_id() as usize]
+	}
+    }
+
+    fn clear(&mut self) {
+	self.next_job_id = 0;
+	self.output_values.clear();
+	self.current_jobs.clear();
     }
 
     fn wait(&mut self) {
@@ -183,6 +206,7 @@ where
 
 		    for (index, job_r) in self.current_jobs.iter().enumerate() {
 			if unpacked_result.job_id == *job_r {
+			    println!("Obtained fitness from worker: {}", unpacked_result.fitness);
 			    self.output_values[index] = Some(unpacked_result.fitness);
 			}
 		    }
