@@ -18,6 +18,7 @@ use serde_json::Result;
 
 mod asteroids_individual;
 
+mod utils;
 mod distro;
 mod lifetime;
 mod promise;
