@@ -220,6 +220,8 @@ where
                     }
                 }
             }
+
+	    scheduler.clear();
         }
 
         let mut total_fitness = 0.0;

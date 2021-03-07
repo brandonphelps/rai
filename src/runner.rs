@@ -62,7 +62,7 @@ fn main() -> () {
             Duration::from_secs(0),
             Duration::from_secs(120),
         ) {
-            Ok(_t) => println!("Posted results"),
+            Ok(_t) => { },
             Err(_) => println!("Failed to post results"),
         };
     }

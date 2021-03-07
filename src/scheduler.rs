@@ -142,9 +142,8 @@ where
             .use_tube(&job_info.ea_name())
             .expect("Failed to use tube");
 
-        let job_id = self.next_job_id + 1 as u128;
+        let job_id = self.next_job_id  as u128;
 	println!("Scheduling job: {}", job_id);
-        self.next_job_id += 1;
 
         let job = JobInfo {
             name: job_info.ea_name().clone(),
@@ -163,6 +162,7 @@ where
             Ok(_t) =>{
 		self.current_jobs.push(job_id);
 		self.output_values.push(None);
+		self.next_job_id += 1;
 	    },
             Err(_) => {
                 println!("Failed to schedule Job");
