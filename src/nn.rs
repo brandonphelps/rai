@@ -11,7 +11,7 @@ use crate::utils::has_unique_elements;
 
 // for a fully connected graph with a bias node returns the next ino id to start with. 
 pub fn inno_start_id(input_node_count: u32, output_node_count: u32) -> u64 {
-    (input_node_count + 1 * output_node_count) as u64
+    ((input_node_count + 1) * output_node_count) as u64
 }
 
 fn matching_edge(parent2: &Network, inno_id: u64) -> Option<&Edge> {

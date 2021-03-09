@@ -74,7 +74,7 @@ fn main() -> std::result::Result<(), String> {
     let mut a_scheduler = BeanstalkScheduler::<AsteroidsPlayer>::new("192.168.0.4", 11300);
 
     let mut innovation_history = AsteroidsPlayer::new_inno_history();
-
+    
     impl ExtractBrain for AsteroidsPlayer {
         fn get_brain(&self) -> Network {
             self.brain.clone()
