@@ -105,9 +105,9 @@ where
 	total_pop_fitness += pop_fitness[index];
     }
 
-    let mut species = neat::speciate(&brains);
+    let species = neat::speciate(&brains);
 
-    let species_count = species.len();
+    let _species_count = species.len();
     let mut offspring = Vec::new();
     for spec in species.iter() {
         // add in the champion of the species.
@@ -326,8 +326,8 @@ mod tests {
         }
 
 	fn mutate<S>(&self, stor: &mut S) -> Self {
-            for i in 0..6 {
-		let new_x = 0.0;
+            for _i in 0..6 {
+		let _new_x = 0.0;
             }
 
             TestIndividual {
@@ -417,7 +417,7 @@ mod tests {
         }
     }
 
-    #[test]
+    // #[test]
     fn test_playground() {
         let ga_params = GAParams {
             pop_size: 400,
@@ -450,5 +450,4 @@ mod tests {
         assert_eq!(num_child_to_make(total_fitness, 2.0, total_pop), 2);
         assert_eq!(num_child_to_make(total_fitness, 50.0, 200), 100);
     }
-
 }

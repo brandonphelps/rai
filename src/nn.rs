@@ -3,10 +3,16 @@
 /// This module contains data structures and functions for defining a nerual network
 /// i've taken a very "real object" approach and modeled it like with realish option,
 /// likely they'll be reduced to remove the unneeded objects
-// can't use this here ?
-use crate::neat::InnovationHistory;
 use rand::prelude::*;
 use serde::{Deserialize, Serialize};
+
+use crate::neat::InnovationHistory;
+use crate::utils::has_unique_elements;
+
+// for a fully connected graph with a bias node returns the next ino id to start with. 
+pub fn inno_start_id(input_node_count: u32, output_node_count: u32) -> u64 {
+    ((input_node_count + 1) * output_node_count) as u64
+}
 
 fn matching_edge(parent2: &Network, inno_id: u64) -> Option<&Edge> {
     for edge in parent2.edges.iter() {
@@ -16,6 +22,27 @@ fn matching_edge(parent2: &Network, inno_id: u64) -> Option<&Edge> {
     }
     return None;
 }
+
+pub fn sigmoid(value: f64) -> f64 {
+    return 1.0 / (1.0 + std::f64::consts::E.powf(-1.0 * value));
+}
+
+
+// put inside node class? 
+pub fn node_per_layer(network: &Network, num_layer: u64) -> Option<u64> {
+    let mut node_count = 0;
+    if num_layer > network.layer_count.into() {
+        return None;
+    } else {
+        for n in network.nodes.iter() {
+            if n.layer == num_layer {
+                node_count += 1;
+            }
+        }
+        return Some(node_count);
+    }
+}
+
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Node {
@@ -28,17 +55,15 @@ impl Node {
     }
 }
 
-#[allow(dead_code)]
-pub fn sigmoid(value: f64) -> f64 {
-    return 1.0 / (1.0 + std::f64::consts::E.powf(-1.0 * value));
-}
-
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Edge {
     pub from_node: u64,
     pub to_node: u64,
+
     pub weight: f64,
     pub enabled: bool,
+
+    // replace with unit struct. 
     pub inno_id: u64,
 }
 
@@ -68,23 +93,13 @@ pub struct Network {
     pub bias_node_id: u64,
     // can we remove this? networks don't need a fitness, EA items do however
     pub fitness: f64,
+    // start of where the innohistory should begin. 
+    inno_start_id: u64
 }
 
-pub fn node_per_layer(network: &Network, num_layer: u64) -> Option<u64> {
-    let mut node_count = 0;
-    if num_layer > network.layer_count.into() {
-        return None;
-    } else {
-        for n in network.nodes.iter() {
-            if n.layer == num_layer {
-                node_count += 1;
-            }
-        }
-        return Some(node_count);
-    }
-}
 
 impl Network {
+    // todo: remove this
     pub fn fitness(&self) -> f64 {
         return self.fitness;
     }
@@ -98,6 +113,7 @@ impl Network {
             layer_count: 2,
             bias_node_id: 0,
             fitness: 0.0,
+	    inno_start_id: 0,
         };
         for _input_n in 0..input_node_count {
             network.new_node(0);
@@ -113,7 +129,6 @@ impl Network {
         network.bias_node_id = (network.nodes.len() - 1) as u64;
 
         if fully_connect {
-            let mut local_inno_id = 0;
             for _input_n in 0..input_node_count {
                 for _output_n in 0..output_node_count {
                     network.edges.push(Edge {
@@ -122,9 +137,9 @@ impl Network {
                         // todo: could be random or zero.
                         weight: 0.5,
                         enabled: true,
-                        inno_id: local_inno_id,
+                        inno_id: network.inno_start_id,
                     });
-                    local_inno_id += 1;
+                    network.inno_start_id += 1;
                 }
             }
             // connect bias nodes up
@@ -134,10 +149,12 @@ impl Network {
                     to_node: (_output_n + input_node_count) as u64,
                     weight: 1.0,
                     enabled: true,
-                    inno_id: local_inno_id,
+                    inno_id: network.inno_start_id,
                 });
-                local_inno_id += 1;
+                network.inno_start_id += 1;
             }
+	    println!("input: {}, output: {} Local inno id:{}", input_node_count, output_node_count,
+		     network.inno_start_id);
         }
 
         return network;
@@ -166,7 +183,6 @@ impl Network {
         return (max_connections as usize) == self.edges.len();
     }
 
-    #[allow(dead_code)]
     pub fn pretty_print(&self) -> () {
         for layer in 0..self.layer_count {
             for node in self.nodes.iter() {
@@ -291,11 +307,14 @@ impl Network {
         edge_weight: f64,
         inno_handler: &mut Option<&mut InnovationHistory>,
     ) -> Edge {
+
         let mut inno_id = 2;
+
         if let Some(ref mut inno_history) = inno_handler {
             let network_inno_ids = self.get_inno_ids();
             inno_id = inno_history.get_inno_number(&network_inno_ids, from_id, to_id);
         }
+
         return Edge {
             from_node: from_id as u64,
             to_node: to_id as u64,
@@ -311,14 +330,19 @@ impl Network {
         edge_index: usize,
         edge1_w: f64,
         edge2_w: f64,
+	// only really important for neat impl
         mut inno_handler: Option<&mut InnovationHistory>,
     ) -> u64 {
         self.edges[edge_index].enabled = false;
+
+	println!("Current edge inods: {:#?}", self.get_inno_ids());
 
         let edge = &self.edges[edge_index];
         let incoming_node_id = edge.from_node;
         let outgoing_node_id = edge.to_node;
 
+
+	println!("{} -> {}", incoming_node_id, outgoing_node_id);
         // get teh node the edge we are breaking up was pointing to.
         let node = &self.nodes[edge.from_node as usize];
         let current_node_layer = node.layer + 1;
@@ -336,12 +360,27 @@ impl Network {
             &mut inno_handler,
         );
         self.edges.push(edge1);
+
+	if !has_unique_elements(self.get_inno_ids()) { 
+	    println!("failed in the middle of add node {:#?}", self);
+	    assert!(has_unique_elements(self.get_inno_ids()));
+	}
+
         let edge2 = self.construct_edge(
+
+
             self.nodes.len() - 1,
             outgoing_node_id as usize,
             edge2_w,
             &mut inno_handler,
         );
+
+	if !has_unique_elements(self.get_inno_ids()) { 
+	    println!("failed in the end of add node {:#?}", self);
+	    assert!(has_unique_elements(self.get_inno_ids()));
+	}
+
+
         self.edges.push(edge2);
 
         if self.nodes[outgoing_node_id as usize].layer == current_node_layer as u64 {
@@ -369,6 +408,7 @@ impl Network {
         _node_one: usize,
         _node_two: usize,
         weight: f64,
+	// only really important for neat
         mut inno_hist: Option<&mut InnovationHistory>,
     ) -> usize {
         // todo: don't add in edges if the edge already exists.
@@ -402,9 +442,13 @@ impl Network {
         self.edges.push(edge);
         return self.edges.len() - 1;
     }
+} 
 
+// Network Neat EA functions
+impl Network {
     // todo: maybe this should be moved to non neaural entwork?
     pub fn mutate(&mut self, inno_history: &mut InnovationHistory) -> () {
+	println!("Mutating network firs ttime!");
         let mut rng = rand::thread_rng();
         // 80% chance to mutate edges node.
         if rng.gen::<f64>() < 0.8 {
@@ -432,7 +476,7 @@ impl Network {
 
         // 3% add new node.
         if rng.gen::<f64>() < 0.03 {
-	    println!("new node");
+	    println!("new node: {}", line!());
             let edge = self.random_non_bias_edge();
             self.add_node(
                 edge as usize,
@@ -441,6 +485,13 @@ impl Network {
                 Some(inno_history),
             );
         }
+
+	
+	if !has_unique_elements(self.get_inno_ids()) { 
+	    println!("mutate {:#?}", self);
+	    assert!(has_unique_elements(self.get_inno_ids()));
+	}
+
     }
 
     fn mutate_edge(&mut self, edge: usize) -> () {
@@ -492,6 +543,12 @@ impl Network {
         for node in self.nodes.iter() {
             child_network.nodes.push(node.clone());
         }
+	
+	if !has_unique_elements(self.get_inno_ids()) { 
+	    println!("crossover {:#?}", self);
+	    assert!(has_unique_elements(self.get_inno_ids()));
+	}
+
         return child_network;
     }
 }
@@ -499,6 +556,8 @@ impl Network {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+
 
     fn construct_and_network() -> Network {
         let mut network = Network::new(2, 1, false);
@@ -740,8 +799,44 @@ mod tests {
         assert_eq!(node_per_layer(&network_three, 1).unwrap(), 3);
 
         network_one.pretty_print();
-
         network_three.pretty_print();
+
+
+	assert!(has_unique_elements(network_one.get_inno_ids()));
+	assert!(has_unique_elements(network_three.get_inno_ids()));
+    }
+
+    #[test]
+    fn test_add_node_with_inno() {
+        let mut network = Network::new(2, 1, true);
+	let mut inno_history = InnovationHistory::new(2, 1);
+	let previous_ids = network.get_inno_ids();
+	
+	let new_node_id = network.add_node(1, 0.2, 0.3, Some(&mut inno_history));
+	let after_ids = network.get_inno_ids();
+	assert!(after_ids.len() > previous_ids.len());
+	network.add_node(1, 0.2, 0.3, Some(&mut inno_history));
+
+	let after_after = network.get_inno_ids();
+	assert!(after_after.len() > after_ids.len());
+    }
+
+    #[test]
+    fn test_add_node_with_inno_more() {
+        let mut network = Network::new(8, 3, true);
+
+	assert_eq!(inno_start_id(8, 3), 27);
+	assert_eq!(network.inno_start_id, 27);
+
+	let mut inno_history = InnovationHistory::new(8, 3);
+	let previous_ids = network.get_inno_ids();
+	
+	let new_node_id = network.add_node(1, 0.2, 0.3, Some(&mut inno_history));
+	let after_ids = network.get_inno_ids();
+	assert!(after_ids.len() > previous_ids.len());
+	network.add_node(1, 0.2, 0.3, Some(&mut inno_history));
+	let after_after = network.get_inno_ids();
+	assert!(after_after.len() > after_ids.len());
     }
 
     #[test]

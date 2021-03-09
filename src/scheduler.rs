@@ -231,7 +231,7 @@ mod tests {
     #[allow(unused_imports)]
     use rand::prelude::*;
 
-    #[test]
+    // #[test]
     fn playground() {
         impl Individual for String {
             fn fitness(&self) -> f64 {
@@ -246,7 +246,7 @@ mod tests {
 		self.clone()
 	    }
 
-	    fn mutate<S>(&self, stor: &mut S) -> Self {
+	    fn mutate<S>(&self, _stor: &mut S) -> Self {
 		self.clone()
 	    }
         }

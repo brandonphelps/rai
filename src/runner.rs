@@ -3,6 +3,7 @@ use core::time::Duration;
 
 use std::str;
 
+mod utils;
 mod distro;
 mod neat;
 mod nn;

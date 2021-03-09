@@ -2,7 +2,7 @@
 #![allow(dead_code)]
 #![allow(deprecated)]
 // dono why this is needed for the doc comamnd to work.
-#![feature(intra_doc_pointers)]
+// #![feature(intra_doc_pointers)]
 
 use prgrs::{Length, Prgrs};
 use rand::distributions::{Distribution, Normal};
@@ -18,6 +18,7 @@ use serde_json::Result;
 
 mod asteroids_individual;
 
+mod utils;
 mod distro;
 mod lifetime;
 mod promise;
@@ -37,7 +38,7 @@ use std::fmt::Debug;
 use std::sync::atomic::{AtomicUsize, Ordering};
 
 use crate::evo_algo::{run_ea, species_crossover, ExtractBrain, GAParams};
-use crate::nn::Network;
+use crate::nn::{Network};
 use crate::asteroids_individual::{AsteroidsPlayer};
 use crate::scheduler::{BeanstalkScheduler};
 
@@ -72,8 +73,8 @@ fn main() -> std::result::Result<(), String> {
 
     let mut a_scheduler = BeanstalkScheduler::<AsteroidsPlayer>::new("192.168.0.4", 11300);
 
-    let mut innovation_history = neat::InnovationHistory::new(8, 3);
-
+    let mut innovation_history = AsteroidsPlayer::new_inno_history();
+    
     impl ExtractBrain for AsteroidsPlayer {
         fn get_brain(&self) -> Network {
             self.brain.clone()
@@ -175,13 +176,13 @@ mod tests {
 
         assert_eq!(
             0,
-            neat::Species::get_excess_disjoint(&network.edges, &network_two.edges)
+            neat::get_excess_disjoint(&network.edges, &network_two.edges)
         );
 
         let network_three = nn::Network::new(num_inputs, num_outputs, false);
         assert_eq!(
             ((num_inputs + 1) * num_outputs) as usize,
-            neat::Species::get_excess_disjoint(&network.edges, &network_three.edges)
+            neat::get_excess_disjoint(&network.edges, &network_three.edges)
         );
 
         assert_eq!(
@@ -212,7 +213,7 @@ mod tests {
 
         assert_eq!(
             0,
-            neat::Species::get_excess_disjoint(&network.edges, &network_two.edges)
+            neat::get_excess_disjoint(&network.edges, &network_two.edges)
         );
         assert_eq!(
             0.0,
@@ -222,18 +223,18 @@ mod tests {
         let network_three = nn::Network::new(num_inputs, num_outputs, false);
         assert_eq!(
             ((num_inputs + 1) * num_outputs) as usize,
-            neat::Species::get_excess_disjoint(&network.edges, &network_three.edges)
+            neat::get_excess_disjoint(&network.edges, &network_three.edges)
         );
 
         network_two.add_node(0, 0.2, 0.4, Some(&mut innovation_history));
         assert_eq!(
             2,
-            neat::Species::get_excess_disjoint(&network.edges, &network_two.edges)
+            neat::get_excess_disjoint(&network.edges, &network_two.edges)
         );
         network_two.add_node(5, 0.2, 0.4, Some(&mut innovation_history));
         assert_eq!(
             4,
-            neat::Species::get_excess_disjoint(&network.edges, &network_two.edges)
+            neat::get_excess_disjoint(&network.edges, &network_two.edges)
         );
 
         println!("Network one");

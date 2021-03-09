@@ -12,6 +12,29 @@ pub struct Species<'a> {
     individuals: Vec<&'a Network>,
 }
 
+/// returns the number of excess and disjoint edges.
+/// i.e the number of extra edges and the number of non matching edges.
+// todo: move outside the species impl?
+pub fn get_excess_disjoint(one: &Vec<Edge>, two: &Vec<Edge>) -> usize {
+    let mut matching = 0;
+    for edge_one in one.iter() {
+        for edge_two in two.iter() {
+            if edge_one.inno_id == edge_two.inno_id {
+                matching += 1;
+                break;
+            }
+        }
+    }
+
+    let total_items = one.len() + two.len();
+
+    // 2 is here so that if sets are exactly the same.
+    // we only do match checking 1 way, but the total items
+    // double counts the items hence the 2 
+    return total_items - 2 * matching;
+}
+
+
 /// Given a vector of individuals, return a vector of species, where the individuals
 /// are divided into species based on how similar they are.
 pub fn speciate(population: &Vec<Network>) -> Vec<Species> {
@@ -55,7 +78,7 @@ impl<'a> Species<'a> {
     }
 
     pub fn same_species(&self, other: &Vec<Edge>) -> bool {
-        let excess_disjoin = Species::get_excess_disjoint(&self.champion.unwrap().edges, other);
+        let excess_disjoin = get_excess_disjoint(&self.champion.unwrap().edges, other);
         let average_weight_diff =
             Species::get_average_weight_diff(&self.champion.unwrap().edges, other);
 
@@ -84,21 +107,6 @@ impl<'a> Species<'a> {
         return fitness;
     }
 
-    /// returns the number of excess and disjoint edges.
-    /// i.e the number of extra edges and the number of non matching edges.
-    // todo: move outside the species impl?
-    pub fn get_excess_disjoint(one: &Vec<Edge>, two: &Vec<Edge>) -> usize {
-        let mut matching = 0;
-        for edge_one in one.iter() {
-            for edge_two in two.iter() {
-                if edge_one.inno_id == edge_two.inno_id {
-                    matching += 1;
-                    break;
-                }
-            }
-        }
-        return one.len() + two.len() - 2 * matching;
-    }
 
     pub fn get_average_weight_diff(one: &Vec<Edge>, two: &Vec<Edge>) -> f64 {
         let mut matching = 0;
@@ -150,6 +158,13 @@ impl InnovationHistory {
         }
     }
 
+    pub fn new_from_id(inno_id: usize) -> Self {
+	InnovationHistory {
+	    global_inno_id: inno_id,
+	    conn_history: vec![],
+	}
+    }
+
     pub fn get_inno_number(
         &mut self,
         network_inno_ids: &Vec<u64>,
@@ -163,12 +178,14 @@ impl InnovationHistory {
         for conn_history in self.conn_history.iter() {
             if conn_history.matches(network_inno_ids, from_node, to_node) {
                 is_new = false;
+		println!("Is not new: {} -> {}: {}", from_node, to_node, connect_inno_num);
                 connect_inno_num = conn_history.inno_number;
                 break;
             }
         }
 
         if is_new {
+	    println!("Is new: {} -> {}: {}", from_node, to_node, connect_inno_num);
             let mut new_inno_nums = Vec::<u64>::new();
             for edge in network_inno_ids.iter() {
                 new_inno_nums.push(edge.clone());
@@ -264,12 +281,29 @@ mod tests {
     }
 
     #[test]
-    fn test_excess_disjoin() {
+    fn test_excess_disjoin_empty() {
         let edge_one: Vec<Edge> = Vec::new();
         let edge_two: Vec<Edge> = Vec::new();
 
-        assert_eq!(Species::get_excess_disjoint(&edge_one, &edge_two), 0);
+        assert_eq!(get_excess_disjoint(&edge_one, &edge_two), 0);
     }
+
+    #[test]
+    fn test_excess_disjoin_one() {
+        let edge_one: Vec<Edge> = vec![Edge { from_node: 0, to_node: 0, weight: 0.0,
+					      enabled: true, inno_id: 1 },
+				       ];
+
+        let edge_two: Vec<Edge> =  vec![Edge { from_node: 0, to_node: 0, weight: 0.0,
+					       enabled: true, inno_id: 1 },
+					Edge { from_node: 0, to_node: 0, weight: 0.0,
+					       enabled: true, inno_id: 2 },
+					
+				       ];
+
+        assert_eq!(get_excess_disjoint(&edge_one, &edge_two), 1);
+    }
+
 
     #[test]
     fn test_offspring_generate() {
