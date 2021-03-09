@@ -246,7 +246,7 @@ mod tests {
 		self.clone()
 	    }
 
-	    fn mutate<S>(&self, stor: &mut S) -> Self {
+	    fn mutate<S>(&self, _stor: &mut S) -> Self {
 		self.clone()
 	    }
         }

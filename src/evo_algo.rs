@@ -107,7 +107,7 @@ where
 
     let species = neat::speciate(&brains);
 
-    let species_count = species.len();
+    let _species_count = species.len();
     let mut offspring = Vec::new();
     for spec in species.iter() {
         // add in the champion of the species.
@@ -326,8 +326,8 @@ mod tests {
         }
 
 	fn mutate<S>(&self, stor: &mut S) -> Self {
-            for i in 0..6 {
-		let new_x = 0.0;
+            for _i in 0..6 {
+		let _new_x = 0.0;
             }
 
             TestIndividual {

@@ -38,7 +38,7 @@ use std::fmt::Debug;
 use std::sync::atomic::{AtomicUsize, Ordering};
 
 use crate::evo_algo::{run_ea, species_crossover, ExtractBrain, GAParams};
-use crate::nn::Network;
+use crate::nn::{Network};
 use crate::asteroids_individual::{AsteroidsPlayer};
 use crate::scheduler::{BeanstalkScheduler};
 
@@ -73,7 +73,7 @@ fn main() -> std::result::Result<(), String> {
 
     let mut a_scheduler = BeanstalkScheduler::<AsteroidsPlayer>::new("192.168.0.4", 11300);
 
-    let mut innovation_history = neat::InnovationHistory::new(8, 3);
+    let mut innovation_history = AsteroidsPlayer::new_inno_history();
 
     impl ExtractBrain for AsteroidsPlayer {
         fn get_brain(&self) -> Network {

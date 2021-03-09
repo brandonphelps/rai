@@ -158,6 +158,13 @@ impl InnovationHistory {
         }
     }
 
+    pub fn new_from_id(inno_id: usize) -> Self {
+	InnovationHistory {
+	    global_inno_id: inno_id,
+	    conn_history: vec![],
+	}
+    }
+
     pub fn get_inno_number(
         &mut self,
         network_inno_ids: &Vec<u64>,
@@ -171,12 +178,14 @@ impl InnovationHistory {
         for conn_history in self.conn_history.iter() {
             if conn_history.matches(network_inno_ids, from_node, to_node) {
                 is_new = false;
+		println!("Is not new: {} -> {}: {}", from_node, to_node, connect_inno_num);
                 connect_inno_num = conn_history.inno_number;
                 break;
             }
         }
 
         if is_new {
+	    println!("Is new: {} -> {}: {}", from_node, to_node, connect_inno_num);
             let mut new_inno_nums = Vec::<u64>::new();
             for edge in network_inno_ids.iter() {
                 new_inno_nums.push(edge.clone());

@@ -8,8 +8,8 @@ use rasteroids::asteroids;
 use rasteroids::collision;
 
 use crate::individual::Individual;
-use crate::neat::InnovationHistory;
-use crate::nn::Network;
+use crate::neat::{InnovationHistory};
+use crate::nn::{Network, inno_start_id};
 
 // use lazy_static::lazy_static;
 // use std::sync::Mutex;
@@ -22,7 +22,6 @@ use std::sync::atomic::{AtomicUsize, Ordering};
 
 // temporary for debugging. 
 static CALL_COUNT: AtomicUsize = AtomicUsize::new(0);
-
 
 // given a network, and a game state generate the next updates inputs.
 pub fn asteroids_thinker(
@@ -192,6 +191,10 @@ impl AsteroidsPlayer {
             brain: Network::new(8, 3, true),
         }
     }
+
+    pub fn new_inno_history() -> InnovationHistory {
+	InnovationHistory::new_from_id(inno_start_id(8, 3) as usize)
+    }
 }
 
 impl Individual for AsteroidsPlayer {
@@ -203,13 +206,13 @@ impl Individual for AsteroidsPlayer {
         String::from("rasteroids")
     }
 
-    fn mutate<S>(&self, inno: &mut S) -> Self {
+    fn mutate<S>(&self, _inno: &mut S) -> Self {
         let mut new_player = self.clone();
     //new_player.brain.mutate(inno);
         return new_player;
     }
 
-    fn crossover<S>(&self, other: &Self,
+    fn crossover<S>(&self, _other: &Self,
 		    _inno: &mut S) -> Self {
         println!("cross over");
         Self::new()
