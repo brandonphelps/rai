@@ -12,22 +12,51 @@ mod asteroids_individual;
 
 use crate::distro::{JobInfo, JobResults};
 use crate::individual::{Individual};
+use serde_json;
 
-use crate::asteroids_individual::{asteroids_fitness, AsteroidsPlayer};
+use serde::{Deserialize};
 
+use crate::asteroids_individual::{AsteroidsPlayer};
+use crate::nn::Network;
+
+use toml::Value;
+use std::fs;
+
+#[derive(Deserialize)]
+struct TempReserver  {
+    name: String,
+    individual: serde_json::Value,
+    job_id: u128,
+}
+
+
+fn resolve_result(job_body: &[u8]) -> impl Individual {
+    let tmp_p: TempReserver =  match serde_json::from_slice(&job_body) {
+	Ok(r) => { r },
+	Err(t) => { panic!("Failed") },
+    };
+
+    AsteroidsPlayer { brain: Network::new(8, 3, true) }
+}
 
 fn main() -> () {
+    let config_file = fs::read_to_string("config.toml").expect("Failed to read configuration from: 'config.toml'");
+    let configuration = config_file.parse::<Value>().expect("Failed to parse configuration file");
+
+    let beanstalk_host = configuration["runner"]["host"].as_str().unwrap();
+    let beanstalk_port = match configuration["runner"]["port"] {
+	Value::Integer(t) => { t as u16 },
+	_ => { panic!("Invalid value type for port") }
+    };
 
     let mut beanstalkd = Beanstalkc::new()
-        .host("192.168.0.4")
-        .port(11300)
+        .host(beanstalk_host)
+        .port(beanstalk_port)
         .connect()
         .expect("Failed to connect to beanstalkd server");
 
     beanstalkd.watch("rasteroids").unwrap();
     beanstalkd.use_tube("results").expect("Failed to watch results tube");
-
-
 
     loop {
         let mut current_job = beanstalkd.reserve().unwrap();
