@@ -141,7 +141,7 @@ where
 
 fn generic_offspring_gen<IndividualT, S>(
     params: &GAParams,
-    _s: &mut S,
+    storage: &mut S,
     pop_fitness: &Vec<f64>,
     current_pop: &Vec<&IndividualT>,
 ) -> Vec<IndividualT>
@@ -156,8 +156,8 @@ where
     while results.len() < params.offspring_count {
         let indivi_one = *parents.choose(&mut rng).unwrap();
         let indivi_two = *parents.choose(&mut rng).unwrap();
-	let new_child = indivi_one.crossover(indivi_two, _s);
-        results.push(new_child.mutate(_s));
+	let new_child = indivi_one.crossover(indivi_two, storage);
+        results.push(new_child.mutate(storage));
     }
     return results;
 }

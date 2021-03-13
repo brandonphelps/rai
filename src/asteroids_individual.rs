@@ -210,6 +210,7 @@ impl Individual for AsteroidsPlayer {
     }
 
     fn crossover(&self, _other: &Self, _inno: &mut InnovationHistory) -> Self {
+	println!("NEW! is empty");
         Self::new()
     }
 }
