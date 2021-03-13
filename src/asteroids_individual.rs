@@ -20,9 +20,6 @@ use crate::nn::{Network, inno_start_id};
 
 use std::sync::atomic::{AtomicUsize, Ordering};
 
-// temporary for debugging. 
-static CALL_COUNT: AtomicUsize = AtomicUsize::new(0);
-
 // given a network, and a game state generate the next updates inputs.
 pub fn asteroids_thinker(
     player: &Network,
@@ -143,9 +140,6 @@ pub fn asteroids_thinker(
 
 #[cfg(not(feature = "gui"))]
 pub fn asteroids_fitness(player: &Network) -> f64 {
-    
-    CALL_COUNT.fetch_add(1, Ordering::SeqCst);
-
     let mut asteroids_game = asteroids::game_init();
     let mut fitness: f64 = 0.0;
 
@@ -198,6 +192,9 @@ impl AsteroidsPlayer {
 }
 
 impl Individual for AsteroidsPlayer {
+
+    type Storage = InnovationHistory;
+
     fn fitness(&self) -> f64 {
         asteroids_fitness(&self.brain)
     }
@@ -206,15 +203,13 @@ impl Individual for AsteroidsPlayer {
         String::from("rasteroids")
     }
 
-    fn mutate<S>(&self, _inno: &mut S) -> Self {
+    fn mutate(&self, inno: &mut InnovationHistory) -> Self {
         let mut new_player = self.clone();
-    //new_player.brain.mutate(inno);
+	new_player.brain.mutate(inno);
         return new_player;
     }
 
-    fn crossover<S>(&self, _other: &Self,
-		    _inno: &mut S) -> Self {
-        println!("cross over");
+    fn crossover(&self, _other: &Self, _inno: &mut InnovationHistory) -> Self {
         Self::new()
     }
 }
@@ -238,3 +233,4 @@ impl AsteroidsStorage {
         }
     }
 }
+

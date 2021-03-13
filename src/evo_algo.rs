@@ -28,6 +28,11 @@ fn num_child_to_make(total_fitness: f64, species_fitness: f64, total_population:
     ((species_fitness / total_fitness) * total_population as f64) as u64
 }
 
+/// marker trait for storage. 
+pub trait GAStorage {
+
+}
+
 /// @brief container class for the various parameters.
 pub struct GAParams {
     // total population per generation.
@@ -141,7 +146,7 @@ fn generic_offspring_gen<IndividualT, S>(
     current_pop: &Vec<&IndividualT>,
 ) -> Vec<IndividualT>
 where
-    IndividualT: Individual,
+    IndividualT: Individual + Individual<Storage = S>,
 {
     let mut results = Vec::<IndividualT>::new();
     let mut rng = rand::thread_rng();
@@ -151,7 +156,7 @@ where
     while results.len() < params.offspring_count {
         let indivi_one = *parents.choose(&mut rng).unwrap();
         let indivi_two = *parents.choose(&mut rng).unwrap();
-	let new_child = indivi_one.crossover::<Option<f64>>(indivi_two, &mut None);
+	let new_child = indivi_one.crossover(indivi_two, _s);
         results.push(new_child.mutate(_s));
     }
     return results;

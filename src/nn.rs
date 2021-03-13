@@ -153,8 +153,6 @@ impl Network {
                 });
                 network.inno_start_id += 1;
             }
-	    println!("input: {}, output: {} Local inno id:{}", input_node_count, output_node_count,
-		     network.inno_start_id);
         }
 
         return network;
