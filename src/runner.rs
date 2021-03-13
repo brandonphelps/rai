@@ -17,7 +17,6 @@ use crate::asteroids_individual::{asteroids_fitness, AsteroidsPlayer};
 
 
 fn main() -> () {
-    println!("Starting runner");
 
     let mut beanstalkd = Beanstalkc::new()
         .host("192.168.0.4")
@@ -27,6 +26,9 @@ fn main() -> () {
 
     beanstalkd.watch("rasteroids").unwrap();
     beanstalkd.use_tube("results").expect("Failed to watch results tube");
+
+
+
     loop {
         let mut current_job = beanstalkd.reserve().unwrap();
 
@@ -34,7 +36,7 @@ fn main() -> () {
 
 	// todo: if name is rasters then JobInfo must be of AsteroidsPlayer
 	// i.e must do dynamic dispatch on the JobInfo type parameter. 
-        let mut result: JobInfo<AsteroidsPlayer> = match serde_json::from_slice(&job_str) {
+        let result: JobInfo<AsteroidsPlayer> = match serde_json::from_slice(&job_str) {
             Ok(r) => r,
             Err(t) => {
                 println!("Got an err on str: {}", str::from_utf8(&job_str).unwrap());

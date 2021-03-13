@@ -194,16 +194,12 @@ where
             indivds.push(&indiv.sol);
         }
 
-	println!("@@Generating offspring!@@");
         let offspring = generate_offspring_func(&params, storage,
 						&individuals_fitness, &indivds);
-
-	println!("@@Finished generating offspring@@");
         for child in offspring.iter() {
             individuals.push(IndiFit::new(child.clone()));
         }
 
-	println!("@@Doing fitness evaluations@@");
         {
             let mut results = HashMap::new();
             // do fitness calculation.
@@ -211,7 +207,6 @@ where
                 results.insert(index, scheduler.schedule_job(indivi.sol.clone()));
             }
 
-            println!("Waiting for scheduler to finish");
             scheduler.wait();
 
             for pair in results.iter_mut() {
@@ -237,15 +232,11 @@ where
         // todo: build some sort of results type such that
         // we don't print here.
         let average_fitness = total_fitness / params.pop_size as f64;
-        println!("Average fitness: {}", average_fitness);
 
-	println!("Culling population");
         // cull population
         individuals.sort_by_key(|indivi| Reverse((indivi.fitness * 1000.0) as i128));
         individuals.truncate(params.pop_size as usize);
     }
-
-
 
     individuals.sort_by_key(|indivi| Reverse((indivi.fitness * 1000.0) as i128));
     println!("Top indivi");
@@ -311,6 +302,8 @@ mod tests {
     struct GStorage {}
 
     impl Individual for TestIndividual {
+	type Storage: Option<u64>;
+
         fn fitness(&self) -> f64 {
             let p = (self.w1 * self.x1
                 + self.w2 * self.x2
@@ -330,7 +323,7 @@ mod tests {
             String::from("mathfit")
         }
 
-	fn mutate<S>(&self, stor: &mut S) -> Self {
+	fn mutate(&self, stor: &mut Self::Storage) -> Self {
             for _i in 0..6 {
 		let _new_x = 0.0;
             }
@@ -352,7 +345,7 @@ mod tests {
 	}
 
 
-	fn crossover<S>(&self, other: &Self, stor: &mut S) -> Self {
+	fn crossover(&self, other: &Self, stor: &mut Self::Storage) -> Self {
             let mut rng = rand::thread_rng();
             if rng.gen::<f64>() < 0.5 {
                 let mut params_x: [f32; 6] = [0.0; 6];
