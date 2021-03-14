@@ -30,6 +30,9 @@ mod individual;
 mod neat;
 mod nn;
 
+mod leven;
+mod bana_individ;
+
 use std::collections::HashMap;
 use std::time::Instant;
 
@@ -55,15 +58,9 @@ fn log<T: Any + Debug>(value: &T) {
     }
 }
 
+
 #[cfg(not(feature = "gui"))]
 fn main() -> std::result::Result<(), String> {
-    let population_count = 400;
-    let max_iter_count = 10000;
-    let input_node_count = 8;
-    let output_node_count = 3;
-
-    // log(&population_count);
-
     let ga_params = GAParams {
         pop_size: 400,
         offspring_count: 10,
@@ -72,7 +69,6 @@ fn main() -> std::result::Result<(), String> {
     };
 
     let mut a_scheduler = BeanstalkScheduler::<AsteroidsPlayer>::new("192.168.0.4", 11300);
-
     let mut innovation_history = AsteroidsPlayer::new_inno_history();
     
     impl ExtractBrain for AsteroidsPlayer {

@@ -199,6 +199,7 @@ impl Individual for AsteroidsPlayer {
         asteroids_fitness(&self.brain)
     }
 
+    // todo: can self be removed? 
     fn ea_name(&self) -> String {
         String::from("rasteroids")
     }
@@ -222,16 +223,3 @@ impl Default for AsteroidsPlayer {
         }
     }
 }
-
-pub struct AsteroidsStorage {
-    inno_history: InnovationHistory,
-}
-
-impl AsteroidsStorage {
-    pub fn new() -> Self {
-        Self {
-            inno_history: InnovationHistory::new(8, 3),
-        }
-    }
-}
-
