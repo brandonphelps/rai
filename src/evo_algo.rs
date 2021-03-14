@@ -139,7 +139,7 @@ where
     return results;
 }
 
-fn generic_offspring_gen<IndividualT, S>(
+pub fn generic_offspring_gen<IndividualT, S>(
     params: &GAParams,
     storage: &mut S,
     pop_fitness: &Vec<f64>,
