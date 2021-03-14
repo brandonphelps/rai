@@ -40,7 +40,7 @@ use std::any::Any;
 use std::fmt::Debug;
 use std::sync::atomic::{AtomicUsize, Ordering};
 
-use crate::evo_algo::{run_ea, species_crossover, ExtractBrain, GAParams};
+use crate::evo_algo::{run_ea, generic_offspring_gen, species_crossover, ExtractBrain, GAParams};
 use crate::nn::{Network};
 use crate::asteroids_individual::{AsteroidsPlayer};
 use crate::scheduler::{BeanstalkScheduler};
@@ -69,6 +69,7 @@ fn main() -> std::result::Result<(), String> {
     };
 
     let mut a_scheduler = BeanstalkScheduler::<AsteroidsPlayer>::new("192.168.0.4", 11300);
+    let mut b_scheduler = BeanstalkScheduler::<bana_individ>::new("192.168.0.4", 11300);
     let mut innovation_history = AsteroidsPlayer::new_inno_history();
     
     impl ExtractBrain for AsteroidsPlayer {
@@ -90,6 +91,14 @@ fn main() -> std::result::Result<(), String> {
 	species_crossover,
         &mut a_scheduler,
     );
+
+    run_ea::<bana_individ::BananaIndivid,
+	     Option<u8>,
+	     BeanstalkScheduler<bana_individ::BananaIndivid>>(
+	&ga_params,
+	&mut None,
+	generic_offspring_gen,
+	&mut b_scheduler);
     return Ok(());
 
     // let _args: Vec<_> = env::args().collect();
