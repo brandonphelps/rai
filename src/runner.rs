@@ -79,6 +79,7 @@ fn main() -> () {
         .expect("Failed to connect to beanstalkd server");
 
     beanstalkd.watch("rasteroids").unwrap();
+    beanstalkd.watch("BANANAAS").unwrap();
     beanstalkd.use_tube("results").expect("Failed to watch results tube");
 
     loop {

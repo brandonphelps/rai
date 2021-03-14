@@ -185,7 +185,8 @@ where
         indivi.fitness = indivi.sol.fitness();
     }
 
-    for _current_generation in 0..params.generation_count {
+    for current_generation in 0..params.generation_count {
+	println!("Current generation: {}", current_generation);
         let mut individuals_fitness = Vec::<f64>::new();
         let mut indivds = Vec::<&IndividualT>::new();
 
@@ -212,7 +213,6 @@ where
             for pair in results.iter_mut() {
                 match pair.1.poll(scheduler) {
                     Poll::Ready(fitness) => {
-                        println!("Getting fitness: {}", fitness);
                         individuals[*pair.0 as usize].fitness = fitness;
                     }
                     Poll::Pending => {
